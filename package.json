@@ -1,0 +1,35 @@
+{
+  "name": "mhdb-gen",
+  "version": "0.0.0",
+  "description": "Generator for the mhdb (historical events) static-site encyclopedia.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mhdb-gen": "./dist/bin/mhdb-gen.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "tsc -p tsconfig.test.json && node --test 'dist-test/test/**/*.test.js'"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "eta": "^4.5.1",
+    "marked": "^18.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.6.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^10.2.1",
+    "typescript": "^6.0.3"
+  }
+}
