@@ -17,7 +17,6 @@
     "test": "tsc -p tsconfig.test.json && node --test 'dist-test/test/**/*.test.js'"
   },
   "dependencies": {
-    "better-sqlite3": "^12.9.0",
     "eta": "^4.5.1",
     "marked": "^18.0.2",
     "zod": "^4.3.6"
@@ -25,7 +24,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.6.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
