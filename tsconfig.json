@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
     "module": "nodenext",
-    "rootDir": "./src",
-    "outDir": "./dist",
+    "rootDir": ".",
+    "outDir": "./build",
     "types": ["node"],
-    "esModuleInterop": true,
     "removeComments": true,
     "skipLibCheck": true,
     "noEmitOnError": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

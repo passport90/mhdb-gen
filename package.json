@@ -11,10 +11,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.prod.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
-    "test": "tsc -p tsconfig.test.json && node --test 'dist-test/test/**/*.test.js'"
+    "test": "tsc && node --test 'build/test/**/*.test.js'"
   },
   "dependencies": {
     "eta": "^4.5.1",
