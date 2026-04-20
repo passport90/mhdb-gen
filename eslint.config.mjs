@@ -42,6 +42,11 @@ export default [
       '@stylistic/no-tabs': 'error',
       '@stylistic/no-trailing-spaces': 'error',
       '@stylistic/object-curly-spacing': ['error', 'always'],
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: 'block-like', next: '*' },
+        { blankLine: 'always', prev: '*', next: 'return' },
+      ],
       '@stylistic/quotes': ['error', 'single'],
       '@stylistic/semi': ['error', 'never'],
       '@typescript-eslint/explicit-function-return-type': 'error',
