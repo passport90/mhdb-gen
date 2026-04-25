@@ -12,9 +12,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.prod.json",
+    "validate": "pnpm typecheck && pnpm lint && pnpm test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
-    "test": "tsc && node --test 'build/test/**/*.test.js'"
+    "test": "tsc && node --test --experimental-test-module-mocks 'build/test/**/*.test.js'"
   },
   "dependencies": {
     "eta": "^4.5.1",
