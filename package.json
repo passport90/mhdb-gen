@@ -11,10 +11,12 @@
     "node": ">=24"
   },
   "scripts": {
+    "prebuild": "rm -rf dist",
     "build": "tsc -p tsconfig.prod.json",
     "validate": "pnpm typecheck && pnpm lint && pnpm test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
+    "pretest": "rm -rf build",
     "test": "tsc && node --test --experimental-test-module-mocks 'build/test/**/*.test.js'"
   },
   "dependencies": {
