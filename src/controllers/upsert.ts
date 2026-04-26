@@ -2,7 +2,7 @@ import type Controller from '../types/controller.js'
 import processEventFile from '../services/process-event-file.js'
 
 /**
- * Upserts each file path's event into the database, sequentially, writing one `[i/n] <path>` progress line per file.
+ * Upserts each file path's event into the database, writing one `[i/n] <path>` progress line per file.
  *
  * @param args - File paths to process.
  * @param messageStream - Receives progress lines.
