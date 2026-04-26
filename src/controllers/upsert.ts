@@ -1,5 +1,5 @@
 import type Controller from '../types/controller.js'
-import processEventFile from '../process-event-file.js'
+import processEventFile from '../services/process-event-file.js'
 
 /**
  * Upserts each file path's event into the database, sequentially, writing one `[i/n] <path>` progress line per file.

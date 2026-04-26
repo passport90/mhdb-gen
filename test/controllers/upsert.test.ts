@@ -13,7 +13,7 @@ describe('upsert', () => {
   let messageStream: PassThrough
 
   before(async () => {
-    mock.module('../../src/process-event-file.js', {
+    mock.module('../../src/services/process-event-file.js', {
       defaultExport: mockProcessEventFile,
     })
 
