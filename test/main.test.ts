@@ -1,8 +1,8 @@
+import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-codes.js'
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type ParsedEvent from '../src/types/parsed-event.js'
 import { PassThrough } from 'node:stream'
-import { USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-codes.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -65,7 +65,7 @@ describe('main', () => {
     const code = await main(['upsert', filePath], messageStream)
 
     assert.strictEqual(mockUpsertEvent.mock.callCount(), 1)
-    assert.strictEqual(code, 0)
+    assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
   describe('when no command is given', () => {

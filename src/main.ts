@@ -7,7 +7,7 @@ import resolveRoute from './router.js'
 /**
  * Runs the program against the given args.
  *
- * @param args - Command-line args (typically `process.argv.slice(2)`).
+ * @param args - Arguments to the program.
  * @param messageStream - Where the program emits human-facing messages — usage, progress, errors, diagnostics.
  * @returns Exit code; `0` on success, non-zero on failure.
  */
@@ -18,10 +18,10 @@ const main: Controller = async (args, messageStream) => {
     return USAGE_ERROR_EXIT_CODE
   }
 
-  /** Sub-command name. */
+  /** Command name. */
   const command = args[0]
 
-  /** Args passed to the sub-command. */
+  /** Args passed to the command. */
   const commandArgs = args.slice(1)
 
   try {

@@ -1,6 +1,6 @@
+import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import type Controller from '../types/controller.js'
 import EventFileError from '../errors/event-file-error.js'
-import { OPERATIONAL_ERROR_EXIT_CODE } from '../constants/exit-codes.js'
 import processEventFile from '../services/process-event-file.js'
 
 /**
@@ -8,7 +8,7 @@ import processEventFile from '../services/process-event-file.js'
  *
  * @param args - File paths to process.
  * @param messageStream - Receives progress lines.
- * @returns Exit code (`0` on success, `OPERATIONAL_ERROR_EXIT_CODE` if any file fails).
+ * @returns `SUCCESS_EXIT_CODE` on success, `OPERATIONAL_ERROR_EXIT_CODE` if any file fails.
  */
 const upsert: Controller = async (args, messageStream) => {
   for (const [index, path] of args.entries()) {
@@ -27,7 +27,7 @@ const upsert: Controller = async (args, messageStream) => {
     }
   }
 
-  return 0
+  return SUCCESS_EXIT_CODE
 }
 
 export default upsert

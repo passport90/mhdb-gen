@@ -1,6 +1,6 @@
+import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { OPERATIONAL_ERROR_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert/strict'
@@ -70,7 +70,7 @@ describe('upsert', () => {
       `[1/3] ${filePaths[0]}\n[2/3] ${filePaths[1]}\n[3/3] ${filePaths[2]}\n`,
     )
     assert.strictEqual(mockUpsertEvent.mock.callCount(), 3)
-    assert.strictEqual(code, 0)
+    assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
   describe('when a file fails to process', () => {
