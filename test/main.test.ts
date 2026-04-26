@@ -47,4 +47,15 @@ describe('main', () => {
       assert.strictEqual(mockProcessEventFile.mock.callCount(), 0)
     })
   })
+
+  describe('when the command is unknown', () => {
+    it('writes the UsageError message and returns 1', async () => {
+      /** Exit code returned by `main`. */
+      const code = await main(['nope'], messageStream)
+
+      assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
+      assert.match(messageStream.read()?.toString() ?? '', /unknown command: 'nope'/)
+      assert.strictEqual(mockProcessEventFile.mock.callCount(), 0)
+    })
+  })
 })

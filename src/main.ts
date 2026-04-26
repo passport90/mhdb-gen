@@ -1,14 +1,15 @@
 import type Controller from './types/controller.js'
 import { USAGE_ERROR_EXIT_CODE } from './constants/exit-codes.js'
+import UsageError from './errors/usage-error.js'
 import type { Writable } from 'node:stream'
 import resolveRoute from './router.js'
 
 /**
- * Dispatches the invocation to the resolved sub-command controller, or prints usage if no command is given.
+ * Runs the program against the given args.
  *
- * @param args - First entry is the sub-command name; remaining entries are forwarded to the resolved controller.
+ * @param args - Command-line args (typically `process.argv.slice(2)`).
  * @param messageStream - Where the program emits human-facing messages — usage, progress, errors, diagnostics.
- * @returns Exit code from the resolved controller, or `USAGE_ERROR_EXIT_CODE` if no command was given.
+ * @returns Exit code; `0` on success, non-zero on failure.
  */
 const main: Controller = async (args, messageStream) => {
   if (args.length === 0) {
@@ -23,10 +24,20 @@ const main: Controller = async (args, messageStream) => {
   /** Args passed to the sub-command. */
   const commandArgs = args.slice(1)
 
-  /** Controller resolved from the command name. */
-  const controller = resolveRoute(command)
+  try {
+    /** Controller resolved from the command name. */
+    const controller = resolveRoute(command)
 
-  return controller(commandArgs, messageStream)
+    return await controller(commandArgs, messageStream)
+  } catch (err) {
+    if (err instanceof UsageError) {
+      messageStream.write(`${err.message}\n`)
+
+      return USAGE_ERROR_EXIT_CODE
+    }
+
+    throw err
+  }
 }
 
 /**

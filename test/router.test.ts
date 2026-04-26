@@ -1,4 +1,5 @@
 import { describe, it } from 'node:test'
+import UsageError from '../src/errors/usage-error.js'
 import assert from 'node:assert/strict'
 import resolveRoute from '../src/router.js'
 import upsertController from '../src/controllers/upsert.js'
@@ -9,10 +10,10 @@ describe('resolveRoute', () => {
   })
 
   describe('when the command is not registered', () => {
-    it('throws', () => {
+    it('throws a UsageError naming the unknown command', () => {
       assert.throws(
         () => resolveRoute('unknown'),
-        /unknown command: 'unknown'/,
+        (err: unknown) => err instanceof UsageError && /unknown command: 'unknown'/.test(err.message),
       )
     })
   })
