@@ -1,20 +1,16 @@
-import type { Readable, Writable } from 'node:stream'
+import type { Writable } from 'node:stream'
 
 /**
- * Handles an invocation with stream I/O, returning an exit code.
+ * Handles an invocation, emitting messages and returning an exit code.
  *
  * @param args - Args provided to the controller.
- * @param inputStream - Stream the controller reads input from.
- * @param outputStream - Stream the controller writes its primary output to.
- * @param errorStream - Stream for diagnostics and error messages.
+ * @param messageStream - Stream for human-facing messages; the bin wires this to stderr.
  * @returns Exit code.
  */
 interface Controller {
   (
     args: string[],
-    inputStream: Readable,
-    outputStream: Writable,
-    errorStream: Writable,
+    messageStream: Writable,
   ): Promise<number>
 }
 

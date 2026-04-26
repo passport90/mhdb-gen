@@ -1,8 +1,3 @@
 import main from '../main.js'
 
-process.exitCode = await main(
-  process.argv.slice(2),
-  process.stdin,
-  process.stdout,
-  process.stderr,
-)
+process.exitCode = await main(process.argv.slice(2), process.stderr)
