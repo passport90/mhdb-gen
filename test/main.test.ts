@@ -2,28 +2,30 @@ import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type ParsedEvent from '../src/types/parsed-event.js'
+import type ParsedEventMeta from '../src/types/parsed-event-meta.js'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('main', () => {
-  /** Placeholder `ParsedEvent` returned by the mock parser. */
-  const emptyParsedEvent: ParsedEvent = {
+  /** Placeholder `ParsedEventMeta` returned by the mock parser. */
+  const emptyEventMeta: ParsedEventMeta = {
     seasonalYear: 0,
     season: 0,
     position: 0,
     startDate: '',
     endDate: '',
-    title: '',
-    description: '',
   }
+
+  /** Markdown fixture content written into the tmp file; passes the real `parseEventFileContent`. */
+  const fixtureContent = '---\nplaceholder: 0\n---\n\n# Event\n\nbody\n'
 
   /** Top-level dispatcher under test; bound after the leaf mocks are registered. */
   let main: typeof import('../src/main.js').default
 
-  /** Mock parser; returns `emptyParsedEvent`. */
-  const mockParseEventFileContent = mock.fn<(content: string) => ParsedEvent>(() => emptyParsedEvent)
+  /** Mock frontmatter parser; returns `emptyEventMeta`. */
+  const mockParseFrontmatter = mock.fn<(yaml: string) => ParsedEventMeta>(() => emptyEventMeta)
 
   /** Mock slug deriver; resolves to empty string. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => '')
@@ -38,7 +40,7 @@ describe('main', () => {
   let tmpDir: string
 
   before(async () => {
-    mock.module('../src/services/parse-event-file-content.js', { defaultExport: mockParseEventFileContent })
+    mock.module('../src/services/parse-frontmatter.js', { defaultExport: mockParseFrontmatter })
     mock.module('../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -59,7 +61,7 @@ describe('main', () => {
     /** Tmp path the upsert controller is invoked against. */
     const filePath = join(tmpDir, 'a.md')
 
-    await writeFile(filePath, '')
+    await writeFile(filePath, fixtureContent)
 
     /** Exit code returned by `main`. */
     const code = await main(['upsert', filePath], messageStream)

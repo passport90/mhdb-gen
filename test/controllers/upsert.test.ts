@@ -2,28 +2,30 @@ import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/consta
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type ParsedEvent from '../../src/types/parsed-event.js'
+import type ParsedEventMeta from '../../src/types/parsed-event-meta.js'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('upsert', () => {
-  /** Placeholder `ParsedEvent` returned by the mock parser. */
-  const emptyParsedEvent: ParsedEvent = {
+  /** Placeholder `ParsedEventMeta` returned by the mock parser. */
+  const emptyEventMeta: ParsedEventMeta = {
     seasonalYear: 0,
     season: 0,
     position: 0,
     startDate: '',
     endDate: '',
-    title: '',
-    description: '',
   }
+
+  /** Markdown fixture content written into each tmp file; passes the real `parseEventFileContent`. */
+  const fixtureContent = '---\nplaceholder: 0\n---\n\n# Event\n\nbody\n'
 
   /** Upsert controller under test; bound after the leaf mocks are registered. */
   let upsert: typeof import('../../src/controllers/upsert.js').default
 
-  /** Mock parser; per-call overrides drive the failure case via `mockImplementationOnce`. */
-  const mockParseEventFileContent = mock.fn<(content: string) => ParsedEvent>(() => emptyParsedEvent)
+  /** Mock frontmatter parser; per-call overrides drive the failure case via `mockImplementationOnce`. */
+  const mockParseFrontmatter = mock.fn<(yaml: string) => ParsedEventMeta>(() => emptyEventMeta)
 
   /** Mock slug deriver; resolves to empty string. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => '')
@@ -41,7 +43,7 @@ describe('upsert', () => {
   let filePaths: string[]
 
   before(async () => {
-    mock.module('../../src/services/parse-event-file-content.js', { defaultExport: mockParseEventFileContent })
+    mock.module('../../src/services/parse-frontmatter.js', { defaultExport: mockParseFrontmatter })
     mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -49,12 +51,12 @@ describe('upsert', () => {
   })
 
   beforeEach(async () => {
-    mockParseEventFileContent.mock.resetCalls()
+    mockParseFrontmatter.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     messageStream = new PassThrough()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
     filePaths = ['a.md', 'b.md', 'c.md'].map(name => join(tmpDir, name))
-    await Promise.all(filePaths.map(path => writeFile(path, '')))
+    await Promise.all(filePaths.map(path => writeFile(path, fixtureContent)))
   })
 
   afterEach(async () => {
@@ -75,7 +77,7 @@ describe('upsert', () => {
 
   describe('when a file fails to process', () => {
     it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', async () => {
-      mockParseEventFileContent.mock.mockImplementationOnce(() => {
+      mockParseFrontmatter.mock.mockImplementationOnce(() => {
         throw new Error('parse failed at line 4')
       }, 1)
 
