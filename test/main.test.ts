@@ -22,9 +22,6 @@ body
   /** Top-level dispatcher under test; bound after the leaf mocks are registered. */
   let main: typeof import('../src/main.js').default
 
-  /** Mock slugifier; resolves to empty string. */
-  const mockSlugify = mock.fn<(title: string) => string>(() => '')
-
   /** Mock conflict checker; resolves to `false` (slug is free). */
   const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
 
@@ -38,7 +35,6 @@ body
   let tmpDir: string
 
   before(async () => {
-    mock.module('../src/services/slugify.js', { defaultExport: mockSlugify })
     mock.module('../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
     mock.module('../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 

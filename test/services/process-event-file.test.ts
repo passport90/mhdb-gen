@@ -8,9 +8,6 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('processEventFile', () => {
-  /** Base slug the mock slugifier returns; distinct value pins arg flow in the wiring assertions. */
-  const mockBaseSlug = 'mock-base-slug'
-
   /** Markdown fixture content written into the tmp file under test. */
   const fixtureContent = `---
 {
@@ -38,11 +35,11 @@ description body
     description: '\ndescription body\n',
   }
 
+  /** Slug the real `slugify` produces for `expectedEvent.title`. */
+  const expectedSlug = 'my-event'
+
   /** Service under test; bound after the leaf mocks are registered. */
   let processEventFile: typeof import('../../src/services/process-event-file.js').default
-
-  /** Mock slugifier; returns `mockBaseSlug`. */
-  const mockSlugify = mock.fn<(title: string) => string>(() => mockBaseSlug)
 
   /** Mock conflict checker; resolves to `false` (slug is free). */
   const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
@@ -54,7 +51,6 @@ description body
   let tmpDir: string
 
   before(async () => {
-    mock.module('../../src/services/slugify.js', { defaultExport: mockSlugify })
     mock.module('../../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -62,7 +58,6 @@ description body
   })
 
   beforeEach(async () => {
-    mockSlugify.mock.resetCalls()
     mockIsSlugConflicting.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
@@ -80,9 +75,8 @@ description body
 
     await processEventFile(filePath)
 
-    assert.deepStrictEqual(mockSlugify.mock.calls[0].arguments, [expectedEvent.title])
-    assert.deepStrictEqual(mockIsSlugConflicting.mock.calls[0].arguments, [mockBaseSlug, expectedEvent])
-    assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, mockBaseSlug])
+    assert.deepStrictEqual(mockIsSlugConflicting.mock.calls[0].arguments, [expectedSlug, expectedEvent])
+    assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, expectedSlug])
   })
 
   describe('when an error occurs anywhere in the pipeline', () => {
