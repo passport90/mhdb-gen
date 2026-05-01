@@ -38,8 +38,8 @@ body
   let filePaths: string[]
 
   before(async () => {
-    mock.module('../../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
-    mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
+    mock.module('../../src/repositories/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
+    mock.module('../../src/repositories/upsert-event.js', { defaultExport: mockUpsertEvent })
 
     upsert = (await import('../../src/controllers/upsert.js')).default
   })

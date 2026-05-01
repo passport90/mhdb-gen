@@ -1,5 +1,5 @@
 import type ParsedEvent from '../types/parsed-event.js'
-import isSlugConflicting from './is-slug-conflicting.js'
+import isSlugConflicting from '../repositories/is-slug-conflicting.js'
 import slugify from './slugify.js'
 
 /**

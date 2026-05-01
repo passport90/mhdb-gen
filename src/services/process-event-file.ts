@@ -2,7 +2,7 @@ import EventFileError from '../errors/event-file-error.js'
 import deriveSlug from './derive-slug.js'
 import parseEventFileContent from './parse-event-file-content.js'
 import { readFile } from 'node:fs/promises'
-import upsertEvent from './upsert-event.js'
+import upsertEvent from '../repositories/upsert-event.js'
 
 /**
  * Persists the event described by the markdown file at the given path.

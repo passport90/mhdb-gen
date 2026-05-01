@@ -25,7 +25,7 @@ describe('deriveSlug', () => {
   const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
 
   before(async () => {
-    mock.module('../../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
+    mock.module('../../src/repositories/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
 
     deriveSlug = (await import('../../src/services/derive-slug.js')).default
   })

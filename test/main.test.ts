@@ -35,8 +35,8 @@ body
   let tmpDir: string
 
   before(async () => {
-    mock.module('../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
-    mock.module('../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
+    mock.module('../src/repositories/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
+    mock.module('../src/repositories/upsert-event.js', { defaultExport: mockUpsertEvent })
 
     main = (await import('../src/main.js')).default
   })
