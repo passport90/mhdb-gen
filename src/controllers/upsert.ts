@@ -1,6 +1,6 @@
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import type Controller from '../types/controller.js'
-import EventFileError from '../errors/event-file-error.js'
+import type EventFileError from '../errors/event-file-error.js'
 import processEventFile from '../services/process-event-file.js'
 
 /**
@@ -17,13 +17,12 @@ const upsert: Controller = async (args, messageStream) => {
     try {
       await processEventFile(path)
     } catch (err) {
-      if (err instanceof EventFileError) {
-        messageStream.write(`${err.path}: ${err.message}\n`)
+      /** Caught error, asserted as `EventFileError` per `processEventFile`'s contract. */
+      const eventFileError = err as EventFileError
 
-        return OPERATIONAL_ERROR_EXIT_CODE
-      }
+      messageStream.write(`${eventFileError.path}: ${eventFileError.message}\n`)
 
-      throw err
+      return OPERATIONAL_ERROR_EXIT_CODE
     }
   }
 
