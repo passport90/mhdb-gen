@@ -1,6 +1,6 @@
 import type ParsedEvent from '../types/parsed-event.js'
 import isSlugConflicting from '../repositories/is-slug-conflicting.js'
-import slugify from './slugify.js'
+import slugify from '../helpers/slugify.js'
 
 /**
  * Derives a unique slug for the event. Idempotent for re-upserts at the same slot:

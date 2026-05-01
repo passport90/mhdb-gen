@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import slugify from '../../src/services/slugify.js'
+import slugify from '../../src/helpers/slugify.js'
 
 describe('slugify', () => {
   it('produces a URL-safe slug — lowercase ASCII word characters joined by single hyphens', () => {
