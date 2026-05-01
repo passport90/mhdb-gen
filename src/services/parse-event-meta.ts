@@ -1,22 +1,24 @@
 import type ParsedEventMeta from '../types/parsed-event-meta.js'
+import parsedEventMetaSchema from '../schemas/parsed-event-meta.js'
 
 /**
- * Parses the JSON-encoded event metadata into a validated `ParsedEventMeta`.
+ * Parses JSON-encoded event metadata into a validated `ParsedEventMeta`.
  *
- * Accepts only the JSON subset of YAML (inputs `JSON.parse` accepts), not full
- * YAML block style — a deliberate restriction below the frontmatter format the
- * file as a whole adheres to.
- *
- * @param _meta - Metadata source as it appears between the `---` fences.
+ * @param meta - JSON-encoded metadata source.
  * @returns Validated `ParsedEventMeta`.
- * @throws `Error` when the input is malformed JSON or does not match the `ParsedEventMeta` shape.
+ * @throws `Error` when the input is not valid JSON.
  */
-const parseEventMeta = (_meta: string): ParsedEventMeta => ({
-  seasonalYear: 0,
-  season: 0,
-  position: 0,
-  startDate: '',
-  endDate: '',
-})
+const parseEventMeta = (meta: string): ParsedEventMeta => {
+  /** JSON-decoded payload, untyped until the schema validates it. */
+  let payload: unknown
+
+  try {
+    payload = JSON.parse(meta)
+  } catch (cause) {
+    throw new Error(`malformed metadata (must be a JSON object): ${(cause as Error).message}`, { cause })
+  }
+
+  return parsedEventMetaSchema.parse(payload)
+}
 
 export default parseEventMeta

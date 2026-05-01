@@ -2,30 +2,24 @@ import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import type ParsedEvent from '../src/types/parsed-event.js'
-import type ParsedEventMeta from '../src/types/parsed-event-meta.js'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('main', () => {
-  /** Placeholder `ParsedEventMeta` returned by the mock parser. */
-  const emptyEventMeta: ParsedEventMeta = {
-    seasonalYear: 0,
-    season: 0,
-    position: 0,
-    startDate: '',
-    endDate: '',
-  }
+  /** Markdown fixture content written into the tmp file; passes real `parseEventFileContent` end-to-end. */
+  const fixtureContent = `---
+{"seasonalYear":2026,"season":1,"position":3,"startDate":"2026-04-15","endDate":"2026-04-22"}
+---
 
-  /** Markdown fixture content written into the tmp file; passes the real `parseEventFileContent`. */
-  const fixtureContent = '---\n{}\n---\n\n# Event\n\nbody\n'
+# Event
+
+body
+`
 
   /** Top-level dispatcher under test; bound after the leaf mocks are registered. */
   let main: typeof import('../src/main.js').default
-
-  /** Mock metadata parser; returns `emptyEventMeta`. */
-  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => emptyEventMeta)
 
   /** Mock slug deriver; resolves to empty string. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => '')
@@ -40,7 +34,6 @@ describe('main', () => {
   let tmpDir: string
 
   before(async () => {
-    mock.module('../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
     mock.module('../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 

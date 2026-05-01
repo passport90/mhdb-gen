@@ -2,42 +2,43 @@ import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import EventFileError from '../../src/errors/event-file-error.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
-import type ParsedEventMeta from '../../src/types/parsed-event-meta.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('processEventFile', () => {
-  /** Sample `ParsedEventMeta` the mock parser returns; distinct values pin arg flow in the wiring assertion. */
-  const testEventMeta: ParsedEventMeta = {
+  /** Slug the mock deriver returns. */
+  const testSlug = 'my-event'
+
+  /** Markdown fixture content written into the tmp file under test. */
+  const fixtureContent = `---
+{
+  "seasonalYear": 2026,
+  "season": 1,
+  "position": 3,
+  "startDate": "2026-04-15",
+  "endDate": "2026-04-22"
+}
+---
+
+# My Event
+
+description body
+`
+
+  /** `ParsedEvent` the real `parseEventFileContent` should produce from `fixtureContent`. */
+  const expectedEvent: ParsedEvent = {
     seasonalYear: 2026,
     season: 1,
     position: 3,
     startDate: '2026-04-15',
     endDate: '2026-04-22',
-  }
-
-  /** Slug the mock deriver returns. */
-  const testSlug = 'my-event'
-
-  /** Meta source the real `splitFile` lifts from `fixtureContent` and forwards to `parseEventMeta`. */
-  const expectedMeta = JSON.stringify(testEventMeta, null, 2)
-
-  /** Markdown fixture content; the real parser composes title and description from this. */
-  const fixtureContent = `---\n${expectedMeta}\n---\n\n# My Event\n\ndescription body\n`
-
-  /** Composed `ParsedEvent` the real `parseEventFileContent` will produce from `fixtureContent` and the mock fields. */
-  const expectedEvent: ParsedEvent = {
-    ...testEventMeta,
     title: 'My Event',
     description: '\ndescription body\n',
   }
 
   /** Service under test; bound after the leaf mocks are registered. */
   let processEventFile: typeof import('../../src/services/process-event-file.js').default
-
-  /** Mock metadata parser; returns `testEventMeta`. */
-  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => testEventMeta)
 
   /** Mock slug deriver; resolves to `testSlug`. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => testSlug)
@@ -49,7 +50,6 @@ describe('processEventFile', () => {
   let tmpDir: string
 
   before(async () => {
-    mock.module('../../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
     mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -57,7 +57,6 @@ describe('processEventFile', () => {
   })
 
   beforeEach(async () => {
-    mockParseEventMeta.mock.resetCalls()
     mockDeriveSlug.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
@@ -75,7 +74,6 @@ describe('processEventFile', () => {
 
     await processEventFile(filePath)
 
-    assert.deepStrictEqual(mockParseEventMeta.mock.calls[0].arguments, [expectedMeta])
     assert.deepStrictEqual(mockDeriveSlug.mock.calls[0].arguments, [expectedEvent.title])
     assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, testSlug])
   })
