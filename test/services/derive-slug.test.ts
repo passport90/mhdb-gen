@@ -1,7 +1,12 @@
-import { before, beforeEach, describe, it, mock } from 'node:test'
-import type EventSlot from '../../src/types/event-slot.js'
+import { afterEach, beforeEach, describe, it } from 'node:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { DatabaseSync } from 'node:sqlite'
 import type ParsedEvent from '../../src/types/parsed-event.js'
+import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
+import deriveSlug from '../../src/services/derive-slug.js'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 describe('deriveSlug', () => {
   /** Parsed event the slug is derived for. */
@@ -18,52 +23,60 @@ describe('deriveSlug', () => {
   /** Slug the real `slugify` produces for `subjectEvent.title`; the dedup loop builds suffixes off this. */
   const baseSlug = 'hello-world'
 
-  /** Service under test; bound after the leaf mock is registered. */
-  let deriveSlug: typeof import('../../src/services/derive-slug.js').default
+  /** Tmp directory created fresh per test; holds the test SQLite file. */
+  let tmpDir: string
 
-  /** Mock conflict checker; default resolves to `false` (slug is free). */
-  const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
+  /** Path to the test SQLite file. */
+  let dbPath: string
 
-  before(async () => {
-    mock.module('../../src/repositories/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
+  /**
+   * Inserts a row into `events` holding the given slug at a slot disjoint from `subjectEvent`.
+   *
+   * @param slug - Slug stored in the row.
+   * @param position - `position` value for the conflicting slot; year and season are fixed at `(2025, 0)`.
+   */
+  const insertConflictingRow = (slug: string, position: number): void => {
+    /** Database handle for this insert; closed before return. */
+    const db = new DatabaseSync(dbPath)
 
-    deriveSlug = (await import('../../src/services/derive-slug.js')).default
+    db.prepare(`
+      INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(slug, 'Title', 'body', '2025-01-01', '2025-12-31', 2025, 0, position)
+
+    db.close()
+  }
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDir, 'test.sqlite')
+    process.env.MHDB_DB_PATH = dbPath
+    await applyMigrations(dbPath)
   })
 
-  beforeEach(() => {
-    mockIsSlugConflicting.mock.resetCalls()
-    mockIsSlugConflicting.mock.mockImplementation(async () => false)
+  afterEach(async () => {
+    delete process.env.MHDB_DB_PATH
+    await rm(tmpDir, { recursive: true, force: true })
   })
 
   it('slugifies the title and returns the base slug when no row conflicts', async () => {
     assert.strictEqual(await deriveSlug(subjectEvent), baseSlug)
-    assert.deepStrictEqual(mockIsSlugConflicting.mock.calls[0].arguments, [baseSlug, subjectEvent])
   })
 
   describe('when the base slug conflicts with another row', () => {
     it('appends -2 and returns the first free suffix', async () => {
-      mockIsSlugConflicting.mock.mockImplementation(async slug => slug === baseSlug)
+      insertConflictingRow('hello-world', 1)
 
       assert.strictEqual(await deriveSlug(subjectEvent), 'hello-world-2')
-      assert.deepStrictEqual(
-        mockIsSlugConflicting.mock.calls.map(call => call.arguments[0]),
-        ['hello-world', 'hello-world-2'],
-      )
     })
   })
 
   describe('when the base slug and -2 both conflict with other rows', () => {
     it('walks the counter to -3', async () => {
-      /** Slugs that simulate as already taken by other slots. */
-      const takenSlugs = new Set(['hello-world', 'hello-world-2'])
-
-      mockIsSlugConflicting.mock.mockImplementation(async slug => takenSlugs.has(slug))
+      insertConflictingRow('hello-world', 1)
+      insertConflictingRow('hello-world-2', 2)
 
       assert.strictEqual(await deriveSlug(subjectEvent), 'hello-world-3')
-      assert.deepStrictEqual(
-        mockIsSlugConflicting.mock.calls.map(call => call.arguments[0]),
-        ['hello-world', 'hello-world-2', 'hello-world-3'],
-      )
     })
   })
 })
