@@ -15,28 +15,28 @@ describe('parseEventFileContent', () => {
   /** Service under test; bound after the leaf mock is registered. */
   let parseEventFileContent: typeof import('../../src/services/parse-event-file-content.js').default
 
-  /** Mock frontmatter parser; returns `testEventMeta`. */
-  const mockParseFrontmatter = mock.fn<(yaml: string) => ParsedEventMeta>(() => testEventMeta)
+  /** Mock metadata parser; returns `testEventMeta`. */
+  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => testEventMeta)
 
   before(async () => {
-    mock.module('../../src/services/parse-frontmatter.js', { defaultExport: mockParseFrontmatter })
+    mock.module('../../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
 
     parseEventFileContent = (await import('../../src/services/parse-event-file-content.js')).default
   })
 
   beforeEach(() => {
-    mockParseFrontmatter.mock.resetCalls()
+    mockParseEventMeta.mock.resetCalls()
   })
 
-  it('passes YAML to parseParsedEventMeta and composes the event with title and description from the body', () => {
+  it('passes the meta to parseEventMeta and composes title and description from the body', () => {
     /** Raw file content with valid frontmatter, an H1, and a body. */
-    const content = '---\nseasonal_year: 2026\nposition: 3\n---\n\n# My Event\n\ndescription body\n'
+    const content = '---\n{"seasonalYear":2026,"position":3}\n---\n\n# My Event\n\ndescription body\n'
 
     /** Parsed event returned by the service. */
     const result = parseEventFileContent(content)
 
-    assert.deepStrictEqual(mockParseFrontmatter.mock.calls[0].arguments, [
-      'seasonal_year: 2026\nposition: 3',
+    assert.deepStrictEqual(mockParseEventMeta.mock.calls[0].arguments, [
+      '{"seasonalYear":2026,"position":3}',
     ])
 
     assert.deepStrictEqual(result, {
@@ -58,7 +58,7 @@ describe('parseEventFileContent', () => {
   describe('when the frontmatter has no closing fence', () => {
     it('throws an unterminated-frontmatter error', () => {
       /** Content that opens a frontmatter block but never closes it. */
-      const content = '---\nseasonal_year: 2026\n\n# Event\n\nbody\n'
+      const content = '---\n{"seasonalYear":2026}\n\n# Event\n\nbody\n'
 
       assert.throws(
         () => parseEventFileContent(content),
@@ -70,7 +70,7 @@ describe('parseEventFileContent', () => {
   describe('when the body has no H1 line', () => {
     it('throws a missing-title error', () => {
       /** Content with valid frontmatter but no H1 in the body. */
-      const content = '---\nseasonal_year: 2026\n---\n\njust a description, no title\n'
+      const content = '---\n{"seasonalYear":2026}\n---\n\njust a description, no title\n'
 
       assert.throws(
         () => parseEventFileContent(content),

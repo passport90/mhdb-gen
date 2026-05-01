@@ -1,10 +1,10 @@
 import type ParsedEvent from '../types/parsed-event.js'
-import parseFrontmatter from './parse-frontmatter.js'
+import parseEventMeta from './parse-event-meta.js'
 
-/** Result of splitting an event file's raw content at the frontmatter fence. */
+/** Result of splitting an event file's raw content into metadata and body. */
 interface FileSplit {
-  /** YAML frontmatter block (between the opening and closing `---` fences, fences excluded). */
-  yaml: string
+  /** Metadata block content (between the opening and closing `---` fences, fences excluded). */
+  meta: string
   /** Body content (everything after the closing fence). */
   body: string
 }
@@ -20,16 +20,21 @@ interface BodySplit {
 /**
  * Parses the raw content of an event markdown file into a `ParsedEvent`.
  *
+ * The file format is markdown with frontmatter: a `---`-fenced metadata block
+ * followed by a markdown body whose H1 is the event title. The metadata block
+ * must contain a JSON object — the JSON subset of YAML, not full YAML block
+ * style.
+ *
  * @param content - Raw file content.
  * @returns Event data composed from frontmatter and body.
  * @throws `Error` when frontmatter is missing or unterminated, or the body has no H1.
  */
 const parseEventFileContent = (content: string): ParsedEvent => {
-  /** Frontmatter YAML and body, split out of the raw file content. */
+  /** Metadata block content and body, split out of the raw file content. */
   const fileSplit = splitFile(content)
 
-  /** Parsed event metadata from the YAML block. */
-  const eventMeta = parseFrontmatter(fileSplit.yaml)
+  /** Parsed event metadata. */
+  const eventMeta = parseEventMeta(fileSplit.meta)
 
   /** Title (from the H1) and description (everything after) of the body. */
   const bodySplit = splitBody(fileSplit.body)
@@ -41,10 +46,10 @@ const parseEventFileContent = (content: string): ParsedEvent => {
 }
 
 /**
- * Splits the raw file content at the frontmatter fence.
+ * Splits the raw file content at the `---` frontmatter fences.
  *
  * @param content - Raw file content.
- * @returns YAML and body strings.
+ * @returns Metadata block content and body strings.
  * @throws `Error` when the frontmatter is missing or unterminated.
  */
 const splitFile = (content: string): FileSplit => {
@@ -59,7 +64,7 @@ const splitFile = (content: string): FileSplit => {
   }
 
   return {
-    yaml: content.slice(4, closeIndex),
+    meta: content.slice(4, closeIndex),
     body: content.slice(closeIndex + 5),
   }
 }

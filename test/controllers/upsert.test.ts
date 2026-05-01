@@ -19,13 +19,13 @@ describe('upsert', () => {
   }
 
   /** Markdown fixture content written into each tmp file; passes the real `parseEventFileContent`. */
-  const fixtureContent = '---\nplaceholder: 0\n---\n\n# Event\n\nbody\n'
+  const fixtureContent = '---\n{}\n---\n\n# Event\n\nbody\n'
 
   /** Upsert controller under test; bound after the leaf mocks are registered. */
   let upsert: typeof import('../../src/controllers/upsert.js').default
 
-  /** Mock frontmatter parser; per-call overrides drive the failure case via `mockImplementationOnce`. */
-  const mockParseFrontmatter = mock.fn<(yaml: string) => ParsedEventMeta>(() => emptyEventMeta)
+  /** Mock metadata parser; per-call overrides drive the failure case via `mockImplementationOnce`. */
+  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => emptyEventMeta)
 
   /** Mock slug deriver; resolves to empty string. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => '')
@@ -43,7 +43,7 @@ describe('upsert', () => {
   let filePaths: string[]
 
   before(async () => {
-    mock.module('../../src/services/parse-frontmatter.js', { defaultExport: mockParseFrontmatter })
+    mock.module('../../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
     mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -51,7 +51,7 @@ describe('upsert', () => {
   })
 
   beforeEach(async () => {
-    mockParseFrontmatter.mock.resetCalls()
+    mockParseEventMeta.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     messageStream = new PassThrough()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
@@ -77,7 +77,7 @@ describe('upsert', () => {
 
   describe('when a file fails to process', () => {
     it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', async () => {
-      mockParseFrontmatter.mock.mockImplementationOnce(() => {
+      mockParseEventMeta.mock.mockImplementationOnce(() => {
         throw new Error('parse failed at line 4')
       }, 1)
 

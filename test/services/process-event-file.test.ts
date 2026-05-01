@@ -20,29 +20,11 @@ describe('processEventFile', () => {
   /** Slug the mock deriver returns. */
   const testSlug = 'my-event'
 
-  /** YAML frontmatter lines; the real parser passes these joined as the argument to `parseFrontmatter`. */
-  const frontmatterLines = [
-    'seasonal_year: 2026',
-    'season: 1',
-    'position: 3',
-    'start_date: 2026-04-15',
-    'end_date: 2026-04-22',
-  ]
+  /** Meta source the real `splitFile` lifts from `fixtureContent` and forwards to `parseEventMeta`. */
+  const expectedMeta = JSON.stringify(testEventMeta, null, 2)
 
   /** Markdown fixture content; the real parser composes title and description from this. */
-  const fixtureContent = [
-    '---',
-    ...frontmatterLines,
-    '---',
-    '',
-    '# My Event',
-    '',
-    'description body',
-    '',
-  ].join('\n')
-
-  /** YAML string the real parser passes to `parseFrontmatter` after splitting `fixtureContent`. */
-  const expectedYaml = frontmatterLines.join('\n')
+  const fixtureContent = `---\n${expectedMeta}\n---\n\n# My Event\n\ndescription body\n`
 
   /** Composed `ParsedEvent` the real `parseEventFileContent` will produce from `fixtureContent` and the mock fields. */
   const expectedEvent: ParsedEvent = {
@@ -54,8 +36,8 @@ describe('processEventFile', () => {
   /** Service under test; bound after the leaf mocks are registered. */
   let processEventFile: typeof import('../../src/services/process-event-file.js').default
 
-  /** Mock frontmatter parser; returns `testEventMeta`. */
-  const mockParseFrontmatter = mock.fn<(yaml: string) => ParsedEventMeta>(() => testEventMeta)
+  /** Mock metadata parser; returns `testEventMeta`. */
+  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => testEventMeta)
 
   /** Mock slug deriver; resolves to `testSlug`. */
   const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => testSlug)
@@ -67,7 +49,7 @@ describe('processEventFile', () => {
   let tmpDir: string
 
   before(async () => {
-    mock.module('../../src/services/parse-frontmatter.js', { defaultExport: mockParseFrontmatter })
+    mock.module('../../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
     mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
@@ -75,7 +57,7 @@ describe('processEventFile', () => {
   })
 
   beforeEach(async () => {
-    mockParseFrontmatter.mock.resetCalls()
+    mockParseEventMeta.mock.resetCalls()
     mockDeriveSlug.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
@@ -93,7 +75,7 @@ describe('processEventFile', () => {
 
     await processEventFile(filePath)
 
-    assert.deepStrictEqual(mockParseFrontmatter.mock.calls[0].arguments, [expectedYaml])
+    assert.deepStrictEqual(mockParseEventMeta.mock.calls[0].arguments, [expectedMeta])
     assert.deepStrictEqual(mockDeriveSlug.mock.calls[0].arguments, [expectedEvent.title])
     assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, testSlug])
   })
