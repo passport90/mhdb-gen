@@ -1,14 +1,15 @@
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import EventFileError from '../../src/errors/event-file-error.js'
+import type EventSlot from '../../src/types/event-slot.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('processEventFile', () => {
-  /** Slug the mock deriver returns. */
-  const testSlug = 'my-event'
+  /** Base slug the mock slugifier returns; distinct value pins arg flow in the wiring assertions. */
+  const mockBaseSlug = 'mock-base-slug'
 
   /** Markdown fixture content written into the tmp file under test. */
   const fixtureContent = `---
@@ -40,8 +41,11 @@ description body
   /** Service under test; bound after the leaf mocks are registered. */
   let processEventFile: typeof import('../../src/services/process-event-file.js').default
 
-  /** Mock slug deriver; resolves to `testSlug`. */
-  const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => testSlug)
+  /** Mock slugifier; returns `mockBaseSlug`. */
+  const mockSlugify = mock.fn<(title: string) => string>(() => mockBaseSlug)
+
+  /** Mock conflict checker; resolves to `false` (slug is free). */
+  const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
 
   /** Mock upserter; resolves to undefined. */
   const mockUpsertEvent = mock.fn<(event: ParsedEvent, slug: string) => Promise<void>>(async () => {})
@@ -50,14 +54,16 @@ description body
   let tmpDir: string
 
   before(async () => {
-    mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
+    mock.module('../../src/services/slugify.js', { defaultExport: mockSlugify })
+    mock.module('../../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
     processEventFile = (await import('../../src/services/process-event-file.js')).default
   })
 
   beforeEach(async () => {
-    mockDeriveSlug.mock.resetCalls()
+    mockSlugify.mock.resetCalls()
+    mockIsSlugConflicting.mock.resetCalls()
     mockUpsertEvent.mock.resetCalls()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
   })
@@ -74,8 +80,9 @@ description body
 
     await processEventFile(filePath)
 
-    assert.deepStrictEqual(mockDeriveSlug.mock.calls[0].arguments, [expectedEvent.title])
-    assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, testSlug])
+    assert.deepStrictEqual(mockSlugify.mock.calls[0].arguments, [expectedEvent.title])
+    assert.deepStrictEqual(mockIsSlugConflicting.mock.calls[0].arguments, [mockBaseSlug, expectedEvent])
+    assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, mockBaseSlug])
   })
 
   describe('when an error occurs anywhere in the pipeline', () => {

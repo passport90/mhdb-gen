@@ -1,6 +1,7 @@
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import type EventSlot from '../../src/types/event-slot.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
 import { PassThrough } from 'node:stream'
 import assert from 'node:assert/strict'
@@ -21,8 +22,11 @@ body
   /** Upsert controller under test; bound after the leaf mocks are registered. */
   let upsert: typeof import('../../src/controllers/upsert.js').default
 
-  /** Mock slug deriver; resolves to empty string. */
-  const mockDeriveSlug = mock.fn<(title: string) => Promise<string>>(async () => '')
+  /** Mock slugifier; resolves to empty string. */
+  const mockSlugify = mock.fn<(title: string) => string>(() => '')
+
+  /** Mock conflict checker; resolves to `false` (slug is free). */
+  const mockIsSlugConflicting = mock.fn<(slug: string, slot: EventSlot) => Promise<boolean>>(async () => false)
 
   /** Mock upserter; resolves to undefined. */
   const mockUpsertEvent = mock.fn<(event: ParsedEvent, slug: string) => Promise<void>>(async () => {})
@@ -37,7 +41,8 @@ body
   let filePaths: string[]
 
   before(async () => {
-    mock.module('../../src/services/derive-slug.js', { defaultExport: mockDeriveSlug })
+    mock.module('../../src/services/slugify.js', { defaultExport: mockSlugify })
+    mock.module('../../src/services/is-slug-conflicting.js', { defaultExport: mockIsSlugConflicting })
     mock.module('../../src/services/upsert-event.js', { defaultExport: mockUpsertEvent })
 
     upsert = (await import('../../src/controllers/upsert.js')).default

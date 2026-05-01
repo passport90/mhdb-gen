@@ -19,7 +19,7 @@ const processEventFile = async (path: string): Promise<void> => {
     const parsedEvent = parseEventFileContent(content)
 
     /** Slug unique within the events table. */
-    const slug = await deriveSlug(parsedEvent.title)
+    const slug = await deriveSlug(parsedEvent)
 
     await upsertEvent(parsedEvent, slug)
   } catch (cause) {
