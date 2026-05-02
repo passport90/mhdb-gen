@@ -30,20 +30,26 @@ body
   let dbPath: string
 
   /**
-   * Reads the row count of the `events` table in the test SQLite file.
+   * Reads every event row from the test SQLite file, projecting only the user-controllable
+   * columns and ordering by `position` for stable assertions.
    *
-   * @returns Row count from the events table.
+   * @returns Event rows ordered by `position` ascending.
    */
-  const readEventRowCount = (): SQLOutputValue | undefined => {
+  const readEvents = (): Record<string, SQLOutputValue>[] => {
     /** Database handle for this read; closed before return. */
     const db = new DatabaseSync(dbPath)
 
-    /** Row count returned by the count query. */
-    const count = db.prepare('SELECT COUNT(*) AS count FROM events').get()?.count
+    /** Event rows ordered by position. */
+    const events = db.prepare(`
+      SELECT slug, title, description, start_date, end_date,
+        seasonal_year, season, position
+      FROM events
+      ORDER BY position ASC
+    `).all()
 
     db.close()
 
-    return count
+    return events
   }
 
   beforeEach(() => {
@@ -68,7 +74,18 @@ body
     /** Exit code returned by `main`. */
     const code = main(['upsert', filePath], messageStream)
 
-    assert.strictEqual(readEventRowCount(), 1)
+    /** Event rows persisted by the upsert run. */
+    const events = readEvents()
+
+    assert.strictEqual(events.length, 1)
+    assert.strictEqual(events[0].slug, 'event')
+    assert.strictEqual(events[0].title, 'Event')
+    assert.strictEqual(events[0].description, '\nbody\n')
+    assert.strictEqual(events[0].start_date, '2026-04-15')
+    assert.strictEqual(events[0].end_date, '2026-04-22')
+    assert.strictEqual(events[0].seasonal_year, 2026)
+    assert.strictEqual(events[0].season, 1)
+    assert.strictEqual(events[0].position, 3)
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
@@ -79,7 +96,7 @@ body
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
       assert.match(messageStream.read()?.toString() ?? '', /^usage: /)
-      assert.strictEqual(readEventRowCount(), 0)
+      assert.strictEqual(readEvents().length, 0)
     })
   })
 
@@ -90,7 +107,7 @@ body
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
       assert.match(messageStream.read()?.toString() ?? '', /unknown command: 'nope'/)
-      assert.strictEqual(readEventRowCount(), 0)
+      assert.strictEqual(readEvents().length, 0)
     })
   })
 })
