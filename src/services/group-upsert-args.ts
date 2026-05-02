@@ -24,13 +24,13 @@ const groupUpsertArgs = (args: string[]): EventSource[] => {
   const illustrationFilePaths = args.filter(path => path.endsWith('.png'))
 
   /** Illustration paths keyed by `<dirname>/<basename-without-extension>`. */
-  const illustrationFilePathByGroupKey = new Map(illustrationFilePaths.map(path => [toGroupKey(path), path]))
+  const illustrationFilePathByPairKey = new Map(illustrationFilePaths.map(path => [toPairKey(path), path]))
 
-  /** Group keys for every markdown path in argv. */
-  const entryGroupKeySet = new Set(entryFilePaths.map(toGroupKey))
+  /** Pair keys for every markdown path in argv. */
+  const entryPairKeySet = new Set(entryFilePaths.map(toPairKey))
 
-  /** Illustration paths whose group has no matching markdown. */
-  const orphanIllustrationFilePaths = illustrationFilePaths.filter(path => !entryGroupKeySet.has(toGroupKey(path)))
+  /** Illustration paths whose pair has no matching markdown. */
+  const orphanIllustrationFilePaths = illustrationFilePaths.filter(path => !entryPairKeySet.has(toPairKey(path)))
 
   if (orphanIllustrationFilePaths.length > 0) {
     throw new UsageError(`illustrations without matching markdown: ${orphanIllustrationFilePaths.join(', ')}`)
@@ -38,21 +38,21 @@ const groupUpsertArgs = (args: string[]): EventSource[] => {
 
   return entryFilePaths.map(entryFilePath => ({
     entryFilePath,
-    illustrationFilePath: illustrationFilePathByGroupKey.get(toGroupKey(entryFilePath)) ?? null,
+    illustrationFilePath: illustrationFilePathByPairKey.get(toPairKey(entryFilePath)) ?? null,
   }))
 }
 
 /**
- * Computes the group key for a path: `<dirname>/<basename-without-extension>`.
+ * Computes the pair key for a path: `<dirname>/<basename-without-extension>`.
  *
  * @param filePath - File path to key.
  * @returns Key shared by sibling `.md` and `.png` files for the same event.
  */
-const toGroupKey = (filePath: string): string => {
-  /** Parsed components of the path. */
-  const parsed = parse(filePath)
+const toPairKey = (filePath: string): string => {
+  /** Parsed components of the file path. */
+  const parsedPath = parse(filePath)
 
-  return join(parsed.dir, parsed.name)
+  return join(parsedPath.dir, parsedPath.name)
 }
 
 export default groupUpsertArgs
