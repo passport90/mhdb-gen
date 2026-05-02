@@ -4,4 +4,4 @@ import main from '../main.js'
 
 checkEnvVars(process.env, REQUIRED_ENV_VAR_NAMES)
 
-process.exitCode = await main(process.argv.slice(2), process.stderr)
+process.exitCode = main(process.argv.slice(2), process.stderr)

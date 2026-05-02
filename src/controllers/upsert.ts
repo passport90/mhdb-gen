@@ -10,12 +10,12 @@ import processEventFile from '../services/process-event-file.js'
  * @param messageStream - Receives progress lines.
  * @returns `SUCCESS_EXIT_CODE` on success, `OPERATIONAL_ERROR_EXIT_CODE` if any file fails.
  */
-const upsert: Controller = async (args, messageStream) => {
+const upsert: Controller = (args, messageStream) => {
   for (const [index, path] of args.entries()) {
     messageStream.write(`[${index + 1}/${args.length}] ${path}\n`)
 
     try {
-      await processEventFile(path)
+      processEventFile(path)
     } catch (err) {
       /** Caught error, asserted as `EventFileError` per `processEventFile`'s contract. */
       const eventFileError = err as EventFileError

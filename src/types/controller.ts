@@ -11,7 +11,7 @@ interface Controller {
   (
     args: string[],
     messageStream: Writable,
-  ): Promise<number>
+  ): number
 }
 
 export default Controller

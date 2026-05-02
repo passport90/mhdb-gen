@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type EventSlot from '../../src/types/event-slot.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
@@ -74,16 +74,16 @@ describe('upsertEvent', () => {
     return rows[0] as Record<string, unknown>
   }
 
-  beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
-    await applyMigrations(dbPath)
+    applyMigrations(dbPath)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   it('inserts a new row when the slot is unoccupied', () => {

@@ -11,7 +11,7 @@ import resolveRoute from './router.js'
  * @param messageStream - Where the program emits human-facing messages — usage, progress, errors, diagnostics.
  * @returns Exit code; `0` on success, non-zero on failure.
  */
-const main: Controller = async (args, messageStream) => {
+const main: Controller = (args, messageStream) => {
   if (args.length === 0) {
     printUsage(messageStream)
 
@@ -28,7 +28,7 @@ const main: Controller = async (args, messageStream) => {
     /** Controller resolved from the command name. */
     const controller = resolveRoute(command)
 
-    return await controller(commandArgs, messageStream)
+    return controller(commandArgs, messageStream)
   } catch (err) {
     if (err instanceof UsageError) {
       messageStream.write(`${err.message}\n`)

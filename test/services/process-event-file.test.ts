@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import EventFileError from '../../src/errors/event-file-error.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -31,25 +31,25 @@ description body
   /** Path to the test SQLite file. */
   let dbPath: string
 
-  beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
-    await applyMigrations(dbPath)
+    applyMigrations(dbPath)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('reads the file, parses it, derives a slug, and upserts the composed event', async () => {
+  it('reads the file, parses it, derives a slug, and upserts the composed event', () => {
     /** Path to the real markdown fixture written for this test. */
     const filePath = join(tmpDir, 'event.md')
 
-    await writeFile(filePath, fixtureContent)
+    writeFileSync(filePath, fixtureContent)
 
-    await processEventFile(filePath)
+    processEventFile(filePath)
 
     /** Database handle for reading the inserted row. */
     const db = new DatabaseSync(dbPath)
@@ -75,12 +75,12 @@ description body
   })
 
   describe('when an error occurs anywhere in the pipeline', () => {
-    it('wraps the cause in an EventFileError carrying the path', async () => {
-      /** Non-existent path; `readFile` will reject with `ENOENT`. */
+    it('wraps the cause in an EventFileError carrying the path', () => {
+      /** Non-existent path; `readFileSync` will throw `ENOENT`. */
       const missingPath = join(tmpDir, 'missing.md')
 
-      await assert.rejects(
-        processEventFile(missingPath),
+      assert.throws(
+        () => processEventFile(missingPath),
         (err: unknown) => err instanceof EventFileError && err.path === missingPath,
       )
     })

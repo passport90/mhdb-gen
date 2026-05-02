@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type ParsedEvent from '../../src/types/parsed-event.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -47,16 +47,16 @@ describe('deriveSlug', () => {
     db.close()
   }
 
-  beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
-    await applyMigrations(dbPath)
+    applyMigrations(dbPath)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   it('slugifies the title and returns the base slug when no row conflicts', () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtempSync, rmSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
@@ -10,14 +10,14 @@ describe('runWithDatabase', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
   let tmpDir: string
 
-  beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     process.env.MHDB_DB_PATH = join(tmpDir, 'test.sqlite')
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   it('runs the callback with an open db, returns its value, then closes the db', () => {

@@ -1,6 +1,6 @@
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { PassThrough } from 'node:stream'
 import applyMigrations from '../support/apply-migrations.js'
@@ -8,6 +8,7 @@ import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import upsert from '../../src/controllers/upsert.js'
+import { writeFile } from 'node:fs/promises'
 
 describe('upsert', () => {
   /**
@@ -40,22 +41,22 @@ body
 
   beforeEach(async () => {
     messageStream = new PassThrough()
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
-    await applyMigrations(dbPath)
+    applyMigrations(dbPath)
     filePaths = ['a.md', 'b.md', 'c.md'].map(name => join(tmpDir, name))
     await Promise.all(filePaths.map((path, index) => writeFile(path, buildFixtureContent(index + 1))))
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('processes each file path in order and writes a progress line per file', async () => {
+  it('processes each file path in order and writes a progress line per file', () => {
     /** Exit code returned by `upsert`. */
-    const code = await upsert(filePaths, messageStream)
+    const code = upsert(filePaths, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
@@ -75,14 +76,14 @@ body
   })
 
   describe('when a file fails to process', () => {
-    it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', async () => {
+    it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', () => {
       /** Broken metadata overwriting the second file; the real `parseEventMeta` rejects this. */
       const brokenContent = '---\n{ broken json\n---\n\n# Event\n\nbody\n'
 
-      await writeFile(filePaths[1], brokenContent)
+      writeFileSync(filePaths[1], brokenContent)
 
       /** Exit code returned by `upsert`. */
-      const code = await upsert(filePaths, messageStream)
+      const code = upsert(filePaths, messageStream)
 
       /** Output lines written to the message stream during the run. */
       const lines = (messageStream.read()?.toString() ?? '').split('\n')

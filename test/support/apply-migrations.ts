@@ -1,4 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises'
+import { readFileSync, readdirSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { join } from 'node:path'
 
@@ -8,12 +8,12 @@ import { join } from 'node:path'
  *
  * @param dbPath - Filesystem path to the SQLite database file.
  */
-const applyMigrations = async (dbPath: string): Promise<void> => {
+const applyMigrations = (dbPath: string): void => {
   /** Path to the project's `migrations/` directory. */
   const migrationsDir = join(process.cwd(), 'migrations')
 
   /** Up-migration filenames under `migrationsDir`, sorted ascending. */
-  const upMigrationFilenames = (await readdir(migrationsDir))
+  const upMigrationFilenames = readdirSync(migrationsDir)
     .filter(name => /^\d+\.0_.+\.sql$/.test(name))
     .sort()
 
@@ -23,7 +23,7 @@ const applyMigrations = async (dbPath: string): Promise<void> => {
   try {
     for (const filename of upMigrationFilenames) {
       /** Migration SQL read from `filename`. */
-      const sql = await readFile(join(migrationsDir, filename), 'utf8')
+      const sql = readFileSync(join(migrationsDir, filename), 'utf8')
 
       db.exec(sql)
     }

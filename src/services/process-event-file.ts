@@ -1,7 +1,7 @@
 import EventFileError from '../errors/event-file-error.js'
 import deriveSlug from './derive-slug.js'
 import parseEventFileContent from './parse-event-file-content.js'
-import { readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import upsertEvent from '../repositories/upsert-event.js'
 
 /**
@@ -10,10 +10,10 @@ import upsertEvent from '../repositories/upsert-event.js'
  * @param path - Path to the markdown file.
  * @throws `EventFileError` wrapping any failure in the read → parse → slug → upsert pipeline.
  */
-const processEventFile = async (path: string): Promise<void> => {
+const processEventFile = (path: string): void => {
   try {
     /** Raw file content. */
-    const content = await readFile(path, 'utf8')
+    const content = readFileSync(path, 'utf8')
 
     /** Parsed event extracted from the file. */
     const parsedEvent = parseEventFileContent(content)
@@ -21,7 +21,7 @@ const processEventFile = async (path: string): Promise<void> => {
     /** Slug unique within the events table. */
     const slug = deriveSlug(parsedEvent)
 
-    await upsertEvent(parsedEvent, slug)
+    upsertEvent(parsedEvent, slug)
   } catch (cause) {
     throw new EventFileError(path, cause)
   }

@@ -1,6 +1,6 @@
 import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-codes.js'
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { PassThrough } from 'node:stream'
 import applyMigrations from './support/apply-migrations.js'
@@ -46,36 +46,36 @@ body
     return count
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     messageStream = new PassThrough()
-    tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
-    await applyMigrations(dbPath)
+    applyMigrations(dbPath)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    await rm(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('dispatches the command to its controller', async () => {
+  it('dispatches the command to its controller', () => {
     /** Tmp path the upsert controller is invoked against. */
     const filePath = join(tmpDir, 'a.md')
 
-    await writeFile(filePath, fixtureContent)
+    writeFileSync(filePath, fixtureContent)
 
     /** Exit code returned by `main`. */
-    const code = await main(['upsert', filePath], messageStream)
+    const code = main(['upsert', filePath], messageStream)
 
     assert.strictEqual(readEventRowCount(), 1)
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
   describe('when no command is given', () => {
-    it('prints usage and returns 1', async () => {
+    it('prints usage and returns 1', () => {
       /** Exit code returned by `main`. */
-      const code = await main([], messageStream)
+      const code = main([], messageStream)
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
       assert.match(messageStream.read()?.toString() ?? '', /^usage: /)
@@ -84,9 +84,9 @@ body
   })
 
   describe('when the command is unknown', () => {
-    it('writes the UsageError message and returns 1', async () => {
+    it('writes the UsageError message and returns 1', () => {
       /** Exit code returned by `main`. */
-      const code = await main(['nope'], messageStream)
+      const code = main(['nope'], messageStream)
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
       assert.match(messageStream.read()?.toString() ?? '', /unknown command: 'nope'/)
