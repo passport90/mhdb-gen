@@ -1,24 +1,14 @@
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
-import { afterEach, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
-import type groupUpsertArgs from '../../src/services/group-upsert-args.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import upsert from '../../src/controllers/upsert.js'
 import { writeFile } from 'node:fs/promises'
-
-/** Mock for `groupUpsertArgs`; reconfigured per test to return predetermined sources or throw. */
-const mockGroupUpsertArgs = mock.fn<typeof groupUpsertArgs>()
-
-mock.module('../../src/services/group-upsert-args.js', {
-  defaultExport: mockGroupUpsertArgs,
-})
-
-/** Upsert controller, dynamically imported after the `groupUpsertArgs` mock is installed. */
-const upsert = (await import('../../src/controllers/upsert.js')).default
 
 describe('upsert', () => {
   /**
@@ -73,11 +63,6 @@ body
   }
 
   beforeEach(async () => {
-    mockGroupUpsertArgs.mock.resetCalls()
-    mockGroupUpsertArgs.mock.mockImplementation(() => {
-      throw new Error('mockGroupUpsertArgs not configured for this test')
-    })
-
     messageStream = new PassThrough()
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
@@ -98,14 +83,6 @@ body
 
     /** Mixed argv: all markdown paths followed by all illustration paths, paired by basename across argv distance. */
     const mixedArgs = [...filePaths, ...illustrationPaths]
-
-    /** Sources the mocked `groupUpsertArgs` returns for this test, pairing each markdown path with its illustration. */
-    const sources = filePaths.map((path, index) => ({
-      entryFilePath: path,
-      illustrationFilePath: illustrationPaths[index],
-    }))
-
-    mockGroupUpsertArgs.mock.mockImplementation(() => sources)
 
     /** Exit code returned by `upsert`. */
     const code = upsert(mixedArgs, messageStream)
@@ -152,14 +129,6 @@ body
 
   describe('when a file fails to process', () => {
     it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', () => {
-      /** Sources the mocked `groupUpsertArgs` returns for this test; one per markdown fixture, no illustrations. */
-      const sources = filePaths.map(path => ({
-        entryFilePath: path,
-        illustrationFilePath: null,
-      }))
-
-      mockGroupUpsertArgs.mock.mockImplementation(() => sources)
-
       /** Malformed metadata overwriting the second file; rejected by `parseEventMeta`. */
       const brokenContent = '---\n{ broken json\n---\n\n# Event\n\nbody\n'
 

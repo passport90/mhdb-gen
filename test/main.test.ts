@@ -1,23 +1,13 @@
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-codes.js'
-import { afterEach, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import applyMigrations from './support/apply-migrations.js'
 import assert from 'node:assert/strict'
-import type groupUpsertArgs from '../src/services/group-upsert-args.js'
 import { join } from 'node:path'
+import main from '../src/main.js'
 import { tmpdir } from 'node:os'
-
-/** Mock for `groupUpsertArgs`; configured in the dispatch test to return one source for the upserted file. */
-const mockGroupUpsertArgs = mock.fn<typeof groupUpsertArgs>()
-
-mock.module('../src/services/group-upsert-args.js', {
-  defaultExport: mockGroupUpsertArgs,
-})
-
-/** Program entry point, dynamically imported after the `groupUpsertArgs` mock is installed. */
-const main = (await import('../src/main.js')).default
 
 describe('main', () => {
   /** Markdown fixture content written into the tmp file; valid input for the full upsert pipeline. */
@@ -63,11 +53,6 @@ body
   }
 
   beforeEach(() => {
-    mockGroupUpsertArgs.mock.resetCalls()
-    mockGroupUpsertArgs.mock.mockImplementation(() => {
-      throw new Error('mockGroupUpsertArgs not configured for this test')
-    })
-
     messageStream = new PassThrough()
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
@@ -85,11 +70,6 @@ body
     const filePath = join(tmpDir, 'a.md')
 
     writeFileSync(filePath, fixtureContent)
-
-    mockGroupUpsertArgs.mock.mockImplementation(() => [{
-      entryFilePath: filePath,
-      illustrationFilePath: null,
-    }])
 
     /** Exit code returned by `main`. */
     const code = main(['upsert', filePath], messageStream)
