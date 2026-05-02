@@ -67,7 +67,7 @@ body
     const db = new DatabaseSync(dbPath)
 
     /** Row count in the `events` table after the run. */
-    const rowCount = (db.prepare('SELECT COUNT(*) AS count FROM events').get() as { count: number }).count
+    const rowCount = db.prepare('SELECT COUNT(*) AS count FROM events').get()?.count
 
     db.close()
 
@@ -92,7 +92,7 @@ body
       const db = new DatabaseSync(dbPath)
 
       /** Row count after the run; only the first file should have committed. */
-      const rowCount = (db.prepare('SELECT COUNT(*) AS count FROM events').get() as { count: number }).count
+      const rowCount = db.prepare('SELECT COUNT(*) AS count FROM events').get()?.count
 
       db.close()
 

@@ -1,7 +1,7 @@
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { SUCCESS_EXIT_CODE, USAGE_ERROR_EXIT_CODE } from '../src/constants/exit-codes.js'
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
 import { PassThrough } from 'node:stream'
 import applyMigrations from './support/apply-migrations.js'
 import assert from 'node:assert/strict'
@@ -32,14 +32,14 @@ body
   /**
    * Reads the row count of the `events` table in the test SQLite file.
    *
-   * @returns Number of rows currently in `events`.
+   * @returns Row count from the events table.
    */
-  const readEventRowCount = (): number => {
+  const readEventRowCount = (): SQLOutputValue | undefined => {
     /** Database handle for this read; closed before return. */
     const db = new DatabaseSync(dbPath)
 
     /** Row count returned by the count query. */
-    const count = (db.prepare('SELECT COUNT(*) AS count FROM events').get() as { count: number }).count
+    const count = db.prepare('SELECT COUNT(*) AS count FROM events').get()?.count
 
     db.close()
 
