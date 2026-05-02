@@ -1,29 +1,30 @@
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
-import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import type ParsedEvent from '../../src/types/parsed-event.js'
+import { DatabaseSync } from 'node:sqlite'
 import { PassThrough } from 'node:stream'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import upsert from '../../src/controllers/upsert.js'
 
 describe('upsert', () => {
-  /** Markdown fixture content written into each tmp file under test. */
-  const fixtureContent = `---
-{"seasonalYear":2026,"season":1,"position":3,"startDate":"2026-04-15","endDate":"2026-04-22"}
+  /**
+   * Builds markdown fixture content for a fresh slot — the controller test
+   * writes one file per slot so they can all upsert without colliding.
+   *
+   * @param position - `position` value for the event's slot.
+   * @returns Markdown source with a JSON frontmatter pinned to `position`.
+   */
+  const buildFixtureContent = (position: number): string => `---
+{"seasonalYear":2026,"season":1,"position":${position},"startDate":"2026-04-15","endDate":"2026-04-22"}
 ---
 
-# Event
+# Event ${position}
 
 body
 `
-
-  /** Upsert controller under test; bound after the leaf mock is registered. */
-  let upsert: typeof import('../../src/controllers/upsert.js').default
-
-  /** Mock upserter; resolves to undefined. */
-  const mockUpsertEvent = mock.fn<(event: ParsedEvent, slug: string) => Promise<void>>(async () => {})
 
   /** Message stream, reset to a fresh `PassThrough` per test. */
   let messageStream: PassThrough
@@ -37,21 +38,14 @@ body
   /** Tmp paths the controller is invoked against, written fresh per test. */
   let filePaths: string[]
 
-  before(async () => {
-    mock.module('../../src/repositories/upsert-event.js', { defaultExport: mockUpsertEvent })
-
-    upsert = (await import('../../src/controllers/upsert.js')).default
-  })
-
   beforeEach(async () => {
-    mockUpsertEvent.mock.resetCalls()
     messageStream = new PassThrough()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     await applyMigrations(dbPath)
     filePaths = ['a.md', 'b.md', 'c.md'].map(name => join(tmpDir, name))
-    await Promise.all(filePaths.map(path => writeFile(path, fixtureContent)))
+    await Promise.all(filePaths.map((path, index) => writeFile(path, buildFixtureContent(index + 1))))
   })
 
   afterEach(async () => {
@@ -67,7 +61,16 @@ body
       messageStream.read()?.toString(),
       `[1/3] ${filePaths[0]}\n[2/3] ${filePaths[1]}\n[3/3] ${filePaths[2]}\n`,
     )
-    assert.strictEqual(mockUpsertEvent.mock.callCount(), 3)
+
+    /** Database handle for verifying the inserted rows. */
+    const db = new DatabaseSync(dbPath)
+
+    /** Row count in the `events` table after the run. */
+    const rowCount = (db.prepare('SELECT COUNT(*) AS count FROM events').get() as { count: number }).count
+
+    db.close()
+
+    assert.strictEqual(rowCount, 3)
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
@@ -84,10 +87,18 @@ body
       /** Output lines written to the message stream during the run. */
       const lines = (messageStream.read()?.toString() ?? '').split('\n')
 
+      /** Database handle for verifying the partial run. */
+      const db = new DatabaseSync(dbPath)
+
+      /** Row count after the run; only the first file should have committed. */
+      const rowCount = (db.prepare('SELECT COUNT(*) AS count FROM events').get() as { count: number }).count
+
+      db.close()
+
       assert.strictEqual(lines[0], `[1/3] ${filePaths[0]}`)
       assert.strictEqual(lines[1], `[2/3] ${filePaths[1]}`)
       assert.ok(lines[2].startsWith(`${filePaths[1]}: malformed metadata (must be a JSON object): `))
-      assert.strictEqual(mockUpsertEvent.mock.callCount(), 1)
+      assert.strictEqual(rowCount, 1)
       assert.strictEqual(code, OPERATIONAL_ERROR_EXIT_CODE)
     })
   })

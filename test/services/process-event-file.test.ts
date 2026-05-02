@@ -1,10 +1,11 @@
-import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { DatabaseSync } from 'node:sqlite'
 import EventFileError from '../../src/errors/event-file-error.js'
-import type ParsedEvent from '../../src/types/parsed-event.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import processEventFile from '../../src/services/process-event-file.js'
 import { tmpdir } from 'node:os'
 
 describe('processEventFile', () => {
@@ -24,40 +25,13 @@ describe('processEventFile', () => {
 description body
 `
 
-  /** `ParsedEvent` the real `parseEventFileContent` should produce from `fixtureContent`. */
-  const expectedEvent: ParsedEvent = {
-    seasonalYear: 2026,
-    season: 1,
-    position: 3,
-    startDate: '2026-04-15',
-    endDate: '2026-04-22',
-    title: 'My Event',
-    description: '\ndescription body\n',
-  }
-
-  /** Slug the real `slugify` produces for `expectedEvent.title`. */
-  const expectedSlug = 'my-event'
-
-  /** Service under test; bound after the leaf mock is registered. */
-  let processEventFile: typeof import('../../src/services/process-event-file.js').default
-
-  /** Mock upserter; resolves to undefined. */
-  const mockUpsertEvent = mock.fn<(event: ParsedEvent, slug: string) => Promise<void>>(async () => {})
-
   /** Tmp directory created fresh per test; holds the real markdown fixture and the test SQLite file. */
   let tmpDir: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
 
-  before(async () => {
-    mock.module('../../src/repositories/upsert-event.js', { defaultExport: mockUpsertEvent })
-
-    processEventFile = (await import('../../src/services/process-event-file.js')).default
-  })
-
   beforeEach(async () => {
-    mockUpsertEvent.mock.resetCalls()
     tmpDir = await mkdtemp(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
@@ -77,7 +51,27 @@ description body
 
     await processEventFile(filePath)
 
-    assert.deepStrictEqual(mockUpsertEvent.mock.calls[0].arguments, [expectedEvent, expectedSlug])
+    /** Database handle for reading the inserted row. */
+    const db = new DatabaseSync(dbPath)
+
+    /** Rows currently in the `events` table. */
+    const rows = db.prepare('SELECT * FROM events').all()
+
+    db.close()
+
+    assert.strictEqual(rows.length, 1)
+
+    /** Sole row written by the pipeline. */
+    const row = rows[0] as Record<string, unknown>
+
+    assert.strictEqual(row.slug, 'my-event')
+    assert.strictEqual(row.title, 'My Event')
+    assert.strictEqual(row.description, '\ndescription body\n')
+    assert.strictEqual(row.start_date, '2026-04-15')
+    assert.strictEqual(row.end_date, '2026-04-22')
+    assert.strictEqual(row.seasonal_year, 2026)
+    assert.strictEqual(row.season, 1)
+    assert.strictEqual(row.position, 3)
   })
 
   describe('when an error occurs anywhere in the pipeline', () => {
