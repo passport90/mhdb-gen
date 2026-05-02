@@ -10,7 +10,7 @@ import main from '../src/main.js'
 import { tmpdir } from 'node:os'
 
 describe('main', () => {
-  /** Markdown fixture content written into the tmp file; passes real `parseEventFileContent` end-to-end. */
+  /** Markdown fixture content written into the tmp file; valid input for the full upsert pipeline. */
   const fixtureContent = `---
 {"seasonalYear":2026,"season":1,"position":3,"startDate":"2026-04-15","endDate":"2026-04-22"}
 ---
@@ -23,7 +23,7 @@ body
   /** Message stream, reset to a fresh `PassThrough` per test. */
   let messageStream: PassThrough
 
-  /** Tmp directory created fresh per test; holds the real markdown fixture and the test SQLite file. */
+  /** Tmp directory created fresh per test; holds the markdown fixture and the test SQLite file. */
   let tmpDir: string
 
   /** Path to the test SQLite file. */

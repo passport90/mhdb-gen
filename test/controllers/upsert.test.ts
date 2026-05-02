@@ -30,7 +30,7 @@ body
   /** Message stream, reset to a fresh `PassThrough` per test. */
   let messageStream: PassThrough
 
-  /** Tmp directory created fresh per test; holds real markdown fixtures and the test SQLite file. */
+  /** Tmp directory created fresh per test; holds the markdown fixtures and the test SQLite file. */
   let tmpDir: string
 
   /** Path to the test SQLite file. */
@@ -123,7 +123,7 @@ body
 
   describe('when a file fails to process', () => {
     it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', () => {
-      /** Broken metadata overwriting the second file; the real `parseEventMeta` rejects this. */
+      /** Malformed metadata overwriting the second file; rejected by `parseEventMeta`. */
       const brokenContent = '---\n{ broken json\n---\n\n# Event\n\nbody\n'
 
       writeFileSync(filePaths[1], brokenContent)

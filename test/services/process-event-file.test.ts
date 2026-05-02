@@ -25,7 +25,7 @@ describe('processEventFile', () => {
 description body
 `
 
-  /** Tmp directory created fresh per test; holds the real markdown fixture and the test SQLite file. */
+  /** Tmp directory created fresh per test; holds the markdown fixture and the test SQLite file. */
   let tmpDir: string
 
   /** Path to the test SQLite file. */
@@ -44,7 +44,7 @@ description body
   })
 
   it('reads the file, parses it, derives a slug, and upserts the composed event', () => {
-    /** Path to the real markdown fixture written for this test. */
+    /** Path to the markdown fixture written for this test. */
     const filePath = join(tmpDir, 'event.md')
 
     writeFileSync(filePath, fixtureContent)

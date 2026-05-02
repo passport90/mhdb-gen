@@ -20,7 +20,7 @@ describe('deriveSlug', () => {
     description: '\nbody\n',
   }
 
-  /** Slug the real `slugify` produces for `subjectEvent.title`; the dedup loop builds suffixes off this. */
+  /** Slug `slugify` produces for `subjectEvent.title`; the dedup loop builds suffixes off this. */
   const baseSlug = 'hello-world'
 
   /** Tmp directory created fresh per test; holds the test SQLite file. */
