@@ -8,7 +8,7 @@ import upsertEvent from '../repositories/upsert-event.js'
  * Persists the event described by the markdown file at the given path.
  *
  * @param path - Path to the markdown file.
- * @throws `EventFileError` wrapping any failure in the read → parse → slug → upsert pipeline.
+ * @throws `EventFileError` wrapping any underlying failure.
  */
 const processEventFile = (path: string): void => {
   try {
