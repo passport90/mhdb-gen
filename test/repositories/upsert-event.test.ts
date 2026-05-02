@@ -1,6 +1,6 @@
+import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
 import type EventSlot from '../../src/types/event-slot.js'
 import type ParsedEvent from '../../src/types/parsed-event.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -58,7 +58,7 @@ describe('upsertEvent', () => {
    *
    * @returns Row as a plain object keyed by column name, or `null` when no row exists.
    */
-  const readEventRow = (): Record<string, unknown> | null => {
+  const readEventRow = (): Record<string, SQLOutputValue> | null => {
     /** Database handle for this read; closed before return. */
     const db = new DatabaseSync(dbPath)
 
@@ -71,7 +71,7 @@ describe('upsertEvent', () => {
       return null
     }
 
-    return rows[0] as Record<string, unknown>
+    return rows[0]
   }
 
   beforeEach(() => {
