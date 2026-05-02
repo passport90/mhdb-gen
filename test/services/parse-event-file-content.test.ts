@@ -1,46 +1,25 @@
-import { before, beforeEach, describe, it, mock } from 'node:test'
-import type ParsedEventMeta from '../../src/types/parsed-event-meta.js'
+import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import parseEventFileContent from '../../src/services/parse-event-file-content.js'
 
 describe('parseEventFileContent', () => {
-  /** Sample `ParsedEventMeta` the mock parser returns; distinct values pin arg flow in the wiring assertion. */
-  const testEventMeta: ParsedEventMeta = {
-    seasonalYear: 2026,
-    season: 1,
-    position: 3,
-    startDate: '2026-04-15',
-    endDate: '2026-04-22',
-  }
-
-  /** Service under test; bound after the leaf mock is registered. */
-  let parseEventFileContent: typeof import('../../src/services/parse-event-file-content.js').default
-
-  /** Mock metadata parser; returns `testEventMeta`. */
-  const mockParseEventMeta = mock.fn<(meta: string) => ParsedEventMeta>(() => testEventMeta)
-
-  before(async () => {
-    mock.module('../../src/services/parse-event-meta.js', { defaultExport: mockParseEventMeta })
-
-    parseEventFileContent = (await import('../../src/services/parse-event-file-content.js')).default
-  })
-
-  beforeEach(() => {
-    mockParseEventMeta.mock.resetCalls()
-  })
-
-  it('passes the meta to parseEventMeta and composes title and description from the body', () => {
+  it('parses raw file content into a `ParsedEvent`', () => {
     /** Raw file content with valid frontmatter, an H1, and a body. */
-    const content = '---\n{"seasonalYear":2026,"position":3}\n---\n\n# My Event\n\ndescription body\n'
+    const content = `---
+{"seasonalYear":2026,"season":1,"position":3,"startDate":"2026-04-15","endDate":"2026-04-22"}
+---
 
-    /** Parsed event returned by the service. */
-    const result = parseEventFileContent(content)
+# My Event
 
-    assert.deepStrictEqual(mockParseEventMeta.mock.calls[0].arguments, [
-      '{"seasonalYear":2026,"position":3}',
-    ])
+description body
+`
 
-    assert.deepStrictEqual(result, {
-      ...testEventMeta,
+    assert.deepStrictEqual(parseEventFileContent(content), {
+      seasonalYear: 2026,
+      season: 1,
+      position: 3,
+      startDate: '2026-04-15',
+      endDate: '2026-04-22',
       title: 'My Event',
       description: '\ndescription body\n',
     })
@@ -70,7 +49,12 @@ describe('parseEventFileContent', () => {
   describe('when the body has no H1 line', () => {
     it('throws a missing-title error', () => {
       /** Content with valid frontmatter but no H1 in the body. */
-      const content = '---\n{"seasonalYear":2026}\n---\n\njust a description, no title\n'
+      const content = `---
+{"seasonalYear":2026,"season":1,"position":3,"startDate":"2026-04-15","endDate":"2026-04-22"}
+---
+
+just a description, no title
+`
 
       assert.throws(
         () => parseEventFileContent(content),
