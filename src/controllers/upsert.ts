@@ -1,21 +1,25 @@
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import type Controller from '../types/controller.js'
 import type EventFileError from '../errors/event-file-error.js'
+import groupUpsertArgs from '../services/group-upsert-args.js'
 import processEventFile from '../services/process-event-file.js'
 
 /**
- * Upserts each file path's event into the database, writing one `[i/n] <path>` progress line per file.
+ * Upserts each event implied by `args` into the database, writing one `[i/n] <entry>` progress line per event.
  *
- * @param args - File paths to process.
- * @param messageStream - Receives progress lines.
- * @returns `SUCCESS_EXIT_CODE` on success, `OPERATIONAL_ERROR_EXIT_CODE` if any file fails.
+ * @param args - Mixed list of `.md` and `.png` paths; markdown files define events and PNGs supply illustrations.
+ * @param messageStream - Receives progress lines and error messages.
+ * @returns `SUCCESS_EXIT_CODE` on success, `OPERATIONAL_ERROR_EXIT_CODE` if any event fails.
  */
 const upsert: Controller = (args, messageStream) => {
-  for (const [index, path] of args.entries()) {
-    messageStream.write(`[${index + 1}/${args.length}] ${path}\n`)
+  /** Validated, paired event sources, one per markdown file in `args`. */
+  const sources = groupUpsertArgs(args)
+
+  for (const [index, source] of sources.entries()) {
+    messageStream.write(`[${index + 1}/${sources.length}] ${source.entryFilePath}\n`)
 
     try {
-      processEventFile(path)
+      processEventFile(source.entryFilePath)
     } catch (err) {
       /** Caught error, asserted as `EventFileError` per `processEventFile`'s contract. */
       const eventFileError = err as EventFileError
