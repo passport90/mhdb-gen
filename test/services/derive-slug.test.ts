@@ -59,24 +59,24 @@ describe('deriveSlug', () => {
     await rm(tmpDir, { recursive: true, force: true })
   })
 
-  it('slugifies the title and returns the base slug when no row conflicts', async () => {
-    assert.strictEqual(await deriveSlug(subjectEvent), baseSlug)
+  it('slugifies the title and returns the base slug when no row conflicts', () => {
+    assert.strictEqual(deriveSlug(subjectEvent), baseSlug)
   })
 
   describe('when the base slug conflicts with another row', () => {
-    it('appends -2 and returns the first free suffix', async () => {
+    it('appends -2 and returns the first free suffix', () => {
       insertConflictingRow('hello-world', 1)
 
-      assert.strictEqual(await deriveSlug(subjectEvent), 'hello-world-2')
+      assert.strictEqual(deriveSlug(subjectEvent), 'hello-world-2')
     })
   })
 
   describe('when the base slug and -2 both conflict with other rows', () => {
-    it('walks the counter to -3', async () => {
+    it('walks the counter to -3', () => {
       insertConflictingRow('hello-world', 1)
       insertConflictingRow('hello-world-2', 2)
 
-      assert.strictEqual(await deriveSlug(subjectEvent), 'hello-world-3')
+      assert.strictEqual(deriveSlug(subjectEvent), 'hello-world-3')
     })
   })
 })

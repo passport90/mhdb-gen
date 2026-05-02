@@ -9,7 +9,7 @@ import slugify from '../helpers/slugify.js'
  * @param event - Parsed event the slug is being derived for; its slot is excluded from the conflict check.
  * @returns Slug unique within the events table.
  */
-const deriveSlug = async (event: ParsedEvent): Promise<string> => {
+const deriveSlug = (event: ParsedEvent): string => {
   /** Slugified title, used as the base for collision-resolved slugs. */
   const baseSlug = slugify(event.title)
 
@@ -19,7 +19,7 @@ const deriveSlug = async (event: ParsedEvent): Promise<string> => {
   /** Suffix counter for the next collision; first appended suffix is `-2`. */
   let counter = 2
 
-  while (await isSlugConflicting(slug, event)) {
+  while (isSlugConflicting(slug, event)) {
     slug = `${baseSlug}-${counter}`
     counter += 1
   }
