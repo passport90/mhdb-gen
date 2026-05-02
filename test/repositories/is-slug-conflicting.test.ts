@@ -54,23 +54,23 @@ describe('isSlugConflicting', () => {
     await rm(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns true when another row holds the slug', async () => {
+  it('returns true when another row holds the slug', () => {
     insertEventRow('hello-world', { seasonalYear: 2025, season: 0, position: 1 })
 
-    assert.strictEqual(await isSlugConflicting('hello-world', subjectSlot), true)
+    assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), true)
   })
 
   describe('when no row holds the slug', () => {
-    it('returns false', async () => {
-      assert.strictEqual(await isSlugConflicting('hello-world', subjectSlot), false)
+    it('returns false', () => {
+      assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), false)
     })
   })
 
   describe('when only the subject slot itself holds the slug', () => {
-    it('returns false — the slot is excluded from the conflict check', async () => {
+    it('returns false — the slot is excluded from the conflict check', () => {
       insertEventRow('hello-world', subjectSlot)
 
-      assert.strictEqual(await isSlugConflicting('hello-world', subjectSlot), false)
+      assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), false)
     })
   })
 })
