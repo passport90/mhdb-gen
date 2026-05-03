@@ -4,14 +4,13 @@ import findEventRenderCandidates from '../repositories/find-event-render-candida
 import { join } from 'node:path'
 
 /**
- * Returns the ids of events whose output is stale or missing on disk — those flagged
- * db-stale by the candidate query, plus those whose
- * `<outputDir>/<seasonalYear>/<season>/<slug>/` folder does not exist. The render
- * loop hydrates each id back into a full event one at a time.
+ * Returns the ids of events whose output is stale or missing on disk — those whose
+ * `rendered_at` is null or older than `updated_at`, plus those whose
+ * `<outputDir>/<seasonalYear>/<season>/<slug>/` folder does not exist.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param outputDir - Output root used to check folder presence.
- * @returns Surrogate ids of the events to render, in candidate order.
+ * @returns Surrogate ids ordered by `(seasonal_year, season, position)` ascending.
  */
 const findEventIdsToRender = (db: DatabaseSync, outputDir: string): number[] => {
   /** Every event's identifying tuple plus its db-staleness flag. */

@@ -29,26 +29,22 @@ const sync: Controller = (_args, messageStream) => {
 
     /**
      * Distinct seasons whose subtree gained at least one re-rendered event this run.
-     * Deduplication via the last-slot tracker below relies on `findEventIdsToRender`
-     * walking candidates in `(seasonal_year, season, position)` order — same-slot events
-     * arrive consecutively, so we only need to remember the previous slot.
+     * Deduplication via `lastSlot` below relies on `findEventIdsToRender` returning ids
+     * ordered by `(seasonal_year, season, position)` — same-slot events arrive
+     * consecutively, so we only need to remember the previous slot.
      */
     const seasonsRendered: SeasonalSlot[] = []
 
-    /** Seasonal year of the previously appended slot; `null` before the first append. */
-    let lastSeasonalYear: number | null = null
-
-    /** Season of the previously appended slot; `null` before the first append. */
-    let lastSeason: number | null = null
+    /** Slot of the previously appended entry; `null` before the first append. */
+    let lastSlot: SeasonalSlot | null = null
 
     for (const [index, id] of ids.entries()) {
       /** Event hydrated for this iteration; lives only for the body of the loop. */
       const event = findEventById(db, id)
 
-      if (event.seasonalYear !== lastSeasonalYear || event.season !== lastSeason) {
-        lastSeasonalYear = event.seasonalYear
-        lastSeason = event.season
-        seasonsRendered.push({ seasonalYear: event.seasonalYear, season: event.season })
+      if (lastSlot === null || !areSeasonalSlotsEqual(lastSlot, event)) {
+        lastSlot = { seasonalYear: event.seasonalYear, season: event.season }
+        seasonsRendered.push(lastSlot)
       }
 
       messageStream.write(`[${index + 1}/${ids.length}] ${event.slug}\n`)
@@ -67,5 +63,15 @@ const sync: Controller = (_args, messageStream) => {
 
   return SUCCESS_EXIT_CODE
 }
+
+/**
+ * Reports whether two seasonal slots refer to the same calendar position.
+ *
+ * @param a - First slot.
+ * @param b - Second slot.
+ * @returns `true` when both slots share the same `seasonalYear` and `season`.
+ */
+const areSeasonalSlotsEqual = (a: SeasonalSlot, b: SeasonalSlot): boolean =>
+  a.seasonalYear === b.seasonalYear && a.season === b.season
 
 export default sync
