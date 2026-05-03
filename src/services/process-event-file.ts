@@ -1,3 +1,4 @@
+import type { DatabaseSync } from 'node:sqlite'
 import EventFileError from '../errors/event-file-error.js'
 import type IllustrationSource from '../types/illustration-source.js'
 import deriveSlug from './derive-slug.js'
@@ -10,11 +11,16 @@ import upsertEvent from '../repositories/upsert-event.js'
 /**
  * Persists the event described by the markdown file at the given path.
  *
+ * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param entryFilePath - Path to the markdown file.
  * @param illustrationFilePath - Path to the sibling illustration PNG, or `null` when this run carries no illustration.
  * @throws `EventFileError` wrapping any underlying failure.
  */
-const processEventFile = (entryFilePath: string, illustrationFilePath: string | null): void => {
+const processEventFile = (
+  db: DatabaseSync,
+  entryFilePath: string,
+  illustrationFilePath: string | null,
+): void => {
   try {
     /** Raw markdown file content. */
     const content = readFileSync(entryFilePath, 'utf8')
@@ -23,12 +29,12 @@ const processEventFile = (entryFilePath: string, illustrationFilePath: string | 
     const parsedEvent = parseEventFileContent(content)
 
     /** Slug unique within the events table. */
-    const slug = deriveSlug(parsedEvent)
+    const slug = deriveSlug(db, parsedEvent)
 
     /** Illustration source paired with its content hash, or `null` when the event has no illustration. */
     const illustrationSource = deriveIllustrationSource(illustrationFilePath)
 
-    upsertEvent(parsedEvent, slug, illustrationSource?.hash ?? null)
+    upsertEvent(db, parsedEvent, slug, illustrationSource?.hash ?? null)
     syncIllustrationBlob(slug, illustrationSource)
   } catch (cause) {
     throw new EventFileError(entryFilePath, cause)

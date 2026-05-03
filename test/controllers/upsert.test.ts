@@ -139,8 +139,8 @@ body
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
 
-  describe('when a file fails to process', () => {
-    it('writes the EventFileError, aborts the batch, and returns OPERATIONAL_ERROR_EXIT_CODE', () => {
+  describe('when a file fails to process mid-batch', () => {
+    it('rolls back every prior row, writes the EventFileError, and returns OPERATIONAL_ERROR_EXIT_CODE', () => {
       /** Malformed metadata overwriting the second file; rejected by `parseEventMeta`. */
       const brokenContent = '---\n{ broken json\n---\n\n# Event\n\nbody\n'
 
@@ -155,7 +155,7 @@ body
       assert.strictEqual(lines[0], `[1/3] ${filePaths[0]}`)
       assert.strictEqual(lines[1], `[2/3] ${filePaths[1]}`)
       assert.ok(lines[2].startsWith(`${filePaths[1]}: malformed metadata (must be a JSON object): `))
-      assert.strictEqual(readEvents().length, 1)
+      assert.strictEqual(readEvents().length, 0)
       assert.strictEqual(code, OPERATIONAL_ERROR_EXIT_CODE)
     })
   })

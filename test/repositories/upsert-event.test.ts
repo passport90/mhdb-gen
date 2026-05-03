@@ -33,6 +33,9 @@ describe('upsertEvent', () => {
   /** Path to the test SQLite file. */
   let dbPath: string
 
+  /** Database handle reused across the SUT call and any seeds/reads in each test. */
+  let db: DatabaseSync
+
   /**
    * Inserts a row directly into `events` at the given slot, bypassing the SUT.
    * Used to seed a slot before exercising `upsertEvent`'s update branch.
@@ -42,16 +45,11 @@ describe('upsertEvent', () => {
    * @returns Surrogate id of the seeded row.
    */
   const seedEventRow = (slug: string, slot: EventSlot): number => {
-    /** Database handle for this insert; closed before return. */
-    const db = new DatabaseSync(dbPath)
-
     /** Result of the INSERT, exposing the autoincremented `lastInsertRowid`. */
     const result = db.prepare(`
       INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(slug, 'Title', 'body', '2026-01-01', '2026-12-31', slot.seasonalYear, slot.season, slot.position)
-
-    db.close()
 
     return Number(result.lastInsertRowid)
   }
@@ -62,13 +60,8 @@ describe('upsertEvent', () => {
    * @returns Row as a plain object keyed by column name, or `null` when no row exists.
    */
   const readEventRow = (): Record<string, SQLOutputValue> | null => {
-    /** Database handle for this read; closed before return. */
-    const db = new DatabaseSync(dbPath)
-
     /** Rows currently in the `events` table. */
     const rows = db.prepare('SELECT * FROM events').all()
-
-    db.close()
 
     if (rows.length === 0) {
       return null
@@ -82,15 +75,17 @@ describe('upsertEvent', () => {
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
+    db.close()
     delete process.env.MHDB_DB_PATH
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
   it('inserts a new row when the slot is unoccupied', () => {
-    upsertEvent(subjectEvent, subjectSlug, subjectIllustrationHash)
+    upsertEvent(db, subjectEvent, subjectSlug, subjectIllustrationHash)
 
     /** Row written by the upsert call. */
     const row = readEventRow()
@@ -112,7 +107,7 @@ describe('upsertEvent', () => {
       /** Surrogate id of the row seeded into the subject slot. */
       const idBeforeUpdate = seedEventRow('placeholder-slug', { seasonalYear: 2026, season: 1, position: 3 })
 
-      upsertEvent(subjectEvent, subjectSlug, subjectIllustrationHash)
+      upsertEvent(db, subjectEvent, subjectSlug, subjectIllustrationHash)
 
       /** Row state after the upsert. */
       const row = readEventRow()

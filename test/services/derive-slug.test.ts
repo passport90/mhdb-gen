@@ -29,6 +29,9 @@ describe('deriveSlug', () => {
   /** Path to the test SQLite file. */
   let dbPath: string
 
+  /** Database handle reused across the SUT call and any seed inserts in each test. */
+  let db: DatabaseSync
+
   /**
    * Inserts a row into `events` holding the given slug at a slot disjoint from `subjectEvent`.
    *
@@ -36,15 +39,10 @@ describe('deriveSlug', () => {
    * @param position - `position` value for the conflicting slot; year and season are fixed at `(2025, 0)`.
    */
   const insertConflictingRow = (slug: string, position: number): void => {
-    /** Database handle for this insert; closed before return. */
-    const db = new DatabaseSync(dbPath)
-
     db.prepare(`
       INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(slug, 'Title', 'body', '2025-01-01', '2025-12-31', 2025, 0, position)
-
-    db.close()
   }
 
   beforeEach(() => {
@@ -52,22 +50,24 @@ describe('deriveSlug', () => {
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
+    db.close()
     delete process.env.MHDB_DB_PATH
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
   it('slugifies the title and returns the base slug when no row conflicts', () => {
-    assert.strictEqual(deriveSlug(subjectEvent), baseSlug)
+    assert.strictEqual(deriveSlug(db, subjectEvent), baseSlug)
   })
 
   describe('when the base slug conflicts with another row', () => {
     it('appends -2 and returns the first free suffix', () => {
       insertConflictingRow('hello-world', 1)
 
-      assert.strictEqual(deriveSlug(subjectEvent), 'hello-world-2')
+      assert.strictEqual(deriveSlug(db, subjectEvent), 'hello-world-2')
     })
   })
 
@@ -76,7 +76,7 @@ describe('deriveSlug', () => {
       insertConflictingRow('hello-world', 1)
       insertConflictingRow('hello-world-2', 2)
 
-      assert.strictEqual(deriveSlug(subjectEvent), 'hello-world-3')
+      assert.strictEqual(deriveSlug(db, subjectEvent), 'hello-world-3')
     })
   })
 })

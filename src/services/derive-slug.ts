@@ -1,3 +1,4 @@
+import type { DatabaseSync } from 'node:sqlite'
 import type ParsedEvent from '../types/parsed-event.js'
 import isSlugConflicting from '../repositories/is-slug-conflicting.js'
 import slugify from '../helpers/slugify.js'
@@ -6,10 +7,11 @@ import slugify from '../helpers/slugify.js'
  * Derives a unique slug for the event. Idempotent for re-upserts at the same slot:
  * passing an unchanged title returns the existing slug rather than appending a suffix.
  *
+ * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param event - Parsed event the slug is being derived for; its slot is excluded from the conflict check.
  * @returns Slug unique within the events table.
  */
-const deriveSlug = (event: ParsedEvent): string => {
+const deriveSlug = (db: DatabaseSync, event: ParsedEvent): string => {
   /** Slugified title, used as the base for collision-resolved slugs. */
   const baseSlug = slugify(event.title)
 
@@ -19,7 +21,7 @@ const deriveSlug = (event: ParsedEvent): string => {
   /** Suffix counter for the next collision; first appended suffix is `-2`. */
   let counter = 2
 
-  while (isSlugConflicting(slug, event)) {
+  while (isSlugConflicting(db, slug, event)) {
     slug = `${baseSlug}-${counter}`
     counter += 1
   }

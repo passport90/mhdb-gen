@@ -22,6 +22,9 @@ describe('isSlugConflicting', () => {
   /** Path to the test SQLite file. */
   let dbPath: string
 
+  /** Database handle reused across the SUT call and any seed inserts in each test. */
+  let db: DatabaseSync
+
   /**
    * Inserts a row into `events` holding the given slug at the given slot. Other
    * columns are populated with placeholders that satisfy the table's `CHECK`
@@ -31,15 +34,10 @@ describe('isSlugConflicting', () => {
    * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
    */
   const insertEventRow = (slug: string, slot: EventSlot): void => {
-    /** Database handle for this insert; closed before return. */
-    const db = new DatabaseSync(dbPath)
-
     db.prepare(`
       INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(slug, 'Title', 'body', '2026-01-01', '2026-12-31', slot.seasonalYear, slot.season, slot.position)
-
-    db.close()
   }
 
   beforeEach(() => {
@@ -47,9 +45,11 @@ describe('isSlugConflicting', () => {
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
+    db.close()
     delete process.env.MHDB_DB_PATH
     rmSync(tmpDir, { recursive: true, force: true })
   })
@@ -57,12 +57,12 @@ describe('isSlugConflicting', () => {
   it('returns true when another row holds the slug', () => {
     insertEventRow('hello-world', { seasonalYear: 2025, season: 0, position: 1 })
 
-    assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), true)
+    assert.strictEqual(isSlugConflicting(db, 'hello-world', subjectSlot), true)
   })
 
   describe('when no row holds the slug', () => {
     it('returns false', () => {
-      assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), false)
+      assert.strictEqual(isSlugConflicting(db, 'hello-world', subjectSlot), false)
     })
   })
 
@@ -70,7 +70,7 @@ describe('isSlugConflicting', () => {
     it('returns false — the slot is excluded from the conflict check', () => {
       insertEventRow('hello-world', subjectSlot)
 
-      assert.strictEqual(isSlugConflicting('hello-world', subjectSlot), false)
+      assert.strictEqual(isSlugConflicting(db, 'hello-world', subjectSlot), false)
     })
   })
 })

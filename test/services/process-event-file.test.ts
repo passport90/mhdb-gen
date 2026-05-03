@@ -31,14 +31,19 @@ description body
   /** Path to the test SQLite file. */
   let dbPath: string
 
+  /** Database handle reused across the SUT call and any reads in each test. */
+  let db: DatabaseSync
+
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
+    db.close()
     delete process.env.MHDB_DB_PATH
     rmSync(tmpDir, { recursive: true, force: true })
   })
@@ -53,15 +58,10 @@ description body
     writeFileSync(filePath, fixtureContent)
     writeFileSync(illustrationPath, 'hello world')
 
-    processEventFile(filePath, illustrationPath)
-
-    /** Database handle for reading the inserted row. */
-    const db = new DatabaseSync(dbPath)
+    processEventFile(db, filePath, illustrationPath)
 
     /** Rows currently in the `events` table. */
     const rows = db.prepare('SELECT * FROM events').all()
-
-    db.close()
 
     assert.strictEqual(rows.length, 1)
 
@@ -93,15 +93,10 @@ description body
 
       writeFileSync(filePath, fixtureContent)
 
-      processEventFile(filePath, null)
-
-      /** Database handle for reading the inserted row. */
-      const db = new DatabaseSync(dbPath)
+      processEventFile(db, filePath, null)
 
       /** Sole row written by the pipeline. */
       const row = db.prepare('SELECT * FROM events').get() as Record<string, unknown>
-
-      db.close()
 
       assert.strictEqual(row.illustration_hash, null)
       assert.strictEqual(existsSync(`${dbPath}.blobs/my-event.png`), false)
@@ -114,7 +109,7 @@ description body
       const missingPath = join(tmpDir, 'missing.md')
 
       assert.throws(
-        () => processEventFile(missingPath, null),
+        () => processEventFile(db, missingPath, null),
         (err: unknown) => err instanceof EventFileError && err.path === missingPath,
       )
     })
