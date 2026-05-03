@@ -11,10 +11,35 @@ import type EventToRender from '../types/event-to-render.js'
  * @returns The full renderable event.
  */
 const findEventById = (db: DatabaseSync, id: number): EventToRender => {
-  void db
-  void id
+  /** Row hydrated from `events`; SQL aliases match the type's camelCase keys. */
+  const row = db.prepare(`
+    SELECT
+      id,
+      slug,
+      title,
+      description,
+      illustration_hash AS illustrationHash,
+      start_date AS startDate,
+      end_date AS endDate,
+      seasonal_year AS seasonalYear,
+      season,
+      position
+    FROM events
+    WHERE id = ?
+  `).get(id)
 
-  throw new Error('findEventById: not yet implemented')
+  return {
+    id: row?.id,
+    slug: row?.slug,
+    title: row?.title,
+    description: row?.description,
+    illustrationHash: row?.illustrationHash,
+    startDate: row?.startDate,
+    endDate: row?.endDate,
+    seasonalYear: row?.seasonalYear,
+    season: row?.season,
+    position: row?.position,
+  } as EventToRender
 }
 
 export default findEventById

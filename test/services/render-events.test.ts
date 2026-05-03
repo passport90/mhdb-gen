@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
-import type { DatabaseSync } from 'node:sqlite'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { DatabaseSync } from 'node:sqlite'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
+import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
   /** Output root pinned for the test, threaded through to the mocked `renderEvent`. */
   const outputDir = '/tmp/mhdb-output-test-fixture'
 
-  /** Hydrated event returned by the mocked `findEventById` when called with id 1. */
+  /** First seeded event; expected to land at id 1 via autoincrement. */
   const firstEvent: EventToRender = {
     id: 1,
     slug: 'first-event',
@@ -23,7 +27,7 @@ describe('renderEvents', () => {
     position: 1,
   }
 
-  /** Hydrated event returned by the mocked `findEventById` when called with id 2. */
+  /** Second seeded event; same slot as `firstEvent`, different position — exercises slot-dedup. */
   const firstEventSibling: EventToRender = {
     id: 2,
     slug: 'first-event-sibling',
@@ -37,7 +41,7 @@ describe('renderEvents', () => {
     position: 2,
   }
 
-  /** Hydrated event returned by the mocked `findEventById` when called with id 3. */
+  /** Third seeded event; different slot — produces a second `SeasonalSlot` entry. */
   const secondEvent: EventToRender = {
     id: 3,
     slug: 'second-event',
@@ -51,14 +55,14 @@ describe('renderEvents', () => {
     position: 4,
   }
 
-  /**
-   * Sentinel db handle threaded through the mocked repos; the mocks never call any db
-   * method, so the cast is safe.
-   */
-  const fakeDb = { __sentinel: 'db' } as unknown as DatabaseSync
+  /** Tmp directory created fresh per test; holds the test SQLite file. */
+  let tmpDir: string
 
-  /** Mock for `findEventById`; routes by id to return the canned hydrated event. */
-  let findEventByIdMock: ReturnType<typeof mock.fn>
+  /** Path to the test SQLite file. */
+  let dbPath: string
+
+  /** Database handle threaded into the SUT. */
+  let db: DatabaseSync
 
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
@@ -77,19 +81,46 @@ describe('renderEvents', () => {
     messageStream: PassThrough,
   ) => SeasonalSlot[]
 
+  /**
+   * Inserts an event row carrying every field `findEventById` hydrates.
+   *
+   * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
+   */
+  const insertEventRow = (event: EventToRender): void => {
+    db.prepare(`
+      INSERT INTO events (
+        slug, title, description, illustration_hash,
+        start_date, end_date,
+        seasonal_year, season, position
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      event.slug,
+      event.title,
+      event.description,
+      event.illustrationHash,
+      event.startDate,
+      event.endDate,
+      event.seasonalYear,
+      event.season,
+      event.position,
+    )
+  }
+
   beforeEach(async () => {
     messageStream = new PassThrough()
 
-    findEventByIdMock = mock.fn((_db: unknown, id: number) => {
-      if (id === 1) return firstEvent
-      if (id === 2) return firstEventSibling
-      if (id === 3) return secondEvent
-      throw new Error(`findEventByIdMock: unexpected id ${id}`)
-    })
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDir, 'test.sqlite')
+    applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
+
+    insertEventRow(firstEvent)
+    insertEventRow(firstEventSibling)
+    insertEventRow(secondEvent)
+
     renderEventMock = mock.fn()
     markRenderedMock = mock.fn()
 
-    mock.module('../../src/repositories/find-event-by-id.js', { defaultExport: findEventByIdMock })
     mock.module('../../src/repositories/mark-rendered.js', { defaultExport: markRenderedMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
 
@@ -97,22 +128,19 @@ describe('renderEvents', () => {
   })
 
   afterEach(() => {
+    db.close()
+    rmSync(tmpDir, { recursive: true, force: true })
     mock.restoreAll()
   })
 
   it('renders each event in id order, dedupes seasons across same-slot events, returns distinct slots', () => {
     /** Distinct seasons returned by the SUT. */
-    const seasonsRendered = renderEvents(fakeDb, [1, 2, 3], outputDir, messageStream)
+    const seasonsRendered = renderEvents(db, [1, 2, 3], outputDir, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
       '[1/3] first-event\n[2/3] first-event-sibling\n[3/3] second-event\n',
     )
-
-    assert.strictEqual(findEventByIdMock.mock.callCount(), 3)
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[0].arguments, [fakeDb, 1])
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[1].arguments, [fakeDb, 2])
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[2].arguments, [fakeDb, 3])
 
     assert.strictEqual(renderEventMock.mock.callCount(), 3)
     assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDir])
@@ -120,9 +148,9 @@ describe('renderEvents', () => {
     assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDir])
 
     assert.strictEqual(markRenderedMock.mock.callCount(), 3)
-    assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [fakeDb, 1])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[1].arguments, [fakeDb, 2])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[2].arguments, [fakeDb, 3])
+    assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [db, 1])
+    assert.deepStrictEqual(markRenderedMock.mock.calls[1].arguments, [db, 2])
+    assert.deepStrictEqual(markRenderedMock.mock.calls[2].arguments, [db, 3])
 
     /** Distinct (year, season) slots — three events live across two seasons; dedup collapses to two. */
     const expectedSeasonsRendered: SeasonalSlot[] = [

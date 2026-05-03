@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import type Controller from '../../src/types/controller.js'
 import { DatabaseSync } from 'node:sqlite'
-import type EventSlot from '../../src/types/event-slot.js'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
@@ -16,7 +15,10 @@ describe('sync', () => {
   /** Output directory pinned for the test, exposed via `MHDB_OUTPUT` per `beforeEach`. */
   const outputDir = '/tmp/mhdb-output-test-fixture'
 
-  /** Hydrated event returned by the mocked `findEventById` when called with id 1. */
+  /**
+   * Seeded event; expected to flow through real `findEventIdsToRender` + real `findEventById`
+   * into the mocked `renderEvent`.
+   */
   const theEvent: EventToRender = {
     id: 1,
     slug: 'the-event',
@@ -52,9 +54,6 @@ describe('sync', () => {
   /** Mock for `runWithDatabase`; configured to invoke its body with the real `db`. */
   let runWithDatabaseMock: ReturnType<typeof mock.fn>
 
-  /** Mock for `findEventById`; routes by id to return the canned hydrated event. */
-  let findEventByIdMock: ReturnType<typeof mock.fn>
-
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
 
@@ -77,28 +76,29 @@ describe('sync', () => {
   let sync: Controller
 
   /**
-   * Inserts a stale row into `events` at the given slot with the given slug. The
-   * default `rendered_at` of `null` is what flips `isDbStale` to true in the real
-   * candidate query, so the controller's render loop picks the row up.
+   * Inserts an event row carrying every field `findEventById` hydrates. The default
+   * `rendered_at` of `null` is what flips `isDbStale` to true in the candidate query,
+   * so the row is picked up for rendering.
    *
-   * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
-   * @param slug - Slug stored in the row.
+   * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
    */
-  const insertEventRow = (slot: EventSlot, slug: string): void => {
+  const insertEventRow = (event: EventToRender): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, start_date, end_date,
+        slug, title, description, illustration_hash,
+        start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      slug,
-      'Title',
-      'body',
-      '2026-01-01',
-      '2026-12-31',
-      slot.seasonalYear,
-      slot.season,
-      slot.position,
+      event.slug,
+      event.title,
+      event.description,
+      event.illustrationHash,
+      event.startDate,
+      event.endDate,
+      event.seasonalYear,
+      event.season,
+      event.position,
     )
   }
 
@@ -112,10 +112,9 @@ describe('sync', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'the-event')
+    insertEventRow(theEvent)
 
     runWithDatabaseMock = mock.fn((body: (db: unknown) => unknown) => body(db))
-    findEventByIdMock = mock.fn(() => theEvent)
     renderEventMock = mock.fn()
     markRenderedMock = mock.fn()
     pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
@@ -123,7 +122,6 @@ describe('sync', () => {
     syncStaticAssetsMock = mock.fn()
 
     mock.module('../../src/helpers/run-with-database.js', { defaultExport: runWithDatabaseMock })
-    mock.module('../../src/repositories/find-event-by-id.js', { defaultExport: findEventByIdMock })
     mock.module('../../src/repositories/mark-rendered.js', { defaultExport: markRenderedMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
     mock.module('../../src/services/prune-orphan-output.js', { defaultExport: pruneOrphanOutputMock })
@@ -151,9 +149,6 @@ describe('sync', () => {
     assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
     assert.strictEqual(runWithDatabaseMock.mock.callCount(), 1)
-
-    assert.strictEqual(findEventByIdMock.mock.callCount(), 1)
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[0].arguments, [db, 1])
 
     assert.strictEqual(renderEventMock.mock.callCount(), 1)
     assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDir])
