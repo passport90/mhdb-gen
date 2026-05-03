@@ -81,6 +81,10 @@ body
     /** Illustration paths pinned to each markdown fixture by basename. */
     const illustrationPaths = filePaths.map(path => path.replace(/\.md$/, '.png'))
 
+    for (const [index, illustrationPath] of illustrationPaths.entries()) {
+      writeFileSync(illustrationPath, `illustration-${index + 1}`)
+    }
+
     /** Mixed argv: all markdown paths followed by all illustration paths, paired by basename across argv distance. */
     const mixedArgs = [...filePaths, ...illustrationPaths]
 
