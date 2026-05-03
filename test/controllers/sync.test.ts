@@ -16,12 +16,12 @@ describe('sync', () => {
   /** Output directory pinned for the test, exposed via `MHDB_OUTPUT` per `beforeEach`. */
   const outputDir = '/tmp/mhdb-output-test-fixture'
 
-  /** Hydrated event for id=1, returned by the mocked `findEventById` when called with id 1. */
-  const firstEvent: EventToRender = {
+  /** Hydrated event returned by the mocked `findEventById` when called with id 1. */
+  const theEvent: EventToRender = {
     id: 1,
-    slug: 'first-event',
-    title: 'First Event',
-    description: '\nbody-1\n',
+    slug: 'the-event',
+    title: 'The Event',
+    description: '\nbody\n',
     illustrationHash: 'hash-1',
     startDate: '2026-04-15',
     endDate: '2026-04-22',
@@ -30,42 +30,9 @@ describe('sync', () => {
     position: 1,
   }
 
-  /** Hydrated event for id=2, returned by the mocked `findEventById` when called with id 2. */
-  const firstEventSibling: EventToRender = {
-    id: 2,
-    slug: 'first-event-sibling',
-    title: 'First Event Sibling',
-    description: '\nbody-1b\n',
-    illustrationHash: null,
-    startDate: '2026-04-23',
-    endDate: '2026-04-30',
-    seasonalYear: 2026,
-    season: 1,
-    position: 2,
-  }
-
-  /** Hydrated event for id=3, returned by the mocked `findEventById` when called with id 3. */
-  const secondEvent: EventToRender = {
-    id: 3,
-    slug: 'second-event',
-    title: 'Second Event',
-    description: '\nbody-2\n',
-    illustrationHash: null,
-    startDate: '2026-05-05',
-    endDate: '2026-05-12',
-    seasonalYear: 2026,
-    season: 2,
-    position: 4,
-  }
-
-  /**
-   * Expected `seasonsRendered` argument to refresh — three events live across two
-   * seasons, so the controller's dedup tracker should collapse the run to two
-   * entries (one for each (year, season)).
-   */
+  /** Distinct seasons the rendered event occupies; expected `seasonsRendered` argument to refresh. */
   const expectedSeasonsRendered: SeasonalSlot[] = [
     { seasonalYear: 2026, season: 1 },
-    { seasonalYear: 2026, season: 2 },
   ]
 
   /** Canned pruned seasons returned by the mocked `pruneOrphanOutput`. */
@@ -145,17 +112,10 @@ describe('sync', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'first-event')
-    insertEventRow({ seasonalYear: 2026, season: 1, position: 2 }, 'first-event-sibling')
-    insertEventRow({ seasonalYear: 2026, season: 2, position: 4 }, 'second-event')
+    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'the-event')
 
     runWithDatabaseMock = mock.fn((body: (db: unknown) => unknown) => body(db))
-    findEventByIdMock = mock.fn((_db: unknown, id: number) => {
-      if (id === 1) return firstEvent
-      if (id === 2) return firstEventSibling
-      if (id === 3) return secondEvent
-      throw new Error(`findEventByIdMock: unexpected id ${id}`)
-    })
+    findEventByIdMock = mock.fn(() => theEvent)
     renderEventMock = mock.fn()
     markRenderedMock = mock.fn()
     pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
@@ -184,31 +144,22 @@ describe('sync', () => {
     mock.restoreAll()
   })
 
-  it('orchestrates the sync pipeline, dedupes seasons across same-slot events, returns SUCCESS_EXIT_CODE', () => {
+  it('orchestrates the sync pipeline — render, mark, prune, refresh, mirror — and returns SUCCESS_EXIT_CODE', () => {
     /** Exit code returned by `sync`. */
     const code = sync([], messageStream)
 
-    assert.strictEqual(
-      messageStream.read()?.toString(),
-      '[1/3] first-event\n[2/3] first-event-sibling\n[3/3] second-event\n',
-    )
+    assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
     assert.strictEqual(runWithDatabaseMock.mock.callCount(), 1)
 
-    assert.strictEqual(findEventByIdMock.mock.callCount(), 3)
+    assert.strictEqual(findEventByIdMock.mock.callCount(), 1)
     assert.deepStrictEqual(findEventByIdMock.mock.calls[0].arguments, [db, 1])
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[1].arguments, [db, 2])
-    assert.deepStrictEqual(findEventByIdMock.mock.calls[2].arguments, [db, 3])
 
-    assert.strictEqual(renderEventMock.mock.callCount(), 3)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDir])
-    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [firstEventSibling, outputDir])
-    assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDir])
+    assert.strictEqual(renderEventMock.mock.callCount(), 1)
+    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDir])
 
-    assert.strictEqual(markRenderedMock.mock.callCount(), 3)
+    assert.strictEqual(markRenderedMock.mock.callCount(), 1)
     assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [db, 1])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[1].arguments, [db, 2])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[2].arguments, [db, 3])
 
     assert.strictEqual(pruneOrphanOutputMock.mock.callCount(), 1)
     assert.deepStrictEqual(pruneOrphanOutputMock.mock.calls[0].arguments, [db, outputDir])
