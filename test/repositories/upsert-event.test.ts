@@ -24,6 +24,9 @@ describe('upsertEvent', () => {
   /** Slug paired with `subjectEvent` for the upsert call under test. */
   const subjectSlug = 'hello-world'
 
+  /** Illustration hash paired with `subjectEvent` for the upsert call under test; SHA-256-shaped placeholder. */
+  const subjectIllustrationHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+
   /** Tmp directory created fresh per test; holds the test SQLite file. */
   let tmpDir: string
 
@@ -87,7 +90,7 @@ describe('upsertEvent', () => {
   })
 
   it('inserts a new row when the slot is unoccupied', () => {
-    upsertEvent(subjectEvent, subjectSlug, null)
+    upsertEvent(subjectEvent, subjectSlug, subjectIllustrationHash)
 
     /** Row written by the upsert call. */
     const row = readEventRow()
@@ -96,6 +99,7 @@ describe('upsertEvent', () => {
     assert.strictEqual(row.slug, 'hello-world')
     assert.strictEqual(row.title, 'Hello World')
     assert.strictEqual(row.description, '\nbody\n')
+    assert.strictEqual(row.illustration_hash, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')
     assert.strictEqual(row.start_date, '2026-04-15')
     assert.strictEqual(row.end_date, '2026-04-22')
     assert.strictEqual(row.seasonal_year, 2026)
@@ -108,7 +112,7 @@ describe('upsertEvent', () => {
       /** Surrogate id of the row seeded into the subject slot. */
       const idBeforeUpdate = seedEventRow('placeholder-slug', { seasonalYear: 2026, season: 1, position: 3 })
 
-      upsertEvent(subjectEvent, subjectSlug, null)
+      upsertEvent(subjectEvent, subjectSlug, subjectIllustrationHash)
 
       /** Row state after the upsert. */
       const row = readEventRow()
@@ -118,6 +122,7 @@ describe('upsertEvent', () => {
       assert.strictEqual(row.slug, 'hello-world')
       assert.strictEqual(row.title, 'Hello World')
       assert.strictEqual(row.description, '\nbody\n')
+      assert.strictEqual(row.illustration_hash, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')
       assert.strictEqual(row.start_date, '2026-04-15')
       assert.strictEqual(row.end_date, '2026-04-22')
     })

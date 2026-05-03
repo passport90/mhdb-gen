@@ -74,6 +74,34 @@ description body
     assert.strictEqual(row.position, 3)
   })
 
+  describe('when an illustration path is given', () => {
+    it('hashes the illustration and writes the digest to the row', () => {
+      /** Path to the markdown fixture written for this test. */
+      const filePath = join(tmpDir, 'event.md')
+
+      /** Path to the illustration fixture written for this test. */
+      const illustrationPath = join(tmpDir, 'event.png')
+
+      writeFileSync(filePath, fixtureContent)
+      writeFileSync(illustrationPath, 'hello world')
+
+      processEventFile(filePath, illustrationPath)
+
+      /** Database handle for reading the inserted row. */
+      const db = new DatabaseSync(dbPath)
+
+      /** Sole row written by the pipeline. */
+      const row = db.prepare('SELECT * FROM events').get() as Record<string, unknown>
+
+      db.close()
+
+      assert.strictEqual(
+        row.illustration_hash,
+        'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+      )
+    })
+  })
+
   describe('when an error occurs anywhere in the pipeline', () => {
     it('wraps the cause in an EventFileError carrying the path', () => {
       /** Non-existent path; `readFileSync` will throw `ENOENT`. */

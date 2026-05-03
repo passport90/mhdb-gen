@@ -51,7 +51,8 @@ body
 
     /** Event rows ordered by position. */
     const events = db.prepare(`
-      SELECT slug, title, description, start_date, end_date,
+      SELECT slug, title, description, illustration_hash,
+        start_date, end_date,
         seasonal_year, season, position
       FROM events
       ORDER BY position ASC
@@ -104,6 +105,7 @@ body
     assert.strictEqual(events[0].slug, 'event-1')
     assert.strictEqual(events[0].title, 'Event 1')
     assert.strictEqual(events[0].description, '\nbody\n')
+    assert.strictEqual(events[0].illustration_hash, '410f1533ea6a277deec4dcb22851bf4cf451e2db90d9e94514742aaa53fdcdd1')
     assert.strictEqual(events[0].start_date, '2026-04-15')
     assert.strictEqual(events[0].end_date, '2026-04-22')
     assert.strictEqual(events[0].seasonal_year, 2026)
@@ -113,6 +115,7 @@ body
     assert.strictEqual(events[1].slug, 'event-2')
     assert.strictEqual(events[1].title, 'Event 2')
     assert.strictEqual(events[1].description, '\nbody\n')
+    assert.strictEqual(events[1].illustration_hash, '5e1cff0e796f7b8b3a765ff4774598d1298497a9c22740051660e0995a135634')
     assert.strictEqual(events[1].start_date, '2026-04-15')
     assert.strictEqual(events[1].end_date, '2026-04-22')
     assert.strictEqual(events[1].seasonal_year, 2026)
@@ -122,6 +125,7 @@ body
     assert.strictEqual(events[2].slug, 'event-3')
     assert.strictEqual(events[2].title, 'Event 3')
     assert.strictEqual(events[2].description, '\nbody\n')
+    assert.strictEqual(events[2].illustration_hash, '519704da57d5ac2f8fadf0b0a2ed258fdc5cd9f800db3eb44351c0f9e959f476')
     assert.strictEqual(events[2].start_date, '2026-04-15')
     assert.strictEqual(events[2].end_date, '2026-04-22')
     assert.strictEqual(events[2].seasonal_year, 2026)
