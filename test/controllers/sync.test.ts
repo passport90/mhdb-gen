@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
 import type Controller from '../../src/types/controller.js'
+import type EventRenderCandidate from '../../src/types/event-render-candidate.js'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
@@ -10,32 +11,47 @@ describe('sync', () => {
   /** Output directory pinned for the test, exposed via `MHDB_OUTPUT` per `beforeEach`. */
   const outputDir = '/tmp/mhdb-output-test-fixture'
 
-  /** Canned events returned by the mocked `findEventsToRender`. */
-  const eventsToRender: EventToRender[] = [
-    {
-      id: 1,
-      slug: 'first-event',
-      title: 'First Event',
-      description: '\nbody-1\n',
-      illustrationHash: 'hash-1',
-      startDate: '2026-04-15',
-      endDate: '2026-04-22',
-      seasonalYear: 2026,
-      season: 1,
-      position: 1,
-    },
-    {
-      id: 2,
-      slug: 'second-event',
-      title: 'Second Event',
-      description: '\nbody-2\n',
-      illustrationHash: null,
-      startDate: '2026-04-23',
-      endDate: '2026-04-30',
-      seasonalYear: 2026,
-      season: 2,
-      position: 4,
-    },
+  /**
+   * Candidates returned by the mocked repo; both are flagged db-stale so the real
+   * `findEventIdsToRender` service includes both regardless of folder presence.
+   */
+  const candidates: EventRenderCandidate[] = [
+    { id: 1, slug: 'first-event', seasonalYear: 2026, season: 1, isDbStale: true },
+    { id: 2, slug: 'second-event', seasonalYear: 2026, season: 2, isDbStale: true },
+  ]
+
+  /** Hydrated event for id=1, returned by the mocked `findEventById` when called with id 1. */
+  const firstEvent: EventToRender = {
+    id: 1,
+    slug: 'first-event',
+    title: 'First Event',
+    description: '\nbody-1\n',
+    illustrationHash: 'hash-1',
+    startDate: '2026-04-15',
+    endDate: '2026-04-22',
+    seasonalYear: 2026,
+    season: 1,
+    position: 1,
+  }
+
+  /** Hydrated event for id=2, returned by the mocked `findEventById` when called with id 2. */
+  const secondEvent: EventToRender = {
+    id: 2,
+    slug: 'second-event',
+    title: 'Second Event',
+    description: '\nbody-2\n',
+    illustrationHash: null,
+    startDate: '2026-04-23',
+    endDate: '2026-04-30',
+    seasonalYear: 2026,
+    season: 2,
+    position: 4,
+  }
+
+  /** Distinct seasons the rendered events occupy; expected `seasonsRendered` argument to refresh. */
+  const expectedSeasonsRendered: SeasonKey[] = [
+    { seasonalYear: 2026, season: 1 },
+    { seasonalYear: 2026, season: 2 },
   ]
 
   /** Canned pruned seasons returned by the mocked `pruneOrphanOutput`. */
@@ -43,14 +59,17 @@ describe('sync', () => {
     { seasonalYear: 2025, season: 4 },
   ]
 
-  /** Sentinel `db` handle threaded by the mocked `runWithDatabase`; leaves only forward it. */
+  /** Sentinel `db` handle threaded by the mocked `runWithDatabase`; the mocked repos only forward it. */
   const fakeDb = { __sentinel: 'db' }
 
   /** Mock for `runWithDatabase`; configured to invoke its body with `fakeDb`. */
   let runWithDatabaseMock: ReturnType<typeof mock.fn>
 
-  /** Mock for `findEventsToRender`. */
-  let findEventsToRenderMock: ReturnType<typeof mock.fn>
+  /** Mock for `findEventRenderCandidates` — the lowest-level seam still hollow at this point in the descent. */
+  let findEventRenderCandidatesMock: ReturnType<typeof mock.fn>
+
+  /** Mock for `findEventById`; routes by id to return the canned hydrated event. */
+  let findEventByIdMock: ReturnType<typeof mock.fn>
 
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
@@ -78,7 +97,12 @@ describe('sync', () => {
     process.env.MHDB_OUTPUT = outputDir
 
     runWithDatabaseMock = mock.fn((body: (db: unknown) => unknown) => body(fakeDb))
-    findEventsToRenderMock = mock.fn(() => eventsToRender)
+    findEventRenderCandidatesMock = mock.fn(() => candidates)
+    findEventByIdMock = mock.fn((_db: unknown, id: number) => {
+      if (id === 1) return firstEvent
+      if (id === 2) return secondEvent
+      throw new Error(`findEventByIdMock: unexpected id ${id}`)
+    })
     renderEventMock = mock.fn()
     markRenderedMock = mock.fn()
     pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
@@ -86,7 +110,11 @@ describe('sync', () => {
     syncStaticAssetsMock = mock.fn()
 
     mock.module('../../src/helpers/run-with-database.js', { defaultExport: runWithDatabaseMock })
-    mock.module('../../src/repositories/find-events-to-render.js', { defaultExport: findEventsToRenderMock })
+    mock.module(
+      '../../src/repositories/find-event-render-candidates.js',
+      { defaultExport: findEventRenderCandidatesMock },
+    )
+    mock.module('../../src/repositories/find-event-by-id.js', { defaultExport: findEventByIdMock })
     mock.module('../../src/repositories/mark-rendered.js', { defaultExport: markRenderedMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
     mock.module('../../src/services/prune-orphan-output.js', { defaultExport: pruneOrphanOutputMock })
@@ -112,12 +140,16 @@ describe('sync', () => {
 
     assert.strictEqual(runWithDatabaseMock.mock.callCount(), 1)
 
-    assert.strictEqual(findEventsToRenderMock.mock.callCount(), 1)
-    assert.deepStrictEqual(findEventsToRenderMock.mock.calls[0].arguments, [fakeDb, outputDir])
+    assert.strictEqual(findEventRenderCandidatesMock.mock.callCount(), 1)
+    assert.deepStrictEqual(findEventRenderCandidatesMock.mock.calls[0].arguments, [fakeDb])
+
+    assert.strictEqual(findEventByIdMock.mock.callCount(), 2)
+    assert.deepStrictEqual(findEventByIdMock.mock.calls[0].arguments, [fakeDb, 1])
+    assert.deepStrictEqual(findEventByIdMock.mock.calls[1].arguments, [fakeDb, 2])
 
     assert.strictEqual(renderEventMock.mock.callCount(), 2)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [eventsToRender[0], outputDir])
-    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [eventsToRender[1], outputDir])
+    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDir])
+    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [secondEvent, outputDir])
 
     assert.strictEqual(markRenderedMock.mock.callCount(), 2)
     assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [fakeDb, 1])
@@ -129,7 +161,7 @@ describe('sync', () => {
     assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
     assert.deepStrictEqual(
       refreshHierarchyIndexesMock.mock.calls[0].arguments,
-      [fakeDb, outputDir, eventsToRender, seasonsPruned],
+      [fakeDb, outputDir, expectedSeasonsRendered, seasonsPruned],
     )
 
     assert.strictEqual(syncStaticAssetsMock.mock.callCount(), 1)

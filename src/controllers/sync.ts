@@ -1,6 +1,8 @@
 import type Controller from '../types/controller.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
-import findEventsToRender from '../repositories/find-events-to-render.js'
+import type SeasonKey from '../types/season-key.js'
+import findEventById from '../repositories/find-event-by-id.js'
+import findEventIdsToRender from '../services/find-event-ids-to-render.js'
 import markRendered from '../repositories/mark-rendered.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
@@ -22,11 +24,28 @@ const sync: Controller = (_args, messageStream) => {
   const outputDir = process.env.MHDB_OUTPUT as string
 
   runWithDatabase(db => {
-    /** Events whose `rendered_at` is stale or whose on-disk folder is missing. */
-    const eventsToRender = findEventsToRender(db, outputDir)
+    /** Surrogate ids of the events that need rendering this run. */
+    const ids = findEventIdsToRender(db, outputDir)
 
-    for (const [index, event] of eventsToRender.entries()) {
-      messageStream.write(`[${index + 1}/${eventsToRender.length}] ${event.slug}\n`)
+    /** Stringified `<year>:<season>` keys already added to `seasonsRendered`; dedups across iterations. */
+    const seasonKeysSeen = new Set<string>()
+
+    /** Distinct seasons whose subtree gained at least one re-rendered event this run. */
+    const seasonsRendered: SeasonKey[] = []
+
+    for (const [index, id] of ids.entries()) {
+      /** Event hydrated for this iteration; lives only for the body of the loop. */
+      const event = findEventById(db, id)
+
+      /** Stringified `<year>:<season>` key for this event's slot. */
+      const seasonKey = `${event.seasonalYear}:${event.season}`
+
+      if (!seasonKeysSeen.has(seasonKey)) {
+        seasonKeysSeen.add(seasonKey)
+        seasonsRendered.push({ seasonalYear: event.seasonalYear, season: event.season })
+      }
+
+      messageStream.write(`[${index + 1}/${ids.length}] ${event.slug}\n`)
 
       renderEvent(event, outputDir)
       markRendered(db, event.id)
@@ -35,7 +54,7 @@ const sync: Controller = (_args, messageStream) => {
     /** Seasons whose subtrees were touched by orphan deletion. */
     const seasonsPruned = pruneOrphanOutput(db, outputDir)
 
-    refreshHierarchyIndexes(db, outputDir, eventsToRender, seasonsPruned)
+    refreshHierarchyIndexes(db, outputDir, seasonsRendered, seasonsPruned)
   })
 
   syncStaticAssets(outputDir)

@@ -1,5 +1,4 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type EventToRender from '../types/event-to-render.js'
 import type SeasonKey from '../types/season-key.js'
 
 /**
@@ -8,18 +7,18 @@ import type SeasonKey from '../types/season-key.js'
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param outputDir - Output root.
- * @param eventsRendered - Events re-rendered this run.
+ * @param seasonsRendered - Seasons whose subtrees gained at least one re-rendered event this run.
  * @param seasonsPruned - Seasons whose orphan subtrees were pruned this run.
  */
 const refreshHierarchyIndexes = (
   db: DatabaseSync,
   outputDir: string,
-  eventsRendered: EventToRender[],
+  seasonsRendered: SeasonKey[],
   seasonsPruned: SeasonKey[],
 ): void => {
   void db
   void outputDir
-  void eventsRendered
+  void seasonsRendered
   void seasonsPruned
 
   throw new Error('refreshHierarchyIndexes: not yet implemented')
