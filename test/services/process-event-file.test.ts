@@ -49,7 +49,7 @@ description body
 
     writeFileSync(filePath, fixtureContent)
 
-    processEventFile(filePath)
+    processEventFile(filePath, null)
 
     /** Database handle for reading the inserted row. */
     const db = new DatabaseSync(dbPath)
@@ -80,7 +80,7 @@ description body
       const missingPath = join(tmpDir, 'missing.md')
 
       assert.throws(
-        () => processEventFile(missingPath),
+        () => processEventFile(missingPath, null),
         (err: unknown) => err instanceof EventFileError && err.path === missingPath,
       )
     })

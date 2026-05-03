@@ -8,8 +8,14 @@ import runWithDatabase from '../helpers/run-with-database.js'
  *
  * @param event - Parsed event data.
  * @param slug - Pre-derived unique slug for the event.
+ * @param _illustrationHash - Hex digest of the event's illustration PNG, or `null`. Currently unused;
+ *   persistence lands in a follow-up commit.
  */
-const upsertEvent = (event: ParsedEvent, slug: string): void => runWithDatabase(db => {
+const upsertEvent = (
+  event: ParsedEvent,
+  slug: string,
+  _illustrationHash: string | null,
+): void => runWithDatabase(db => {
   db.prepare(`
     INSERT INTO events (
       slug, title, description, start_date, end_date,

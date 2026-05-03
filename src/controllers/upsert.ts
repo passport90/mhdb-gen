@@ -19,7 +19,7 @@ const upsert: Controller = (args, messageStream) => {
     messageStream.write(`[${index + 1}/${sources.length}] ${source.entryFilePath}\n`)
 
     try {
-      processEventFile(source.entryFilePath)
+      processEventFile(source.entryFilePath, source.illustrationFilePath)
     } catch (err) {
       /** Caught error, asserted as `EventFileError` per `processEventFile`'s contract. */
       const eventFileError = err as EventFileError

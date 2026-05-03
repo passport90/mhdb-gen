@@ -87,7 +87,7 @@ describe('upsertEvent', () => {
   })
 
   it('inserts a new row when the slot is unoccupied', () => {
-    upsertEvent(subjectEvent, subjectSlug)
+    upsertEvent(subjectEvent, subjectSlug, null)
 
     /** Row written by the upsert call. */
     const row = readEventRow()
@@ -108,7 +108,7 @@ describe('upsertEvent', () => {
       /** Surrogate id of the row seeded into the subject slot. */
       const idBeforeUpdate = seedEventRow('placeholder-slug', { seasonalYear: 2026, season: 1, position: 3 })
 
-      upsertEvent(subjectEvent, subjectSlug)
+      upsertEvent(subjectEvent, subjectSlug, null)
 
       /** Row state after the upsert. */
       const row = readEventRow()
