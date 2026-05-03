@@ -30,14 +30,16 @@ describe('findEventIdsToRender', () => {
   let findEventIdsToRender: (db: DatabaseSync, outputDir: string) => number[]
 
   /**
-   * Creates the on-disk output folder for the given (year, season, slug), simulating
+   * Creates the on-disk output folder for the given event coordinate, simulating
    * an event whose render output is already on disk.
    *
-   * @param slot - (seasonal year, season, slug) tuple identifying the folder.
+   * @param seasonalYear - Seasonal year segment of the folder path.
+   * @param season - Season segment of the folder path.
+   * @param slug - Slug segment of the folder path.
    */
-  const seedOutputFolder = (slot: { seasonalYear: number, season: number, slug: string }): void => {
+  const seedOutputFolder = (seasonalYear: number, season: number, slug: string): void => {
     mkdirSync(
-      join(outputDir, String(slot.seasonalYear), String(slot.season), slot.slug),
+      join(outputDir, String(seasonalYear), String(season), slug),
       { recursive: true },
     )
   }
@@ -64,10 +66,15 @@ describe('findEventIdsToRender', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns the id of a db-stale candidate, in candidate order', () => {
+  it('returns ids of candidates that are db-stale or whose output folder is missing, in candidate order', () => {
     candidatesToReturn = [
-      { id: 7, slug: 'hello-world', seasonalYear: 2026, season: 1, isDbStale: true },
+      { id: 1, slug: 'stale-with-folder', seasonalYear: 2026, season: 1, isDbStale: true },
+      { id: 2, slug: 'stale-no-folder', seasonalYear: 2026, season: 2, isDbStale: true },
+      { id: 3, slug: 'fresh-with-folder', seasonalYear: 2026, season: 3, isDbStale: false },
+      { id: 4, slug: 'fresh-no-folder', seasonalYear: 2026, season: 4, isDbStale: false },
     ]
+    seedOutputFolder(2026, 1, 'stale-with-folder')
+    seedOutputFolder(2026, 3, 'fresh-with-folder')
 
     /** Ids returned by the SUT. */
     const ids = findEventIdsToRender(db, outputDir)
@@ -75,33 +82,6 @@ describe('findEventIdsToRender', () => {
     assert.strictEqual(findEventRenderCandidatesMock.mock.callCount(), 1)
     assert.deepStrictEqual(findEventRenderCandidatesMock.mock.calls[0].arguments, [db])
 
-    assert.deepStrictEqual(ids, [7])
-  })
-
-  describe('when a candidate is db-fresh and its output folder is missing on disk', () => {
-    it('includes its id', () => {
-      candidatesToReturn = [
-        { id: 1, slug: 'orphaned-event', seasonalYear: 2026, season: 1, isDbStale: false },
-      ]
-
-      /** Ids returned by the SUT. */
-      const ids = findEventIdsToRender(db, outputDir)
-
-      assert.deepStrictEqual(ids, [1])
-    })
-  })
-
-  describe('when a candidate is db-fresh and its output folder exists on disk', () => {
-    it('skips it', () => {
-      candidatesToReturn = [
-        { id: 1, slug: 'fresh-event', seasonalYear: 2026, season: 1, isDbStale: false },
-      ]
-      seedOutputFolder({ seasonalYear: 2026, season: 1, slug: 'fresh-event' })
-
-      /** Ids returned by the SUT. */
-      const ids = findEventIdsToRender(db, outputDir)
-
-      assert.deepStrictEqual(ids, [])
-    })
+    assert.deepStrictEqual(ids, [1, 2, 4])
   })
 })
