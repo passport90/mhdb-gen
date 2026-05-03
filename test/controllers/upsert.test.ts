@@ -1,7 +1,7 @@
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite'
 import { OPERATIONAL_ERROR_EXIT_CODE, SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
@@ -131,6 +131,10 @@ body
     assert.strictEqual(events[2].seasonal_year, 2026)
     assert.strictEqual(events[2].season, 1)
     assert.strictEqual(events[2].position, 3)
+
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-1.png`, 'utf8'), 'illustration-1')
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-2.png`, 'utf8'), 'illustration-2')
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-3.png`, 'utf8'), 'illustration-3')
 
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })
