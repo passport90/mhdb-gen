@@ -3,7 +3,7 @@ import type SeasonalSlot from '../types/seasonal-slot.js'
 
 /**
  * Re-renders the root, year, and season index pages whose subtrees were touched this run —
- * either by an event re-rendered or an orphan folder pruned.
+ * either by an event re-rendered or an orphan directory pruned.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param outputDir - Output root.

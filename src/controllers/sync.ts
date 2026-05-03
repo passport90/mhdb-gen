@@ -9,8 +9,8 @@ import syncStaticAssets from '../services/sync-static-assets.js'
 
 /**
  * Reconciles the HTML output tree to current DB state — re-renders events whose `rendered_at`
- * is stale or whose folder is missing on disk, refreshes hierarchy indexes for any subtree
- * touched, mirrors static assets, and removes orphan output folders.
+ * is stale or whose directory is missing on disk, refreshes hierarchy indexes for any subtree
+ * touched, mirrors static assets, and removes orphan output directories.
  *
  * @param _args - Ignored; sync currently takes no flags.
  * @param messageStream - Receives one `[i/n] <slug>` progress line per event rendered.

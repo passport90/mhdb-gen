@@ -12,7 +12,7 @@ describe('findEventIdsToRender', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file and simulated output tree. */
   let tmpDir: string
 
-  /** Output root passed to the SUT for its folder-presence check. */
+  /** Output root passed to the SUT for its directory-presence check. */
   let outputDir: string
 
   /** Path to the test SQLite file. */
@@ -52,14 +52,14 @@ describe('findEventIdsToRender', () => {
   }
 
   /**
-   * Creates the on-disk output folder for the given event coordinate, simulating
+   * Creates the on-disk output directory for the given event coordinate, simulating
    * an event whose render output is already on disk.
    *
-   * @param seasonalYear - Seasonal year segment of the folder path.
-   * @param season - Season segment of the folder path.
-   * @param slug - Slug segment of the folder path.
+   * @param seasonalYear - Seasonal year segment of the directory path.
+   * @param season - Season segment of the directory path.
+   * @param slug - Slug segment of the directory path.
    */
-  const seedOutputFolder = (seasonalYear: number, season: number, slug: string): void => {
+  const seedOutputDir = (seasonalYear: number, season: number, slug: string): void => {
     mkdirSync(
       join(outputDir, String(seasonalYear), String(season), slug),
       { recursive: true },
@@ -81,14 +81,14 @@ describe('findEventIdsToRender', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns ids of candidates that are db-stale or whose output folder is missing, in candidate order', () => {
-    insertEventRow({ seasonalYear: 2026, season: 0, position: 1 }, 'stale-with-folder', null)
-    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'stale-no-folder', null)
-    insertEventRow({ seasonalYear: 2026, season: 2, position: 1 }, 'fresh-with-folder', '2099-01-01 00:00:00')
-    insertEventRow({ seasonalYear: 2026, season: 3, position: 1 }, 'fresh-no-folder', '2099-01-01 00:00:00')
+  it('returns ids of candidates that are db-stale or whose output dir is missing, in candidate order', () => {
+    insertEventRow({ seasonalYear: 2026, season: 0, position: 1 }, 'stale-with-dir', null)
+    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'stale-no-dir', null)
+    insertEventRow({ seasonalYear: 2026, season: 2, position: 1 }, 'fresh-with-dir', '2099-01-01 00:00:00')
+    insertEventRow({ seasonalYear: 2026, season: 3, position: 1 }, 'fresh-no-dir', '2099-01-01 00:00:00')
 
-    seedOutputFolder(2026, 0, 'stale-with-folder')
-    seedOutputFolder(2026, 2, 'fresh-with-folder')
+    seedOutputDir(2026, 0, 'stale-with-dir')
+    seedOutputDir(2026, 2, 'fresh-with-dir')
 
     /** Ids returned by the SUT. */
     const ids = findEventIdsToRender(db, outputDir)
