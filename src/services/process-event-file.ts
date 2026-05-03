@@ -1,8 +1,10 @@
 import EventFileError from '../errors/event-file-error.js'
+import type IllustrationSource from '../types/illustration-source.js'
 import deriveSlug from './derive-slug.js'
 import hashFile from './hash-file.js'
 import parseEventFileContent from './parse-event-file-content.js'
 import { readFileSync } from 'node:fs'
+import syncIllustrationBlob from './sync-illustration-blob.js'
 import upsertEvent from '../repositories/upsert-event.js'
 
 /**
@@ -23,27 +25,34 @@ const processEventFile = (entryFilePath: string, illustrationFilePath: string | 
     /** Slug unique within the events table. */
     const slug = deriveSlug(parsedEvent)
 
+    /** Illustration source paired with its content hash, or `null` when the event has no illustration. */
+    const illustrationSource = deriveIllustrationSource(illustrationFilePath)
+
     /** Hex digest of the illustration PNG, or `null` when the event has no illustration. */
-    const illustrationHash = deriveIllustrationHash(illustrationFilePath)
+    const illustrationHash = illustrationSource === null ? null : illustrationSource.hash
 
     upsertEvent(parsedEvent, slug, illustrationHash)
+    syncIllustrationBlob(slug, illustrationSource)
   } catch (cause) {
     throw new EventFileError(entryFilePath, cause)
   }
 }
 
 /**
- * Hashes the illustration PNG when one is given, returning `null` otherwise.
+ * Builds an `IllustrationSource` from the given path, returning `null` when no path is given.
  *
  * @param illustrationFilePath - Path to the illustration PNG, or `null` when there is none.
- * @returns Hex digest of the file, or `null` when no path was given.
+ * @returns `IllustrationSource` paired with the file's hash, or `null` when no path was given.
  */
-const deriveIllustrationHash = (illustrationFilePath: string | null): string | null => {
+const deriveIllustrationSource = (illustrationFilePath: string | null): IllustrationSource | null => {
   if (illustrationFilePath === null) {
     return null
   }
 
-  return hashFile(illustrationFilePath)
+  return {
+    filePath: illustrationFilePath,
+    hash: hashFile(illustrationFilePath),
+  }
 }
 
 export default processEventFile

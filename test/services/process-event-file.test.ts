@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import EventFileError from '../../src/errors/event-file-error.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -43,13 +43,17 @@ description body
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('reads the file, parses it, derives a slug, and upserts the composed event', () => {
+  it('upserts the event, hashes the illustration onto the row, and copies the bytes into the blob store', () => {
     /** Path to the markdown fixture written for this test. */
     const filePath = join(tmpDir, 'event.md')
 
-    writeFileSync(filePath, fixtureContent)
+    /** Path to the illustration fixture written for this test. */
+    const illustrationPath = join(tmpDir, 'event.png')
 
-    processEventFile(filePath, null)
+    writeFileSync(filePath, fixtureContent)
+    writeFileSync(illustrationPath, 'hello world')
+
+    processEventFile(filePath, illustrationPath)
 
     /** Database handle for reading the inserted row. */
     const db = new DatabaseSync(dbPath)
@@ -67,25 +71,29 @@ description body
     assert.strictEqual(row.slug, 'my-event')
     assert.strictEqual(row.title, 'My Event')
     assert.strictEqual(row.description, '\ndescription body\n')
+    assert.strictEqual(
+      row.illustration_hash,
+      'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+    )
     assert.strictEqual(row.start_date, '2026-04-15')
     assert.strictEqual(row.end_date, '2026-04-22')
     assert.strictEqual(row.seasonal_year, 2026)
     assert.strictEqual(row.season, 1)
     assert.strictEqual(row.position, 3)
+    assert.strictEqual(
+      readFileSync(`${dbPath}.blobs/my-event.png`, 'utf8'),
+      'hello world',
+    )
   })
 
-  describe('when an illustration path is given', () => {
-    it('hashes the illustration and writes the digest to the row', () => {
+  describe('when no illustration path is given', () => {
+    it('upserts the event with a null illustration hash and writes no blob', () => {
       /** Path to the markdown fixture written for this test. */
       const filePath = join(tmpDir, 'event.md')
 
-      /** Path to the illustration fixture written for this test. */
-      const illustrationPath = join(tmpDir, 'event.png')
-
       writeFileSync(filePath, fixtureContent)
-      writeFileSync(illustrationPath, 'hello world')
 
-      processEventFile(filePath, illustrationPath)
+      processEventFile(filePath, null)
 
       /** Database handle for reading the inserted row. */
       const db = new DatabaseSync(dbPath)
@@ -95,10 +103,8 @@ description body
 
       db.close()
 
-      assert.strictEqual(
-        row.illustration_hash,
-        'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
-      )
+      assert.strictEqual(row.illustration_hash, null)
+      assert.strictEqual(existsSync(`${dbPath}.blobs/my-event.png`), false)
     })
   })
 
