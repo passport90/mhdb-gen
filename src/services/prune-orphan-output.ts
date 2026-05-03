@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type SeasonKey from '../types/season-key.js'
+import type SeasonalSlot from '../types/seasonal-slot.js'
 
 /**
  * Removes slug folders under `outputDir` that have no corresponding row in `events`, then any season
@@ -9,7 +9,7 @@ import type SeasonKey from '../types/season-key.js'
  * @param outputDir - Output root walked for orphan folders.
  * @returns Seasons whose subtree was touched by deletions, so their indexes can be refreshed.
  */
-const pruneOrphanOutput = (db: DatabaseSync, outputDir: string): SeasonKey[] => {
+const pruneOrphanOutput = (db: DatabaseSync, outputDir: string): SeasonalSlot[] => {
   void db
   void outputDir
 

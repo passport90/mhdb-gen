@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type SeasonKey from '../types/season-key.js'
+import type SeasonalSlot from '../types/seasonal-slot.js'
 
 /**
  * Re-renders the root, year, and season index pages whose subtrees were touched this run —
@@ -13,8 +13,8 @@ import type SeasonKey from '../types/season-key.js'
 const refreshHierarchyIndexes = (
   db: DatabaseSync,
   outputDir: string,
-  seasonsRendered: SeasonKey[],
-  seasonsPruned: SeasonKey[],
+  seasonsRendered: SeasonalSlot[],
+  seasonsPruned: SeasonalSlot[],
 ): void => {
   void db
   void outputDir

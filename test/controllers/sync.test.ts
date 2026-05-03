@@ -4,7 +4,7 @@ import type EventRenderCandidate from '../../src/types/event-render-candidate.js
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
-import type SeasonKey from '../../src/types/season-key.js'
+import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import assert from 'node:assert/strict'
 
 describe('sync', () => {
@@ -49,13 +49,13 @@ describe('sync', () => {
   }
 
   /** Distinct seasons the rendered events occupy; expected `seasonsRendered` argument to refresh. */
-  const expectedSeasonsRendered: SeasonKey[] = [
+  const expectedSeasonsRendered: SeasonalSlot[] = [
     { seasonalYear: 2026, season: 1 },
     { seasonalYear: 2026, season: 2 },
   ]
 
   /** Canned pruned seasons returned by the mocked `pruneOrphanOutput`. */
-  const seasonsPruned: SeasonKey[] = [
+  const seasonsPruned: SeasonalSlot[] = [
     { seasonalYear: 2025, season: 4 },
   ]
 

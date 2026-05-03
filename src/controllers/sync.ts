@@ -1,6 +1,6 @@
 import type Controller from '../types/controller.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
-import type SeasonKey from '../types/season-key.js'
+import type SeasonalSlot from '../types/seasonal-slot.js'
 import findEventById from '../repositories/find-event-by-id.js'
 import findEventIdsToRender from '../services/find-event-ids-to-render.js'
 import markRendered from '../repositories/mark-rendered.js'
@@ -27,21 +27,27 @@ const sync: Controller = (_args, messageStream) => {
     /** Surrogate ids of the events that need rendering this run. */
     const ids = findEventIdsToRender(db, outputDir)
 
-    /** Stringified `<year>:<season>` keys already added to `seasonsRendered`; dedups across iterations. */
-    const seasonKeysSeen = new Set<string>()
+    /**
+     * Distinct seasons whose subtree gained at least one re-rendered event this run.
+     * Deduplication via the last-slot tracker below relies on `findEventIdsToRender`
+     * walking candidates in `(seasonal_year, season, position)` order — same-slot events
+     * arrive consecutively, so we only need to remember the previous slot.
+     */
+    const seasonsRendered: SeasonalSlot[] = []
 
-    /** Distinct seasons whose subtree gained at least one re-rendered event this run. */
-    const seasonsRendered: SeasonKey[] = []
+    /** Seasonal year of the previously appended slot; `null` before the first append. */
+    let lastSeasonalYear: number | null = null
+
+    /** Season of the previously appended slot; `null` before the first append. */
+    let lastSeason: number | null = null
 
     for (const [index, id] of ids.entries()) {
       /** Event hydrated for this iteration; lives only for the body of the loop. */
       const event = findEventById(db, id)
 
-      /** Stringified `<year>:<season>` key for this event's slot. */
-      const seasonKey = `${event.seasonalYear}:${event.season}`
-
-      if (!seasonKeysSeen.has(seasonKey)) {
-        seasonKeysSeen.add(seasonKey)
+      if (event.seasonalYear !== lastSeasonalYear || event.season !== lastSeason) {
+        lastSeasonalYear = event.seasonalYear
+        lastSeason = event.season
         seasonsRendered.push({ seasonalYear: event.seasonalYear, season: event.season })
       }
 

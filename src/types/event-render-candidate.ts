@@ -1,4 +1,4 @@
-import type SeasonKey from './season-key.js'
+import type SeasonalSlot from './seasonal-slot.js'
 
 /**
  * Skinny event row used by the sync render-decision step — just the fields needed
@@ -6,7 +6,7 @@ import type SeasonKey from './season-key.js'
  * authored fields (title, description, illustration hash, dates) are deferred to
  * a per-event hydration call inside the render loop.
  */
-interface EventRenderCandidate extends SeasonKey {
+interface EventRenderCandidate extends SeasonalSlot {
   /** Surrogate primary key of the event row. */
   id: number
   /** URL slug; identifies the on-disk output folder for the row. */
