@@ -28,10 +28,7 @@ const processEventFile = (entryFilePath: string, illustrationFilePath: string | 
     /** Illustration source paired with its content hash, or `null` when the event has no illustration. */
     const illustrationSource = deriveIllustrationSource(illustrationFilePath)
 
-    /** Hex digest of the illustration PNG, or `null` when the event has no illustration. */
-    const illustrationHash = illustrationSource === null ? null : illustrationSource.hash
-
-    upsertEvent(parsedEvent, slug, illustrationHash)
+    upsertEvent(parsedEvent, slug, illustrationSource?.hash ?? null)
     syncIllustrationBlob(slug, illustrationSource)
   } catch (cause) {
     throw new EventFileError(entryFilePath, cause)
