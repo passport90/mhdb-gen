@@ -57,9 +57,6 @@ describe('sync', () => {
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
 
-  /** Mock for `markRendered`. */
-  let markRenderedMock: ReturnType<typeof mock.fn>
-
   /** Mock for `pruneOrphanOutput`. */
   let pruneOrphanOutputMock: ReturnType<typeof mock.fn>
 
@@ -116,13 +113,11 @@ describe('sync', () => {
 
     runWithDatabaseMock = mock.fn((body: (db: unknown) => unknown) => body(db))
     renderEventMock = mock.fn()
-    markRenderedMock = mock.fn()
     pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
     refreshHierarchyIndexesMock = mock.fn()
     syncStaticAssetsMock = mock.fn()
 
     mock.module('../../src/helpers/run-with-database.js', { defaultExport: runWithDatabaseMock })
-    mock.module('../../src/repositories/mark-rendered.js', { defaultExport: markRenderedMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
     mock.module('../../src/services/prune-orphan-output.js', { defaultExport: pruneOrphanOutputMock })
     mock.module(
@@ -153,8 +148,10 @@ describe('sync', () => {
     assert.strictEqual(renderEventMock.mock.callCount(), 1)
     assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDir])
 
-    assert.strictEqual(markRenderedMock.mock.callCount(), 1)
-    assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [db, 1])
+    /** Stamped `rendered_at` on the event row, asserted as a side effect of real `markRendered`. */
+    const row = db.prepare('SELECT rendered_at FROM events WHERE id = ?').get(1)
+    assert.ok(row !== undefined)
+    assert.notStrictEqual(row.rendered_at, null)
 
     assert.strictEqual(pruneOrphanOutputMock.mock.callCount(), 1)
     assert.deepStrictEqual(pruneOrphanOutputMock.mock.calls[0].arguments, [db, outputDir])

@@ -67,9 +67,6 @@ describe('renderEvents', () => {
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
 
-  /** Mock for `markRendered`. */
-  let markRenderedMock: ReturnType<typeof mock.fn>
-
   /** Message stream, reset per test. */
   let messageStream: PassThrough
 
@@ -119,9 +116,7 @@ describe('renderEvents', () => {
     insertEventRow(secondEvent)
 
     renderEventMock = mock.fn()
-    markRenderedMock = mock.fn()
 
-    mock.module('../../src/repositories/mark-rendered.js', { defaultExport: markRenderedMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
 
     renderEvents = (await import('../../src/services/render-events.js')).default
@@ -147,10 +142,12 @@ describe('renderEvents', () => {
     assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [firstEventSibling, outputDir])
     assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDir])
 
-    assert.strictEqual(markRenderedMock.mock.callCount(), 3)
-    assert.deepStrictEqual(markRenderedMock.mock.calls[0].arguments, [db, 1])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[1].arguments, [db, 2])
-    assert.deepStrictEqual(markRenderedMock.mock.calls[2].arguments, [db, 3])
+    /** Stamped `rendered_at` for every event row, asserted as a side effect of real `markRendered`. */
+    const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()
+    assert.strictEqual(renderedAtById.length, 3)
+    assert.notStrictEqual(renderedAtById[0]?.rendered_at, null)
+    assert.notStrictEqual(renderedAtById[1]?.rendered_at, null)
+    assert.notStrictEqual(renderedAtById[2]?.rendered_at, null)
 
     /** Distinct (year, season) slots — three events live across two seasons; dedup collapses to two. */
     const expectedSeasonsRendered: SeasonalSlot[] = [

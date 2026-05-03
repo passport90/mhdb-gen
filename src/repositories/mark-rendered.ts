@@ -9,10 +9,11 @@ import type { DatabaseSync } from 'node:sqlite'
  * @param eventId - Surrogate primary key of the event row.
  */
 const markRendered = (db: DatabaseSync, eventId: number): void => {
-  void db
-  void eventId
-
-  throw new Error('markRendered: not yet implemented')
+  db.prepare(`
+    UPDATE events
+    SET rendered_at = datetime('now')
+    WHERE id = ?
+  `).run(eventId)
 }
 
 export default markRendered
