@@ -147,12 +147,16 @@ describe('sync', () => {
     assert.notStrictEqual(row.rendered_at, null)
 
     assert.strictEqual(pruneOrphanOutputMock.mock.callCount(), 1)
-    /** Args passed to `pruneOrphanOutput`; the `db` handle is the SUT's internal one and isn't compared by identity. */
+    /**
+     * Args passed to `pruneOrphanOutput`; the controller threads the same headers list
+     * through both decision services.
+     */
     const pruneArgs = pruneOrphanOutputMock.mock.calls[0].arguments
+    assert.strictEqual((pruneArgs[0] as unknown[]).length, 1)
     assert.strictEqual(pruneArgs[1], outputDir)
 
     assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
-    /** Args passed to `refreshHierarchyIndexes`; same db-identity caveat as `pruneArgs`. */
+    /** Args passed to `refreshHierarchyIndexes`; the SUT's internal db handle isn't compared by identity. */
     const refreshArgs = refreshHierarchyIndexesMock.mock.calls[0].arguments
     assert.strictEqual(refreshArgs[1], outputDir)
     assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)

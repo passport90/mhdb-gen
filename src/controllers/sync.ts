@@ -1,5 +1,6 @@
 import type Controller from '../types/controller.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
+import findAllEventHeaders from '../repositories/find-all-event-headers.js'
 import findEventIdsToRender from '../services/find-event-ids-to-render.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
@@ -21,14 +22,17 @@ const sync: Controller = (_args, messageStream) => {
   const outputDir = process.env.MHDB_OUTPUT as string
 
   runWithDatabase(db => {
+    /** Snapshot of every event row, threaded through the decision-side services. */
+    const headers = findAllEventHeaders(db)
+
     /** Surrogate ids of the events that need rendering this run. */
-    const ids = findEventIdsToRender(db, outputDir)
+    const ids = findEventIdsToRender(headers, outputDir)
 
     /** Distinct seasons whose subtree gained at least one re-rendered event this run. */
     const seasonsRendered = renderEvents(db, ids, outputDir, messageStream)
 
     /** Seasons whose subtrees were touched by orphan deletion. */
-    const seasonsPruned = pruneOrphanOutput(db, outputDir)
+    const seasonsPruned = pruneOrphanOutput(headers, outputDir)
 
     refreshHierarchyIndexes(db, outputDir, seasonsRendered, seasonsPruned)
   })

@@ -1,15 +1,14 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventRenderCandidate from '../../src/types/event-render-candidate.js'
 import type EventSlot from '../../src/types/event-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
-import findEventRenderCandidates from '../../src/repositories/find-event-render-candidates.js'
+import findAllEventHeaders from '../../src/repositories/find-all-event-headers.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-describe('findEventRenderCandidates', () => {
+describe('findAllEventHeaders', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
   let tmpDir: string
 
@@ -21,13 +20,13 @@ describe('findEventRenderCandidates', () => {
 
   /**
    * Inserts a row into `events` at the given slot with controlled timestamp columns,
-   * bypassing the `updated_at` trigger so the staleness flag can be exercised
+   * bypassing the `updated_at` trigger so the headers' raw timestamps land
    * deterministically.
    *
    * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
    * @param slug - Slug stored in the row.
-   * @param renderedAt - Value for `rendered_at`; `null` exercises the null-render arm of the staleness predicate.
-   * @param updatedAt - Value for `updated_at`; combined with `renderedAt` to control the `<` arm.
+   * @param renderedAt - Value for `rendered_at`; `null` is the never-rendered arm.
+   * @param updatedAt - Value for `updated_at`.
    */
   const insertEventRow = (
     slot: EventSlot,
@@ -69,36 +68,55 @@ describe('findEventRenderCandidates', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns each event with isDbStale, ordered by (seasonal_year, season, position)', () => {
+  it('returns each event header with raw timestamps, ordered by (seasonal_year, season, position)', () => {
     insertEventRow(
       { seasonalYear: 2026, season: 2, position: 1 },
-      'fresh-event',
+      'next-summer',
       '2026-06-01 00:00:00',
       '2026-05-01 00:00:00',
     )
     insertEventRow(
+      { seasonalYear: 2025, season: 1, position: 1 },
+      'last-spring',
+      null,
+      '2025-04-01 00:00:00',
+    )
+    insertEventRow(
       { seasonalYear: 2026, season: 1, position: 2 },
-      'stale-render',
-      '2026-04-01 00:00:00',
+      'next-spring-second',
       '2026-04-15 00:00:00',
+      '2026-04-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2026, season: 1, position: 1 },
-      'never-rendered',
-      null,
+      'next-spring-first',
+      '2026-04-15 00:00:00',
       '2026-04-01 00:00:00',
     )
 
-    /** Candidates returned by the SUT. */
-    const candidates = findEventRenderCandidates(db)
+    /** Headers returned by the SUT. */
+    const headers = findAllEventHeaders(db)
 
-    /** Expected candidates — three rows in (year, season, position) order with the SQL-computed staleness flag. */
-    const expectedCandidates: EventRenderCandidate[] = [
-      { id: 3, slug: 'never-rendered', seasonalYear: 2026, season: 1, isDbStale: true },
-      { id: 2, slug: 'stale-render', seasonalYear: 2026, season: 1, isDbStale: true },
-      { id: 1, slug: 'fresh-event', seasonalYear: 2026, season: 2, isDbStale: false },
-    ]
+    assert.strictEqual(headers.length, 4)
 
-    assert.deepStrictEqual(candidates, expectedCandidates)
+    assert.strictEqual(headers[0]?.id, 2)
+    assert.strictEqual(headers[0]?.slug, 'last-spring')
+    assert.strictEqual(headers[0]?.seasonalYear, 2025)
+    assert.strictEqual(headers[0]?.season, 1)
+    assert.strictEqual(headers[0]?.renderedAt, null)
+    assert.strictEqual(headers[0]?.updatedAt, '2025-04-01 00:00:00')
+
+    assert.strictEqual(headers[1]?.id, 4)
+    assert.strictEqual(headers[1]?.slug, 'next-spring-first')
+    assert.strictEqual(headers[1]?.seasonalYear, 2026)
+    assert.strictEqual(headers[1]?.season, 1)
+    assert.strictEqual(headers[1]?.renderedAt, '2026-04-15 00:00:00')
+    assert.strictEqual(headers[1]?.updatedAt, '2026-04-01 00:00:00')
+
+    assert.strictEqual(headers[2]?.id, 3)
+    assert.strictEqual(headers[2]?.slug, 'next-spring-second')
+
+    assert.strictEqual(headers[3]?.id, 1)
+    assert.strictEqual(headers[3]?.slug, 'next-summer')
   })
 })

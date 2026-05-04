@@ -1,55 +1,17 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
-import type EventSlot from '../../src/types/event-slot.js'
-import applyMigrations from '../support/apply-migrations.js'
+import type EventHeader from '../../src/types/event-header.js'
 import assert from 'node:assert/strict'
 import findEventIdsToRender from '../../src/services/find-event-ids-to-render.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('findEventIdsToRender', () => {
-  /** Tmp directory created fresh per test; holds the test SQLite file and simulated output tree. */
+  /** Tmp directory created fresh per test; holds the simulated output tree. */
   let tmpDir: string
 
   /** Output root passed to the SUT for its directory-presence check. */
   let outputDir: string
-
-  /** Path to the test SQLite file. */
-  let dbPath: string
-
-  /** Database handle threaded into the SUT. */
-  let db: DatabaseSync
-
-  /**
-   * Inserts a row into `events` at the given slot with the given slug. `renderedAt`
-   * controls the SQL staleness arm: `null` makes the row stale by null-render; any
-   * value strictly earlier than the row's default `updated_at` makes it stale by
-   * `<`; a value far in the future makes it fresh.
-   *
-   * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
-   * @param slug - Slug stored in the row.
-   * @param renderedAt - Value for `rendered_at` (ISO timestamp or null).
-   */
-  const insertEventRow = (slot: EventSlot, slug: string, renderedAt: string | null): void => {
-    db.prepare(`
-      INSERT INTO events (
-        slug, title, description, start_date, end_date,
-        seasonal_year, season, position,
-        rendered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      slug,
-      'Title',
-      'body',
-      '2026-01-01',
-      '2026-12-31',
-      slot.seasonalYear,
-      slot.season,
-      slot.position,
-      renderedAt,
-    )
-  }
 
   /**
    * Creates the on-disk output directory for the given event coordinate, simulating
@@ -69,29 +31,57 @@ describe('findEventIdsToRender', () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     outputDir = join(tmpDir, 'output')
-    dbPath = join(tmpDir, 'test.sqlite')
-    process.env.MHDB_DB_PATH = dbPath
-    applyMigrations(dbPath)
-    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
-    db.close()
-    delete process.env.MHDB_DB_PATH
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns ids of candidates that are db-stale or whose output dir is missing, in candidate order', () => {
-    insertEventRow({ seasonalYear: 2026, season: 0, position: 1 }, 'stale-with-dir', null)
-    insertEventRow({ seasonalYear: 2026, season: 1, position: 1 }, 'stale-no-dir', null)
-    insertEventRow({ seasonalYear: 2026, season: 2, position: 1 }, 'fresh-with-dir', '2099-01-01 00:00:00')
-    insertEventRow({ seasonalYear: 2026, season: 3, position: 1 }, 'fresh-no-dir', '2099-01-01 00:00:00')
+  it('returns ids of headers that are db-stale or whose output dir is missing, in input order', () => {
+    /**
+     * Four headers cover every cell of the (isDbStale, dirExists) grid; only the two
+     * with at least one "yes" should land in the output ids.
+     */
+    const headers: EventHeader[] = [
+      {
+        id: 1,
+        slug: 'stale-with-dir',
+        seasonalYear: 2026,
+        season: 0,
+        renderedAt: null,
+        updatedAt: '2026-04-01 00:00:00',
+      },
+      {
+        id: 2,
+        slug: 'stale-no-dir',
+        seasonalYear: 2026,
+        season: 1,
+        renderedAt: null,
+        updatedAt: '2026-04-01 00:00:00',
+      },
+      {
+        id: 3,
+        slug: 'fresh-with-dir',
+        seasonalYear: 2026,
+        season: 2,
+        renderedAt: '2099-01-01 00:00:00',
+        updatedAt: '2026-04-01 00:00:00',
+      },
+      {
+        id: 4,
+        slug: 'fresh-no-dir',
+        seasonalYear: 2026,
+        season: 3,
+        renderedAt: '2099-01-01 00:00:00',
+        updatedAt: '2026-04-01 00:00:00',
+      },
+    ]
 
     seedOutputDir(2026, 0, 'stale-with-dir')
     seedOutputDir(2026, 2, 'fresh-with-dir')
 
     /** Ids returned by the SUT. */
-    const ids = findEventIdsToRender(db, outputDir)
+    const ids = findEventIdsToRender(headers, outputDir)
 
     assert.deepStrictEqual(ids, [1, 2, 4])
   })

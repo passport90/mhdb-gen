@@ -1,16 +1,17 @@
-import type { DatabaseSync } from 'node:sqlite'
+import type EventHeader from '../types/event-header.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 
 /**
- * Removes slug directories under `outputDir` that have no corresponding row in `events`, then any season
+ * Removes slug directories under `outputDir` whose slug is not in `headers`, then any season
  * directory left empty by that pass, then any year directory left empty in turn.
  *
- * @param db - Database handle; the caller controls the transaction lifecycle.
+ * @param headers - Snapshot of every event row; only `slug` is consulted, but taking the full
+ *   header keeps the controller seam symmetric with `findEventIdsToRender`.
  * @param outputDir - Output root walked for orphan directories.
  * @returns Seasons whose subtree was touched by deletions, so their indexes can be refreshed.
  */
-const pruneOrphanOutput = (db: DatabaseSync, outputDir: string): SeasonalSlot[] => {
-  void db
+const pruneOrphanOutput = (headers: EventHeader[], outputDir: string): SeasonalSlot[] => {
+  void headers
   void outputDir
 
   throw new Error('pruneOrphanOutput: not yet implemented')
