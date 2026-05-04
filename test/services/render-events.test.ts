@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
@@ -10,16 +10,13 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
-  /** Output root pinned for the test, threaded through to the mocked `renderEvent`. */
-  const outputDirPath = '/tmp/mhdb-output-test-fixture'
-
   /** First seeded event; expected to land at id 1 via autoincrement. */
   const firstEvent: EventToRender = {
     id: 1,
     slug: 'first-event',
     title: 'First Event',
     description: '\nbody-1\n',
-    illustrationHash: 'hash-1',
+    illustrationHash: null,
     startDate: '2026-04-15',
     endDate: '2026-04-22',
     seasonalYear: 2026,
@@ -55,17 +52,20 @@ describe('renderEvents', () => {
     position: 4,
   }
 
-  /** Tmp directory created fresh per test; holds the test SQLite file. */
+  /** Tmp directory created fresh per test; holds the test SQLite file and the output tree. */
   let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
 
+  /** Output root threaded into the SUT; receives one bundle per rendered event. */
+  let outputDirPath: string
+
   /** Database handle threaded into the SUT. */
   let db: DatabaseSync
 
-  /** Mock for `renderEvent`. */
-  let renderEventMock: ReturnType<typeof mock.fn>
+  /** Mock for `buildEventPage`; the only seam still hollow on the spine. */
+  let buildEventPageMock: ReturnType<typeof mock.fn>
 
   /** Message stream, reset per test. */
   let messageStream: PassThrough
@@ -108,6 +108,7 @@ describe('renderEvents', () => {
 
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDirPath, 'test.sqlite')
+    outputDirPath = join(tmpDirPath, 'output')
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
@@ -115,9 +116,9 @@ describe('renderEvents', () => {
     insertEventRow(firstEventSibling)
     insertEventRow(secondEvent)
 
-    renderEventMock = mock.fn()
+    buildEventPageMock = mock.fn(() => '<html>fake-page</html>')
 
-    mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
+    mock.module('../../src/services/build-event-page.js', { defaultExport: buildEventPageMock })
 
     renderEvents = (await import('../../src/services/render-events.js')).default
   })
@@ -137,10 +138,18 @@ describe('renderEvents', () => {
       '[1/3] first-event\n[2/3] first-event-sibling\n[3/3] second-event\n',
     )
 
-    assert.strictEqual(renderEventMock.mock.callCount(), 3)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDirPath])
-    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [firstEventSibling, outputDirPath])
-    assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDirPath])
+    assert.strictEqual(
+      readFileSync(join(outputDirPath, '2026', '1', 'first-event', 'index.html'), 'utf8'),
+      '<html>fake-page</html>',
+    )
+    assert.strictEqual(
+      readFileSync(join(outputDirPath, '2026', '1', 'first-event-sibling', 'index.html'), 'utf8'),
+      '<html>fake-page</html>',
+    )
+    assert.strictEqual(
+      readFileSync(join(outputDirPath, '2026', '2', 'second-event', 'index.html'), 'utf8'),
+      '<html>fake-page</html>',
+    )
 
     /** Stamped `rendered_at` for every event row, asserted as a side effect of real `markRendered`. */
     const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()
