@@ -48,11 +48,8 @@ describe('sync', () => {
   /** Path to the test SQLite file. */
   let dbPath: string
 
-  /** Database handle the mocked `runWithDatabase` threads into the controller body. */
+  /** Test-side database handle, used to seed the row and read back side effects; separate connection from the SUT's. */
   let db: DatabaseSync
-
-  /** Mock for `runWithDatabase`; configured to invoke its body with the real `db`. */
-  let runWithDatabaseMock: ReturnType<typeof mock.fn>
 
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
@@ -111,13 +108,11 @@ describe('sync', () => {
 
     insertEventRow(theEvent)
 
-    runWithDatabaseMock = mock.fn((body: (db: unknown) => unknown) => body(db))
     renderEventMock = mock.fn()
     pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
     refreshHierarchyIndexesMock = mock.fn()
     syncStaticAssetsMock = mock.fn()
 
-    mock.module('../../src/helpers/run-with-database.js', { defaultExport: runWithDatabaseMock })
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
     mock.module('../../src/services/prune-orphan-output.js', { defaultExport: pruneOrphanOutputMock })
     mock.module(
@@ -143,8 +138,6 @@ describe('sync', () => {
 
     assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
-    assert.strictEqual(runWithDatabaseMock.mock.callCount(), 1)
-
     assert.strictEqual(renderEventMock.mock.callCount(), 1)
     assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDir])
 
@@ -154,13 +147,16 @@ describe('sync', () => {
     assert.notStrictEqual(row.rendered_at, null)
 
     assert.strictEqual(pruneOrphanOutputMock.mock.callCount(), 1)
-    assert.deepStrictEqual(pruneOrphanOutputMock.mock.calls[0].arguments, [db, outputDir])
+    /** Args passed to `pruneOrphanOutput`; the `db` handle is the SUT's internal one and isn't compared by identity. */
+    const pruneArgs = pruneOrphanOutputMock.mock.calls[0].arguments
+    assert.strictEqual(pruneArgs[1], outputDir)
 
     assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
-    assert.deepStrictEqual(
-      refreshHierarchyIndexesMock.mock.calls[0].arguments,
-      [db, outputDir, expectedSeasonsRendered, seasonsPruned],
-    )
+    /** Args passed to `refreshHierarchyIndexes`; same db-identity caveat as `pruneArgs`. */
+    const refreshArgs = refreshHierarchyIndexesMock.mock.calls[0].arguments
+    assert.strictEqual(refreshArgs[1], outputDir)
+    assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)
+    assert.deepStrictEqual(refreshArgs[3], seasonsPruned)
 
     assert.strictEqual(syncStaticAssetsMock.mock.callCount(), 1)
     assert.deepStrictEqual(syncStaticAssetsMock.mock.calls[0].arguments, [outputDir])
