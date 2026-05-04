@@ -35,7 +35,7 @@ describe('sync', () => {
   ]
 
   /**
-   * Slot of the orphan directory seeded under `outputDir`; real `pruneOrphanOutput`
+   * Slot of the orphan directory seeded under `outputDirPath`; real `pruneOrphanOutput`
    * should remove it and report this slot as touched.
    */
   const expectedSeasonsPruned: SeasonalSlot[] = [
@@ -43,13 +43,13 @@ describe('sync', () => {
   ]
 
   /** Tmp directory created fresh per test; encloses the SQLite file and the output root. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
 
-  /** Output root for the test, exposed via `MHDB_OUTPUT`; created per-test under `tmpDir`. */
-  let outputDir: string
+  /** Output root for the test, exposed via `MHDB_OUTPUT_DIR_PATH`; created per-test under `tmpDirPath`. */
+  let outputDirPath: string
 
   /** Test-side database handle, used to seed the row and read back side effects; separate connection from the SUT's. */
   let db: DatabaseSync
@@ -95,25 +95,25 @@ describe('sync', () => {
   beforeEach(async () => {
     messageStream = new PassThrough()
 
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
-    outputDir = join(tmpDir, 'output')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
+    outputDirPath = join(tmpDirPath, 'output')
 
     /** Asset source root, seeded with one stub file the real `syncStaticAssets` should mirror. */
-    const assetsDir = join(tmpDir, 'src-assets')
-    mkdirSync(assetsDir, { recursive: true })
-    writeFileSync(join(assetsDir, 'style.css'), '/* stub */')
+    const assetsDirPath = join(tmpDirPath, 'src-assets')
+    mkdirSync(assetsDirPath, { recursive: true })
+    writeFileSync(join(assetsDirPath, 'style.css'), '/* stub */')
 
     process.env.MHDB_DB_PATH = dbPath
-    process.env.MHDB_OUTPUT = outputDir
-    process.env.MHDB_ASSETS_DIR = assetsDir
+    process.env.MHDB_OUTPUT_DIR_PATH = outputDirPath
+    process.env.MHDB_ASSETS_DIR_PATH = assetsDirPath
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
     insertEventRow(theEvent)
 
-    /** Orphan slug-dir seeded under `outputDir` so the real prune has something to remove. */
-    mkdirSync(join(outputDir, '2024', '0', 'orphan-leftover'), { recursive: true })
+    /** Orphan slug-dir seeded under `outputDirPath` so the real prune has something to remove. */
+    mkdirSync(join(outputDirPath, '2024', '0', 'orphan-leftover'), { recursive: true })
 
     renderEventMock = mock.fn()
     refreshHierarchyIndexesMock = mock.fn()
@@ -128,11 +128,11 @@ describe('sync', () => {
   })
 
   afterEach(() => {
-    delete process.env.MHDB_OUTPUT
+    delete process.env.MHDB_OUTPUT_DIR_PATH
     delete process.env.MHDB_DB_PATH
-    delete process.env.MHDB_ASSETS_DIR
+    delete process.env.MHDB_ASSETS_DIR_PATH
     db.close()
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
     mock.restoreAll()
   })
 
@@ -143,23 +143,23 @@ describe('sync', () => {
     assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
     assert.strictEqual(renderEventMock.mock.callCount(), 1)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDir])
+    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDirPath])
 
     /** Stamped `rendered_at` on the event row, asserted as a side effect of real `markRendered`. */
     const row = db.prepare('SELECT rendered_at FROM events WHERE id = ?').get(1)
     assert.ok(row !== undefined)
     assert.notStrictEqual(row.rendered_at, null)
 
-    assert.ok(!existsSync(join(outputDir, '2024')))
+    assert.ok(!existsSync(join(outputDirPath, '2024')))
 
     assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
     /** Args passed to `refreshHierarchyIndexes`; the SUT's internal db handle isn't compared by identity. */
     const refreshArgs = refreshHierarchyIndexesMock.mock.calls[0].arguments
-    assert.strictEqual(refreshArgs[1], outputDir)
+    assert.strictEqual(refreshArgs[1], outputDirPath)
     assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)
     assert.deepStrictEqual(refreshArgs[3], expectedSeasonsPruned)
 
-    assert.strictEqual(readFileSync(join(outputDir, 'style.css'), 'utf8'), '/* stub */')
+    assert.strictEqual(readFileSync(join(outputDirPath, 'style.css'), 'utf8'), '/* stub */')
 
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })

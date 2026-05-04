@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 
 describe('findAllEventHeaders', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -55,8 +55,8 @@ describe('findAllEventHeaders', () => {
   }
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
@@ -65,7 +65,7 @@ describe('findAllEventHeaders', () => {
   afterEach(() => {
     db.close()
     delete process.env.MHDB_DB_PATH
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('returns each event header with raw timestamps, ordered by (seasonal_year, season, position)', () => {

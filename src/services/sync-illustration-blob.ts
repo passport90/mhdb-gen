@@ -14,10 +14,10 @@ import hashFile from './hash-file.js'
  */
 const syncIllustrationBlob = (slug: string, illustrationSource: IllustrationSource | null): void => {
   /** Directory holding every event's illustration blob, sibling to the SQLite file. */
-  const blobDir = `${process.env.MHDB_DB_PATH as string}.blobs`
+  const blobDirPath = `${process.env.MHDB_DB_PATH as string}.blobs`
 
   /** Canonical blob path for this event. */
-  const blobPath = `${blobDir}/${slug}.png`
+  const blobPath = `${blobDirPath}/${slug}.png`
 
   if (illustrationSource === null) {
     rmSync(blobPath, { force: true })
@@ -29,7 +29,7 @@ const syncIllustrationBlob = (slug: string, illustrationSource: IllustrationSour
     return
   }
 
-  mkdirSync(blobDir, { recursive: true })
+  mkdirSync(blobDirPath, { recursive: true })
   copyFileSync(illustrationSource.filePath, blobPath)
 }
 

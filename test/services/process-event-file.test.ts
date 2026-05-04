@@ -26,7 +26,7 @@ description body
 `
 
   /** Tmp directory created fresh per test; holds the markdown fixture and the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -35,8 +35,8 @@ description body
   let db: DatabaseSync
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
@@ -45,15 +45,15 @@ description body
   afterEach(() => {
     db.close()
     delete process.env.MHDB_DB_PATH
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('upserts the event, hashes the illustration onto the row, and copies the bytes into the blob store', () => {
     /** Path to the markdown fixture written for this test. */
-    const filePath = join(tmpDir, 'event.md')
+    const filePath = join(tmpDirPath, 'event.md')
 
     /** Path to the illustration fixture written for this test. */
-    const illustrationPath = join(tmpDir, 'event.png')
+    const illustrationPath = join(tmpDirPath, 'event.png')
 
     writeFileSync(filePath, fixtureContent)
     writeFileSync(illustrationPath, 'hello world')
@@ -89,7 +89,7 @@ description body
   describe('when no illustration path is given', () => {
     it('upserts the event with a null illustration hash and writes no blob', () => {
       /** Path to the markdown fixture written for this test. */
-      const filePath = join(tmpDir, 'event.md')
+      const filePath = join(tmpDirPath, 'event.md')
 
       writeFileSync(filePath, fixtureContent)
 
@@ -106,7 +106,7 @@ description body
   describe('when an error occurs anywhere in the pipeline', () => {
     it('wraps the cause in an EventFileError carrying the path', () => {
       /** Non-existent path; `readFileSync` will throw `ENOENT`. */
-      const missingPath = join(tmpDir, 'missing.md')
+      const missingPath = join(tmpDirPath, 'missing.md')
 
       assert.throws(
         () => processEventFile(db, missingPath, null),

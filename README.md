@@ -7,7 +7,7 @@ Generator for the **mhdb** (historical events) static-site encyclopedia. Reads e
 Environment variables:
 
 - `MHDB_DB` — path to the SQLite database file.
-- `MHDB_OUTPUT` — directory where the generated site is written.
+- `MHDB_OUTPUT_DIR_PATH` — directory where the generated site is written.
 
 ## Development
 

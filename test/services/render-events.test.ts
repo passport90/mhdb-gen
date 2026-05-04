@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
   /** Output root pinned for the test, threaded through to the mocked `renderEvent`. */
-  const outputDir = '/tmp/mhdb-output-test-fixture'
+  const outputDirPath = '/tmp/mhdb-output-test-fixture'
 
   /** First seeded event; expected to land at id 1 via autoincrement. */
   const firstEvent: EventToRender = {
@@ -56,7 +56,7 @@ describe('renderEvents', () => {
   }
 
   /** Tmp directory created fresh per test; holds the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -74,7 +74,7 @@ describe('renderEvents', () => {
   let renderEvents: (
     db: DatabaseSync,
     ids: number[],
-    outputDir: string,
+    outputDirPath: string,
     messageStream: PassThrough,
   ) => SeasonalSlot[]
 
@@ -106,8 +106,8 @@ describe('renderEvents', () => {
   beforeEach(async () => {
     messageStream = new PassThrough()
 
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
@@ -124,13 +124,13 @@ describe('renderEvents', () => {
 
   afterEach(() => {
     db.close()
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
     mock.restoreAll()
   })
 
   it('renders each event in id order, dedupes seasons across same-slot events, returns distinct slots', () => {
     /** Distinct seasons returned by the SUT. */
-    const seasonsRendered = renderEvents(db, [1, 2, 3], outputDir, messageStream)
+    const seasonsRendered = renderEvents(db, [1, 2, 3], outputDirPath, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
@@ -138,9 +138,9 @@ describe('renderEvents', () => {
     )
 
     assert.strictEqual(renderEventMock.mock.callCount(), 3)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDir])
-    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [firstEventSibling, outputDir])
-    assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDir])
+    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [firstEvent, outputDirPath])
+    assert.deepStrictEqual(renderEventMock.mock.calls[1].arguments, [firstEventSibling, outputDirPath])
+    assert.deepStrictEqual(renderEventMock.mock.calls[2].arguments, [secondEvent, outputDirPath])
 
     /** Stamped `rendered_at` for every event row, asserted as a side effect of real `markRendered`. */
     const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()

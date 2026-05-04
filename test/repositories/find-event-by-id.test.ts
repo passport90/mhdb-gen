@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 
 describe('findEventById', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -18,15 +18,15 @@ describe('findEventById', () => {
   let db: DatabaseSync
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
     db.close()
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('hydrates the row at the given id into an EventToRender, mapping snake_case columns to camelCase', () => {

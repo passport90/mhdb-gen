@@ -6,18 +6,18 @@ import type SeasonalSlot from '../types/seasonal-slot.js'
  * either by an event re-rendered or an orphan directory pruned.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
- * @param outputDir - Output root.
+ * @param outputDirPath - Output root.
  * @param seasonsRendered - Seasons whose subtrees gained at least one re-rendered event this run.
  * @param seasonsPruned - Seasons whose orphan subtrees were pruned this run.
  */
 const refreshHierarchyIndexes = (
   db: DatabaseSync,
-  outputDir: string,
+  outputDirPath: string,
   seasonsRendered: SeasonalSlot[],
   seasonsPruned: SeasonalSlot[],
 ): void => {
   void db
-  void outputDir
+  void outputDirPath
   void seasonsRendered
   void seasonsPruned
 

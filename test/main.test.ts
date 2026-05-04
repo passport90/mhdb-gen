@@ -24,7 +24,7 @@ body
   let messageStream: PassThrough
 
   /** Tmp directory created fresh per test; holds the markdown fixture and the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -54,20 +54,20 @@ body
 
   beforeEach(() => {
     messageStream = new PassThrough()
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
   })
 
   afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('dispatches the command to its controller', () => {
     /** Tmp path the upsert controller is invoked against. */
-    const filePath = join(tmpDir, 'a.md')
+    const filePath = join(tmpDirPath, 'a.md')
 
     writeFileSync(filePath, fixtureContent)
 

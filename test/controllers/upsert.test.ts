@@ -31,7 +31,7 @@ body
   let messageStream: PassThrough
 
   /** Tmp directory created fresh per test; holds the markdown fixtures and the test SQLite file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
@@ -65,17 +65,17 @@ body
 
   beforeEach(async () => {
     messageStream = new PassThrough()
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
     process.env.MHDB_DB_PATH = dbPath
     applyMigrations(dbPath)
-    filePaths = ['a.md', 'b.md', 'c.md'].map(name => join(tmpDir, name))
+    filePaths = ['a.md', 'b.md', 'c.md'].map(name => join(tmpDirPath, name))
     await Promise.all(filePaths.map((path, index) => writeFile(path, buildFixtureContent(index + 1))))
   })
 
   afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('pairs each `.md` with its sibling `.png` and writes one progress line per event', () => {

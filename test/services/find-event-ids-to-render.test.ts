@@ -8,10 +8,10 @@ import { tmpdir } from 'node:os'
 
 describe('findEventIdsToRender', () => {
   /** Tmp directory created fresh per test; holds the simulated output tree. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Output root passed to the SUT for its directory-presence check. */
-  let outputDir: string
+  let outputDirPath: string
 
   /**
    * Creates the on-disk output directory for the given event coordinate, simulating
@@ -23,18 +23,18 @@ describe('findEventIdsToRender', () => {
    */
   const seedOutputDir = (seasonalYear: number, season: number, slug: string): void => {
     mkdirSync(
-      join(outputDir, String(seasonalYear), String(season), slug),
+      join(outputDirPath, String(seasonalYear), String(season), slug),
       { recursive: true },
     )
   }
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    outputDir = join(tmpDir, 'output')
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    outputDirPath = join(tmpDirPath, 'output')
   })
 
   afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('returns ids of headers that are db-stale or whose output dir is missing, in input order', () => {
@@ -81,7 +81,7 @@ describe('findEventIdsToRender', () => {
     seedOutputDir(2026, 2, 'fresh-with-dir')
 
     /** Ids returned by the SUT. */
-    const ids = findEventIdsToRender(headers, outputDir)
+    const ids = findEventIdsToRender(headers, outputDirPath)
 
     assert.deepStrictEqual(ids, [1, 2, 4])
   })

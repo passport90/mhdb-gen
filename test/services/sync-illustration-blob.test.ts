@@ -16,29 +16,29 @@ import { tmpdir } from 'node:os'
 
 describe('syncIllustrationBlob', () => {
   /** Tmp directory created fresh per test; holds the source illustration and the blob store. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   /** Path to the test SQLite file (file itself never created — only the sibling blob dir is touched). */
   let dbPath: string
 
   /** Directory the blob store writes to; computed from `dbPath` per the sibling-of-DB convention. */
-  let blobDir: string
+  let blobDirPath: string
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    dbPath = join(tmpDir, 'test.sqlite')
-    blobDir = `${dbPath}.blobs`
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    dbPath = join(tmpDirPath, 'test.sqlite')
+    blobDirPath = `${dbPath}.blobs`
     process.env.MHDB_DB_PATH = dbPath
   })
 
   afterEach(() => {
     delete process.env.MHDB_DB_PATH
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('copies the source illustration into the blob store under the slug filename', () => {
     /** Path to the source illustration written for this test. */
-    const sourcePath = join(tmpDir, 'event.png')
+    const sourcePath = join(tmpDirPath, 'event.png')
 
     writeFileSync(sourcePath, 'illustration-bytes')
 
@@ -48,7 +48,7 @@ describe('syncIllustrationBlob', () => {
     })
 
     /** Path the service is expected to have written. */
-    const blobPath = join(blobDir, 'my-event.png')
+    const blobPath = join(blobDirPath, 'my-event.png')
 
     assert.strictEqual(readFileSync(blobPath, 'utf8'), 'illustration-bytes')
   })
@@ -56,12 +56,12 @@ describe('syncIllustrationBlob', () => {
   describe('when an existing blob already hashes to the source hash', () => {
     it('leaves the blob untouched, observable via unchanged mtime', () => {
       /** Path to the source illustration; same content as the seeded blob. */
-      const sourcePath = join(tmpDir, 'event.png')
+      const sourcePath = join(tmpDirPath, 'event.png')
 
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDir, 'my-event.png')
+      const blobPath = join(blobDirPath, 'my-event.png')
 
-      mkdirSync(blobDir, { recursive: true })
+      mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'illustration-bytes')
       writeFileSync(sourcePath, 'illustration-bytes')
 
@@ -82,12 +82,12 @@ describe('syncIllustrationBlob', () => {
   describe('when an existing blob hashes to something different from the source hash', () => {
     it('overwrites the blob with the source bytes', () => {
       /** Path to the source illustration; differs from the seeded blob. */
-      const sourcePath = join(tmpDir, 'event.png')
+      const sourcePath = join(tmpDirPath, 'event.png')
 
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDir, 'my-event.png')
+      const blobPath = join(blobDirPath, 'my-event.png')
 
-      mkdirSync(blobDir, { recursive: true })
+      mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'stale-bytes')
       writeFileSync(sourcePath, 'fresh-bytes')
 
@@ -103,9 +103,9 @@ describe('syncIllustrationBlob', () => {
   describe('when the illustration source is null', () => {
     it('deletes any existing blob for that slug', () => {
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDir, 'my-event.png')
+      const blobPath = join(blobDirPath, 'my-event.png')
 
-      mkdirSync(blobDir, { recursive: true })
+      mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'stale-bytes')
 
       syncIllustrationBlob('my-event', null)

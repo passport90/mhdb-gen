@@ -19,41 +19,41 @@ import runWithDatabase from '../helpers/run-with-database.js'
  */
 const sync: Controller = (_args, messageStream) => {
   /** Output root from env, established by the bin's `checkEnvVars` gate. */
-  const outputDir = process.env.MHDB_OUTPUT as string
+  const outputDirPath = process.env.MHDB_OUTPUT_DIR_PATH as string
 
-  /** Asset source root from env, mirrored into `outputDir` after the DB-side reconciliation. */
-  const assetsDir = process.env.MHDB_ASSETS_DIR as string
+  /** Asset source root from env, mirrored into `outputDirPath` after the DB-side reconciliation. */
+  const assetsDirPath = process.env.MHDB_ASSETS_DIR_PATH as string
 
   runWithDatabase(db => {
     /** Snapshot of every event row, threaded through the decision-side services. */
     const headers = findAllEventHeaders(db)
 
     /** Surrogate ids of the events that need rendering this run. */
-    const ids = findEventIdsToRender(headers, outputDir)
+    const ids = findEventIdsToRender(headers, outputDirPath)
 
     /** Distinct seasons whose subtree gained at least one re-rendered event this run. */
-    const seasonsRendered = renderEvents(db, ids, outputDir, messageStream)
+    const seasonsRendered = renderEvents(db, ids, outputDirPath, messageStream)
 
     /** Seasons whose subtrees were touched by orphan deletion. */
-    const seasonsPruned = pruneOrphanOutput(headers, outputDir)
+    const seasonsPruned = pruneOrphanOutput(headers, outputDirPath)
 
-    refreshHierarchyIndexes(db, outputDir, seasonsRendered, seasonsPruned)
+    refreshHierarchyIndexes(db, outputDirPath, seasonsRendered, seasonsPruned)
   })
 
-  copyDirectory(assetsDir, outputDir)
+  copyDirectory(assetsDirPath, outputDirPath)
 
   return SUCCESS_EXIT_CODE
 }
 
 /**
- * Mirrors `srcDir` into `destDir` recursively, overwriting destination files unconditionally.
- * Files in `destDir` that aren't part of `srcDir` are left untouched.
+ * Mirrors `srcDirPath` into `destDirPath` recursively, overwriting destination files unconditionally.
+ * Files in `destDirPath` that aren't part of `srcDirPath` are left untouched.
  *
- * @param srcDir - Root of the source tree.
- * @param destDir - Root the source tree is mirrored into.
+ * @param srcDirPath - Root of the source tree.
+ * @param destDirPath - Root the source tree is mirrored into.
  */
-const copyDirectory = (srcDir: string, destDir: string): void => {
-  cpSync(srcDir, destDir, { recursive: true, force: true })
+const copyDirectory = (srcDirPath: string, destDirPath: string): void => {
+  cpSync(srcDirPath, destDirPath, { recursive: true, force: true })
 }
 
 export default sync

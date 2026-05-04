@@ -14,14 +14,14 @@ import renderEvent from './render-event.js'
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param ids - Event surrogate ids to render, ordered as above.
- * @param outputDir - Output root passed through to the renderer.
+ * @param outputDirPath - Output root passed through to the renderer.
  * @param messageStream - Receives one progress line per event rendered.
  * @returns Distinct seasons that received at least one render this call.
  */
 const renderEvents = (
   db: DatabaseSync,
   ids: number[],
-  outputDir: string,
+  outputDirPath: string,
   messageStream: Writable,
 ): SeasonalSlot[] => {
   /** Distinct seasons accumulated across the loop. */
@@ -41,7 +41,7 @@ const renderEvents = (
 
     messageStream.write(`[${index + 1}/${ids.length}] ${event.slug}\n`)
 
-    renderEvent(event, outputDir)
+    renderEvent(event, outputDirPath)
     markRendered(db, event.id)
   }
 

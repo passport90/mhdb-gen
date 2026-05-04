@@ -7,19 +7,19 @@ import { tmpdir } from 'node:os'
 
 describe('hashFile', () => {
   /** Tmp directory created fresh per test; holds the fixture file. */
-  let tmpDir: string
+  let tmpDirPath: string
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
   })
 
   afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('returns the SHA-256 hex digest of the file contents', () => {
     /** Path to the fixture file written for this test. */
-    const filePath = join(tmpDir, 'fixture.txt')
+    const filePath = join(tmpDirPath, 'fixture.txt')
 
     writeFileSync(filePath, 'hello world')
 

@@ -4,7 +4,7 @@ import type SeasonalSlot from '../types/seasonal-slot.js'
 import { join } from 'node:path'
 
 /**
- * Removes slug directories under `outputDir` whose `(seasonalYear, season, slug)` triple is
+ * Removes slug directories under `outputDirPath` whose `(seasonalYear, season, slug)` triple is
  * not in `headers`, then any season directory left empty by that pass, then any year directory
  * left empty in turn. Year and season entries are descended into only when their name matches
  * the DB's CHECK constraints (4-digit CE year, season 0-3), so non-event entries co-located
@@ -12,43 +12,43 @@ import { join } from 'node:path'
  *
  * @param headers - Snapshot of every event row; each `(seasonalYear, season, slug)` is the
  *   canonical disk location for that event's output directory.
- * @param outputDir - Output root walked for orphan directories.
+ * @param outputDirPath - Output root walked for orphan directories.
  * @returns Seasons whose subtree was touched by deletions, so their indexes can be refreshed.
  */
-const pruneOrphanOutput = (headers: EventHeader[], outputDir: string): SeasonalSlot[] => {
+const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): SeasonalSlot[] => {
   /** Set of `(year, season, slug)` triples currently in the DB; encoded as `/`-joined strings for membership lookup. */
   const validKeySet = new Set(headers.map(h => `${h.seasonalYear}/${h.season}/${h.slug}`))
 
   /** Slots accumulated for return — one entry per season that lost at least one slug-dir. */
   const touchedSlots: SeasonalSlot[] = []
 
-  for (const yearEntry of readdirSync(outputDir, { withFileTypes: true })) {
+  for (const yearEntry of readdirSync(outputDirPath, { withFileTypes: true })) {
     /** CE year integer parsed from the entry; `null` skips entries that aren't year directories. */
     const seasonalYear = parseSeasonalYear(yearEntry)
     if (seasonalYear === null) continue
 
     /** Absolute path to the year directory currently being walked. */
-    const yearDir = join(outputDir, yearEntry.name)
+    const yearDirPath = join(outputDirPath, yearEntry.name)
 
-    for (const seasonEntry of readdirSync(yearDir, { withFileTypes: true })) {
+    for (const seasonEntry of readdirSync(yearDirPath, { withFileTypes: true })) {
       /** Season index parsed from the entry; `null` skips entries that aren't season directories. */
       const season = parseSeason(seasonEntry)
       if (season === null) continue
 
       /** Absolute path to the season directory currently being walked. */
-      const seasonDir = join(yearDir, seasonEntry.name)
+      const seasonDirPath = join(yearDirPath, seasonEntry.name)
 
       /** Slot for this iteration; reused for membership keys and the touched-slots push. */
       const slot: SeasonalSlot = { seasonalYear, season }
 
-      if (pruneOrphanSlugsInSeason(seasonDir, slot, validKeySet)) {
+      if (pruneOrphanSlugsInSeason(seasonDirPath, slot, validKeySet)) {
         touchedSlots.push(slot)
       }
 
-      removeIfEmpty(seasonDir)
+      removeIfEmpty(seasonDirPath)
     }
 
-    removeIfEmpty(yearDir)
+    removeIfEmpty(yearDirPath)
   }
 
   return touchedSlots
@@ -76,27 +76,27 @@ const parseSeason = (entry: Dirent): number | null =>
   entry.isDirectory() && /^[0-3]$/.test(entry.name) ? Number(entry.name) : null
 
 /**
- * Removes slug directories under `seasonDir` whose `(seasonalYear, season, slug)` triple is
+ * Removes slug directories under `seasonDirPath` whose `(seasonalYear, season, slug)` triple is
  * not in `validKeySet`.
  *
- * @param seasonDir - Absolute path to the season directory whose children are to be checked.
- * @param slot - The `(seasonalYear, season)` of `seasonDir`; used to build the membership key.
+ * @param seasonDirPath - Absolute path to the season directory whose children are to be checked.
+ * @param slot - The `(seasonalYear, season)` of `seasonDirPath`; used to build the membership key.
  * @param validKeySet - Canonical `(year, season, slug)` triples currently in the DB.
  * @returns `true` when at least one slug directory was removed; `false` otherwise.
  */
 const pruneOrphanSlugsInSeason = (
-  seasonDir: string,
+  seasonDirPath: string,
   slot: SeasonalSlot,
   validKeySet: Set<string>,
 ): boolean => {
-  /** Tracks whether at least one slug-dir was deleted under `seasonDir`. */
+  /** Tracks whether at least one slug-dir was deleted under `seasonDirPath`. */
   let isSeasonTouched = false
 
-  for (const slugEntry of readdirSync(seasonDir, { withFileTypes: true })) {
+  for (const slugEntry of readdirSync(seasonDirPath, { withFileTypes: true })) {
     if (!slugEntry.isDirectory()) continue
     if (validKeySet.has(`${slot.seasonalYear}/${slot.season}/${slugEntry.name}`)) continue
 
-    rmSync(join(seasonDir, slugEntry.name), { recursive: true })
+    rmSync(join(seasonDirPath, slugEntry.name), { recursive: true })
     isSeasonTouched = true
   }
 
@@ -104,13 +104,13 @@ const pruneOrphanSlugsInSeason = (
 }
 
 /**
- * Removes `dir` when it contains no entries; otherwise leaves it in place.
+ * Removes `dirPath` when it contains no entries; otherwise leaves it in place.
  *
- * @param dir - Absolute path to the directory to inspect.
+ * @param dirPath - Absolute path to the directory to inspect.
  */
-const removeIfEmpty = (dir: string): void => {
-  if (readdirSync(dir).length === 0) {
-    rmSync(dir, { recursive: true })
+const removeIfEmpty = (dirPath: string): void => {
+  if (readdirSync(dirPath).length === 0) {
+    rmSync(dirPath, { recursive: true })
   }
 }
 
