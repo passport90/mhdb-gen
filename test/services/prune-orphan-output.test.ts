@@ -1,0 +1,115 @@
+import { afterEach, beforeEach, describe, it } from 'node:test'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import type EventHeader from '../../src/types/event-header.js'
+import type SeasonalSlot from '../../src/types/seasonal-slot.js'
+import assert from 'node:assert/strict'
+import { join } from 'node:path'
+import pruneOrphanOutput from '../../src/services/prune-orphan-output.js'
+import { tmpdir } from 'node:os'
+
+describe('pruneOrphanOutput', () => {
+  /** Tmp directory created fresh per test; encloses the output root. */
+  let tmpDir: string
+
+  /** Output root passed to the SUT; created lazily by the seed helpers. */
+  let outputDir: string
+
+  /**
+   * Orders slots by `(seasonalYear, season)` ascending — makes the touched-slots
+   * assertion independent of filesystem walk order.
+   *
+   * @param a - First slot.
+   * @param b - Second slot.
+   * @returns Negative when `a < b`, positive when `a > b`, zero when equal.
+   */
+  const compareSlots = (a: SeasonalSlot, b: SeasonalSlot): number =>
+    a.seasonalYear - b.seasonalYear || a.season - b.season
+
+  /**
+   * Seeds an empty directory at `outputDir/<relativePath>`, creating any intermediate
+   * directories needed.
+   *
+   * @param relativePath - Path under `outputDir` to materialize.
+   */
+  const seedDir = (relativePath: string): void => {
+    mkdirSync(join(outputDir, relativePath), { recursive: true })
+  }
+
+  /**
+   * Seeds an empty regular file at `outputDir/<relativePath>`, creating any intermediate
+   * directories needed.
+   *
+   * @param relativePath - Path under `outputDir` to materialize.
+   */
+  const seedFile = (relativePath: string): void => {
+    /** Absolute path to the file to write. */
+    const filePath = join(outputDir, relativePath)
+
+    mkdirSync(join(filePath, '..'), { recursive: true })
+    writeFileSync(filePath, '')
+  }
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    outputDir = join(tmpDir, 'output')
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('removes orphan slug-dirs, rolls up empty parents, reports touched seasons', () => {
+    /**
+     * Two headers establish the valid set: `kept-spring` lives at (2026, 1) and `moved`
+     * at (2026, 2). On disk, `moved` was previously rendered at (2025, 3) — that prior
+     * location is orphan since the canonical key now points elsewhere.
+     */
+    const headers: EventHeader[] = [
+      {
+        id: 1,
+        slug: 'kept-spring',
+        seasonalYear: 2026,
+        season: 1,
+        renderedAt: '2026-04-15 00:00:00',
+        updatedAt: '2026-04-01 00:00:00',
+      },
+      {
+        id: 2,
+        slug: 'moved',
+        seasonalYear: 2026,
+        season: 2,
+        renderedAt: '2026-06-15 00:00:00',
+        updatedAt: '2026-06-01 00:00:00',
+      },
+    ]
+
+    seedDir('2026/1/kept-spring')
+    seedDir('2026/1/orphan-spring')
+    seedDir('2025/3/moved')
+    seedDir('2024/0/orphan-only')
+    seedFile('static-asset.css')
+
+    /** Touched slots returned by the SUT. */
+    const touchedSlots = pruneOrphanOutput(headers, outputDir)
+
+    assert.ok(existsSync(join(outputDir, '2026/1/kept-spring')))
+    assert.ok(!existsSync(join(outputDir, '2026/1/orphan-spring')))
+
+    assert.ok(!existsSync(join(outputDir, '2025')))
+
+    assert.ok(!existsSync(join(outputDir, '2024')))
+
+    assert.ok(existsSync(join(outputDir, 'static-asset.css')))
+
+    /** Touched slots sorted by `(seasonalYear, season)` so the assertion is order-independent. */
+    const sortedSlots = [...touchedSlots].sort(compareSlots)
+    assert.deepStrictEqual(
+      sortedSlots,
+      [
+        { seasonalYear: 2024, season: 0 },
+        { seasonalYear: 2025, season: 3 },
+        { seasonalYear: 2026, season: 1 },
+      ],
+    )
+  })
+})

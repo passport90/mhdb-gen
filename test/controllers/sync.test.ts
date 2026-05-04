@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import type Controller from '../../src/types/controller.js'
 import { DatabaseSync } from 'node:sqlite'
 import type EventToRender from '../../src/types/event-to-render.js'
@@ -12,9 +12,6 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('sync', () => {
-  /** Output directory pinned for the test, exposed via `MHDB_OUTPUT` per `beforeEach`. */
-  const outputDir = '/tmp/mhdb-output-test-fixture'
-
   /**
    * Seeded event; expected to flow through real `findEventIdsToRender` + real `findEventById`
    * into the mocked `renderEvent`.
@@ -37,25 +34,28 @@ describe('sync', () => {
     { seasonalYear: 2026, season: 1 },
   ]
 
-  /** Canned pruned seasons returned by the mocked `pruneOrphanOutput`. */
-  const seasonsPruned: SeasonalSlot[] = [
-    { seasonalYear: 2025, season: 3 },
+  /**
+   * Slot of the orphan directory seeded under `outputDir`; real `pruneOrphanOutput`
+   * should remove it and report this slot as touched.
+   */
+  const expectedSeasonsPruned: SeasonalSlot[] = [
+    { seasonalYear: 2024, season: 0 },
   ]
 
-  /** Tmp directory created fresh per test; holds the test SQLite file. */
+  /** Tmp directory created fresh per test; encloses the SQLite file and the output root. */
   let tmpDir: string
 
   /** Path to the test SQLite file. */
   let dbPath: string
+
+  /** Output root for the test, exposed via `MHDB_OUTPUT`; created per-test under `tmpDir`. */
+  let outputDir: string
 
   /** Test-side database handle, used to seed the row and read back side effects; separate connection from the SUT's. */
   let db: DatabaseSync
 
   /** Mock for `renderEvent`. */
   let renderEventMock: ReturnType<typeof mock.fn>
-
-  /** Mock for `pruneOrphanOutput`. */
-  let pruneOrphanOutputMock: ReturnType<typeof mock.fn>
 
   /** Mock for `refreshHierarchyIndexes`. */
   let refreshHierarchyIndexesMock: ReturnType<typeof mock.fn>
@@ -70,9 +70,8 @@ describe('sync', () => {
   let sync: Controller
 
   /**
-   * Inserts an event row carrying every field `findEventById` hydrates. The default
-   * `rendered_at` of `null` is what flips `isDbStale` to true in the candidate query,
-   * so the row is picked up for rendering.
+   * Inserts an event row carrying every field `findEventById` hydrates, leaving
+   * `rendered_at` at its column default of `null` so the row qualifies for rendering.
    *
    * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
    */
@@ -98,23 +97,25 @@ describe('sync', () => {
 
   beforeEach(async () => {
     messageStream = new PassThrough()
-    process.env.MHDB_OUTPUT = outputDir
 
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
+    outputDir = join(tmpDir, 'output')
     process.env.MHDB_DB_PATH = dbPath
+    process.env.MHDB_OUTPUT = outputDir
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
     insertEventRow(theEvent)
 
+    /** Orphan slug-dir seeded under `outputDir` so the real prune has something to remove. */
+    mkdirSync(join(outputDir, '2024', '0', 'orphan-leftover'), { recursive: true })
+
     renderEventMock = mock.fn()
-    pruneOrphanOutputMock = mock.fn(() => seasonsPruned)
     refreshHierarchyIndexesMock = mock.fn()
     syncStaticAssetsMock = mock.fn()
 
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
-    mock.module('../../src/services/prune-orphan-output.js', { defaultExport: pruneOrphanOutputMock })
     mock.module(
       '../../src/services/refresh-hierarchy-indexes.js',
       { defaultExport: refreshHierarchyIndexesMock },
@@ -146,21 +147,14 @@ describe('sync', () => {
     assert.ok(row !== undefined)
     assert.notStrictEqual(row.rendered_at, null)
 
-    assert.strictEqual(pruneOrphanOutputMock.mock.callCount(), 1)
-    /**
-     * Args passed to `pruneOrphanOutput`; the controller threads the same headers list
-     * through both decision services.
-     */
-    const pruneArgs = pruneOrphanOutputMock.mock.calls[0].arguments
-    assert.strictEqual((pruneArgs[0] as unknown[]).length, 1)
-    assert.strictEqual(pruneArgs[1], outputDir)
+    assert.ok(!existsSync(join(outputDir, '2024')))
 
     assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
     /** Args passed to `refreshHierarchyIndexes`; the SUT's internal db handle isn't compared by identity. */
     const refreshArgs = refreshHierarchyIndexesMock.mock.calls[0].arguments
     assert.strictEqual(refreshArgs[1], outputDir)
     assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)
-    assert.deepStrictEqual(refreshArgs[3], seasonsPruned)
+    assert.deepStrictEqual(refreshArgs[3], expectedSeasonsPruned)
 
     assert.strictEqual(syncStaticAssetsMock.mock.callCount(), 1)
     assert.deepStrictEqual(syncStaticAssetsMock.mock.calls[0].arguments, [outputDir])
