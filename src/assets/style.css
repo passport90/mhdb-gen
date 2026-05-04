@@ -1,0 +1,8 @@
+/* mhdb-gen base stylesheet — placeholder; per-template styling lands later */
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 48rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  line-height: 1.6;
+}

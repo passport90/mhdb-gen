@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import type Controller from '../../src/types/controller.js'
 import { DatabaseSync } from 'node:sqlite'
 import type EventToRender from '../../src/types/event-to-render.js'
@@ -60,9 +60,6 @@ describe('sync', () => {
   /** Mock for `refreshHierarchyIndexes`. */
   let refreshHierarchyIndexesMock: ReturnType<typeof mock.fn>
 
-  /** Mock for `syncStaticAssets`. */
-  let syncStaticAssetsMock: ReturnType<typeof mock.fn>
-
   /** Message stream, reset per test. */
   let messageStream: PassThrough
 
@@ -101,8 +98,15 @@ describe('sync', () => {
     tmpDir = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     dbPath = join(tmpDir, 'test.sqlite')
     outputDir = join(tmpDir, 'output')
+
+    /** Asset source root, seeded with one stub file the real `syncStaticAssets` should mirror. */
+    const assetsDir = join(tmpDir, 'src-assets')
+    mkdirSync(assetsDir, { recursive: true })
+    writeFileSync(join(assetsDir, 'style.css'), '/* stub */')
+
     process.env.MHDB_DB_PATH = dbPath
     process.env.MHDB_OUTPUT = outputDir
+    process.env.MHDB_ASSETS_DIR = assetsDir
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
@@ -113,14 +117,12 @@ describe('sync', () => {
 
     renderEventMock = mock.fn()
     refreshHierarchyIndexesMock = mock.fn()
-    syncStaticAssetsMock = mock.fn()
 
     mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
     mock.module(
       '../../src/services/refresh-hierarchy-indexes.js',
       { defaultExport: refreshHierarchyIndexesMock },
     )
-    mock.module('../../src/services/sync-static-assets.js', { defaultExport: syncStaticAssetsMock })
 
     sync = (await import('../../src/controllers/sync.js')).default
   })
@@ -128,6 +130,7 @@ describe('sync', () => {
   afterEach(() => {
     delete process.env.MHDB_OUTPUT
     delete process.env.MHDB_DB_PATH
+    delete process.env.MHDB_ASSETS_DIR
     db.close()
     rmSync(tmpDir, { recursive: true, force: true })
     mock.restoreAll()
@@ -156,8 +159,7 @@ describe('sync', () => {
     assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)
     assert.deepStrictEqual(refreshArgs[3], expectedSeasonsPruned)
 
-    assert.strictEqual(syncStaticAssetsMock.mock.callCount(), 1)
-    assert.deepStrictEqual(syncStaticAssetsMock.mock.calls[0].arguments, [outputDir])
+    assert.strictEqual(readFileSync(join(outputDir, 'style.css'), 'utf8'), '/* stub */')
 
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })

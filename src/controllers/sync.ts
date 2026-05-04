@@ -1,12 +1,12 @@
 import type Controller from '../types/controller.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
+import { cpSync } from 'node:fs'
 import findAllEventHeaders from '../repositories/find-all-event-headers.js'
 import findEventIdsToRender from '../services/find-event-ids-to-render.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
 import renderEvents from '../services/render-events.js'
 import runWithDatabase from '../helpers/run-with-database.js'
-import syncStaticAssets from '../services/sync-static-assets.js'
 
 /**
  * Reconciles the HTML output tree to current DB state — re-renders events whose `rendered_at`
@@ -20,6 +20,9 @@ import syncStaticAssets from '../services/sync-static-assets.js'
 const sync: Controller = (_args, messageStream) => {
   /** Output root from env, established by the bin's `checkEnvVars` gate. */
   const outputDir = process.env.MHDB_OUTPUT as string
+
+  /** Asset source root from env, mirrored into `outputDir` after the DB-side reconciliation. */
+  const assetsDir = process.env.MHDB_ASSETS_DIR as string
 
   runWithDatabase(db => {
     /** Snapshot of every event row, threaded through the decision-side services. */
@@ -37,9 +40,20 @@ const sync: Controller = (_args, messageStream) => {
     refreshHierarchyIndexes(db, outputDir, seasonsRendered, seasonsPruned)
   })
 
-  syncStaticAssets(outputDir)
+  copyDirectory(assetsDir, outputDir)
 
   return SUCCESS_EXIT_CODE
+}
+
+/**
+ * Mirrors `srcDir` into `destDir` recursively, overwriting destination files unconditionally.
+ * Files in `destDir` that aren't part of `srcDir` are left untouched.
+ *
+ * @param srcDir - Root of the source tree.
+ * @param destDir - Root the source tree is mirrored into.
+ */
+const copyDirectory = (srcDir: string, destDir: string): void => {
+  cpSync(srcDir, destDir, { recursive: true, force: true })
 }
 
 export default sync
