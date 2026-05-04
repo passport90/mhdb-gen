@@ -24,7 +24,7 @@ const findEventIdsToRender = (headers: EventHeader[], outputDir: string): number
       header.slug,
     )
 
-    if (isDbStale(header) || !existsSync(dirPath)) {
+    if (isRenderStale(header) || !existsSync(dirPath)) {
       ids.push(header.id)
     }
   }
@@ -33,14 +33,13 @@ const findEventIdsToRender = (headers: EventHeader[], outputDir: string): number
 }
 
 /**
- * Reports whether the row is stale relative to its content — its `renderedAt` is null
- * or older than its `updatedAt`. Mirrors the SQL predicate the trigger-exclusion
- * contract is designed around.
+ * Reports whether the rendered output is stale relative to the DB row — its
+ * `renderedAt` is null or older than its `updatedAt`.
  *
  * @param header - Event header carrying the timestamps.
  * @returns `true` when the row needs re-rendering on staleness grounds alone.
  */
-const isDbStale = (header: EventHeader): boolean =>
+const isRenderStale = (header: EventHeader): boolean =>
   header.renderedAt === null || header.renderedAt < header.updatedAt
 
 export default findEventIdsToRender
