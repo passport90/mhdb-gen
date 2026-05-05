@@ -27,6 +27,7 @@ describe('sync', () => {
     seasonalYear: 2026,
     season: 1,
     position: 1,
+    updatedAt: '2026-05-05 12:00:00',
   }
 
   /** Distinct seasons the rendered event occupies; expected `seasonsRendered` argument to refresh. */
@@ -143,7 +144,22 @@ describe('sync', () => {
     assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
     assert.strictEqual(renderEventMock.mock.callCount(), 1)
-    assert.deepStrictEqual(renderEventMock.mock.calls[0].arguments, [theEvent, outputDirPath])
+    /** Args captured from the mocked `renderEvent` call; `updatedAt` is DB-generated, not literal-matchable. */
+    const renderArgs = renderEventMock.mock.calls[0].arguments
+    /** Event hydrated from the DB and threaded into `renderEvent`. */
+    const renderedEvent = renderArgs[0] as EventToRender
+    assert.strictEqual(renderedEvent.id, theEvent.id)
+    assert.strictEqual(renderedEvent.slug, theEvent.slug)
+    assert.strictEqual(renderedEvent.title, theEvent.title)
+    assert.strictEqual(renderedEvent.description, theEvent.description)
+    assert.strictEqual(renderedEvent.illustrationHash, theEvent.illustrationHash)
+    assert.strictEqual(renderedEvent.startDate, theEvent.startDate)
+    assert.strictEqual(renderedEvent.endDate, theEvent.endDate)
+    assert.strictEqual(renderedEvent.seasonalYear, theEvent.seasonalYear)
+    assert.strictEqual(renderedEvent.season, theEvent.season)
+    assert.strictEqual(renderedEvent.position, theEvent.position)
+    assert.match(renderedEvent.updatedAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    assert.strictEqual(renderArgs[1], outputDirPath)
 
     /** Stamped `rendered_at` on the event row, asserted as a side effect of real `markRendered`. */
     const row = db.prepare('SELECT rendered_at FROM events WHERE id = ?').get(1)

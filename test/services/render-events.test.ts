@@ -22,6 +22,7 @@ describe('renderEvents', () => {
     seasonalYear: 2026,
     season: 1,
     position: 1,
+    updatedAt: '2026-05-05 12:00:00',
   }
 
   /** Second seeded event; same slot as `firstEvent`, different position — exercises slot-dedup. */
@@ -36,6 +37,7 @@ describe('renderEvents', () => {
     seasonalYear: 2026,
     season: 1,
     position: 2,
+    updatedAt: '2026-05-05 12:00:00',
   }
 
   /** Third seeded event; different slot — produces a second `SeasonalSlot` entry. */
@@ -50,6 +52,7 @@ describe('renderEvents', () => {
     seasonalYear: 2026,
     season: 2,
     position: 4,
+    updatedAt: '2026-05-05 12:00:00',
   }
 
   /** Tmp directory created fresh per test; holds the test SQLite file and the output tree. */

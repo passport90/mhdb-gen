@@ -61,5 +61,6 @@ describe('findEventById', () => {
     assert.strictEqual(event.seasonalYear, 1066)
     assert.strictEqual(event.season, 3)
     assert.strictEqual(event.position, 1)
+    assert.match(event.updatedAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
   })
 })

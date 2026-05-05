@@ -23,7 +23,8 @@ const findEventById = (db: DatabaseSync, id: number): EventToRender => {
       end_date AS endDate,
       seasonal_year AS seasonalYear,
       season,
-      position
+      position,
+      updated_at AS updatedAt
     FROM events
     WHERE id = ?
   `).get(id)
@@ -39,6 +40,7 @@ const findEventById = (db: DatabaseSync, id: number): EventToRender => {
     seasonalYear: row?.seasonalYear,
     season: row?.season,
     position: row?.position,
+    updatedAt: row?.updatedAt,
   } as EventToRender
 }
 

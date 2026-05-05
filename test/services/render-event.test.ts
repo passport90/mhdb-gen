@@ -71,6 +71,7 @@ describe('renderEvent', () => {
       seasonalYear: 1066,
       season: 3,
       position: 1,
+      updatedAt: '2026-05-05 12:00:00',
     }
 
     renderEvent(event, outputDirPath)
@@ -101,6 +102,7 @@ describe('renderEvent', () => {
         seasonalYear: 2026,
         season: 1,
         position: 1,
+        updatedAt: '2026-05-05 12:00:00',
       }
 
       renderEvent(event, outputDirPath)

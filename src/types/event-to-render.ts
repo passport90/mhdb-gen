@@ -5,6 +5,8 @@ import type ParsedEvent from './parsed-event.js'
 interface EventToRender extends EventKeyBundle, ParsedEvent {
   /** Hex SHA-256 of the illustration; `null` when the event has no illustration. */
   illustrationHash: string | null
+  /** SQLite `datetime('now')` stamp of the row's last content change; bumped by the `events_updated_at` trigger. */
+  updatedAt: string
 }
 
 export default EventToRender
