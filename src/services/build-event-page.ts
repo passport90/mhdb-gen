@@ -1,14 +1,13 @@
-import type EventToRender from '../types/event-to-render.js'
+import type EventPageViewModel from '../types/event-page-view-model.js'
 
 /**
- * Renders the event into a self-contained HTML page string — eta template applied to the event's
- * fields, with the markdown body parsed to HTML.
+ * Applies the eta event template to the view model.
  *
- * @param event - Event to render.
+ * @param viewModel - Pre-resolved view model — paths, labels, rendered HTML already in place.
  * @returns Full HTML document for the event's page.
  */
-const buildEventPage = (event: EventToRender): string => {
-  void event
+const buildEventPage = (viewModel: EventPageViewModel): string => {
+  void viewModel
 
   throw new Error('buildEventPage: not yet implemented')
 }

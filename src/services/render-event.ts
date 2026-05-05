@@ -1,6 +1,7 @@
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import type EventToRender from '../types/event-to-render.js'
 import buildEventPage from './build-event-page.js'
+import buildEventViewModel from './build-event-view-model.js'
 import { join } from 'node:path'
 
 /**
@@ -8,9 +9,16 @@ import { join } from 'node:path'
  * illustration alongside it when the event has one.
  *
  * @param event - Event to render.
+ * @param prevEvent - Previous event in the same season, or `null` at the start of the season.
+ * @param nextEvent - Next event in the same season, or `null` at the end of the season.
  * @param outputDirPath - Output root.
  */
-const renderEvent = (event: EventToRender, outputDirPath: string): void => {
+const renderEvent = (
+  event: EventToRender,
+  prevEvent: EventToRender | null,
+  nextEvent: EventToRender | null,
+  outputDirPath: string,
+): void => {
   /** Per-event directory; canonical disk location for this event's output bundle. */
   const eventDirPath = join(
     outputDirPath,
@@ -19,8 +27,11 @@ const renderEvent = (event: EventToRender, outputDirPath: string): void => {
     event.slug,
   )
 
+  /** View model fed to the eta template. */
+  const viewModel = buildEventViewModel(event, prevEvent, nextEvent)
+
   mkdirSync(eventDirPath, { recursive: true })
-  writeFileSync(join(eventDirPath, 'index.html'), buildEventPage(event))
+  writeFileSync(join(eventDirPath, 'index.html'), buildEventPage(viewModel))
 
   if (event.illustrationHash === null) return
 

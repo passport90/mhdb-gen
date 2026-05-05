@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import type EventToRender from '../types/event-to-render.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import type { Writable } from 'node:stream'
 import findEventById from '../repositories/find-event-by-id.js'
@@ -30,19 +31,36 @@ const renderEvents = (
   /** Slot of the previously appended entry; `null` before the first append. */
   let lastSlot: SeasonalSlot | null = null
 
-  for (const [index, id] of ids.entries()) {
-    /** Event hydrated for this iteration; lives only for the body of the loop. */
-    const event = findEventById(db, id)
+  if (ids.length === 0) return seasonsRendered
 
-    if (lastSlot === null || !areSeasonalSlotsEqual(lastSlot, event)) {
-      lastSlot = { seasonalYear: event.seasonalYear, season: event.season }
+  /** Previous iteration's event; carries forward to become `prevEvent` for the next iteration when same-slot. */
+  let prevEvent: EventToRender | null = null
+
+  /** Event being rendered this iteration; hydrated up-front so the loop can peek ahead one row. */
+  let currentEvent: EventToRender = findEventById(db, ids[0])
+
+  for (let index = 0; index < ids.length; index++) {
+    /** Peek-ahead hydration of the next event; `null` past the last id. */
+    const nextEvent = index + 1 < ids.length ? findEventById(db, ids[index + 1]) : null
+
+    /** Previous event gated to same-slot; `null` when from a different slot or absent. */
+    const prevSiblingEvent = pickSibling(prevEvent, currentEvent)
+
+    /** Next event gated to same-slot; `null` when from a different slot or absent. */
+    const nextSiblingEvent = pickSibling(nextEvent, currentEvent)
+
+    if (lastSlot === null || !areSeasonalSlotsEqual(lastSlot, currentEvent)) {
+      lastSlot = { seasonalYear: currentEvent.seasonalYear, season: currentEvent.season }
       seasonsRendered.push(lastSlot)
     }
 
-    messageStream.write(`[${index + 1}/${ids.length}] ${event.slug}\n`)
+    messageStream.write(`[${index + 1}/${ids.length}] ${currentEvent.slug}\n`)
 
-    renderEvent(event, outputDirPath)
-    markRendered(db, event.id)
+    renderEvent(currentEvent, prevSiblingEvent, nextSiblingEvent, outputDirPath)
+    markRendered(db, currentEvent.id)
+
+    prevEvent = currentEvent
+    if (nextEvent !== null) currentEvent = nextEvent
   }
 
   return seasonsRendered
@@ -57,5 +75,19 @@ const renderEvents = (
  */
 const areSeasonalSlotsEqual = (a: SeasonalSlot, b: SeasonalSlot): boolean =>
   a.seasonalYear === b.seasonalYear && a.season === b.season
+
+/**
+ * Picks `candidateEvent` when it shares a season slot with `currentEvent`, otherwise `null` — gates a
+ * peek-ahead/peek-behind hydration into a same-slot sibling for the renderer's prev/next refs.
+ *
+ * @param candidateEvent - Adjacent event from the hydration window, or `null` past the window edge.
+ * @param currentEvent - Event being rendered this iteration.
+ * @returns `candidateEvent` when same-slot; `null` when different-slot or absent.
+ */
+const pickSibling = (
+  candidateEvent: EventToRender | null,
+  currentEvent: EventToRender,
+): EventToRender | null =>
+  candidateEvent !== null && areSeasonalSlotsEqual(candidateEvent, currentEvent) ? candidateEvent : null
 
 export default renderEvents

@@ -159,7 +159,9 @@ describe('sync', () => {
     assert.strictEqual(renderedEvent.season, theEvent.season)
     assert.strictEqual(renderedEvent.position, theEvent.position)
     assert.match(renderedEvent.updatedAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
-    assert.strictEqual(renderArgs[1], outputDirPath)
+    assert.strictEqual(renderArgs[1], null)
+    assert.strictEqual(renderArgs[2], null)
+    assert.strictEqual(renderArgs[3], outputDirPath)
 
     /** Stamped `rendered_at` on the event row, asserted as a side effect of real `markRendered`. */
     const row = db.prepare('SELECT rendered_at FROM events WHERE id = ?').get(1)

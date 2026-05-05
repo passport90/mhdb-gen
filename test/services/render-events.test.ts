@@ -67,7 +67,10 @@ describe('renderEvents', () => {
   /** Database handle threaded into the SUT. */
   let db: DatabaseSync
 
-  /** Mock for `buildEventPage`; the only seam still hollow on the spine. */
+  /** Mock for `buildEventViewModel`; capture inspected for sibling-threading assertions. */
+  let buildEventViewModelMock: ReturnType<typeof mock.fn>
+
+  /** Mock for `buildEventPage`; the second seam still hollow on the spine. */
   let buildEventPageMock: ReturnType<typeof mock.fn>
 
   /** Message stream, reset per test. */
@@ -119,8 +122,10 @@ describe('renderEvents', () => {
     insertEventRow(firstEventSibling)
     insertEventRow(secondEvent)
 
+    buildEventViewModelMock = mock.fn(() => ({}))
     buildEventPageMock = mock.fn(() => '<html>fake-page</html>')
 
+    mock.module('../../src/services/build-event-view-model.js', { defaultExport: buildEventViewModelMock })
     mock.module('../../src/services/build-event-page.js', { defaultExport: buildEventPageMock })
 
     renderEvents = (await import('../../src/services/render-events.js')).default
@@ -153,6 +158,31 @@ describe('renderEvents', () => {
       readFileSync(join(outputDirPath, '2026', '2', 'second-event', 'index.html'), 'utf8'),
       '<html>fake-page</html>',
     )
+
+    /** Captured argument tuple of one `buildEventViewModel` call. */
+    type ViewModelCallArgs = [EventToRender, EventToRender | null, EventToRender | null]
+
+    /** Args captured per `buildEventViewModel` call; inspected for sibling-threading correctness. */
+    const viewModelCalls = buildEventViewModelMock.mock.calls.map((call) => call.arguments as ViewModelCallArgs)
+    assert.strictEqual(viewModelCalls.length, 3)
+    /** First call's positional args: the rendered event, then the prev/next sibling events. */
+    const [firstEventArg, firstPrevEvent, firstNextEvent] = viewModelCalls[0]
+    /** Second call's positional args. */
+    const [secondEventArg, secondPrevEvent, secondNextEvent] = viewModelCalls[1]
+    /** Third call's positional args. */
+    const [thirdEventArg, thirdPrevEvent, thirdNextEvent] = viewModelCalls[2]
+
+    assert.strictEqual(firstEventArg.slug, 'first-event')
+    assert.strictEqual(firstPrevEvent, null)
+    assert.strictEqual(firstNextEvent, secondEventArg)
+
+    assert.strictEqual(secondEventArg.slug, 'first-event-sibling')
+    assert.strictEqual(secondPrevEvent, firstEventArg)
+    assert.strictEqual(secondNextEvent, null)
+
+    assert.strictEqual(thirdEventArg.slug, 'second-event')
+    assert.strictEqual(thirdPrevEvent, null)
+    assert.strictEqual(thirdNextEvent, null)
 
     /** Stamped `rendered_at` for every event row, asserted as a side effect of real `markRendered`. */
     const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()
