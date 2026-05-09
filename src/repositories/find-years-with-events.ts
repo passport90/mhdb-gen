@@ -7,9 +7,14 @@ import type { DatabaseSync } from 'node:sqlite'
  * @returns Years in ascending order; empty when the events table holds no rows.
  */
 const findYearsWithEvents = (db: DatabaseSync): number[] => {
-  void db
+  /** Distinct-year rows produced by the query. */
+  const rows = db.prepare(`
+    SELECT DISTINCT seasonal_year AS year
+    FROM events
+    ORDER BY seasonal_year ASC
+  `).all()
 
-  throw new Error('findYearsWithEvents: not yet implemented')
+  return rows.map((row) => row.year as number)
 }
 
 export default findYearsWithEvents
