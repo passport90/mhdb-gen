@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import {
   existsSync,
   mkdirSync,
@@ -7,10 +7,10 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs'
-import type EventPageViewModel from '../../src/types/event-page-view-model.js'
 import type EventToRender from '../../src/types/event-to-render.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import renderEvent from '../../src/services/render-event.js'
 import { tmpdir } from 'node:os'
 
 describe('renderEvent', () => {
@@ -20,38 +20,17 @@ describe('renderEvent', () => {
   /** Output root passed to the SUT; the SUT's `mkdirSync` creates it lazily. */
   let outputDirPath: string
 
-  /** Mock for `buildEventPage`; returns a sentinel HTML string. */
-  let buildEventPageMock: ReturnType<typeof mock.fn>
-
-  /**
-   * SUT, dynamically re-imported per test so the static import of `buildEventPage` resolves through
-   * the mocked loader.
-   */
-  let renderEvent: (
-    event: EventToRender,
-    prev: EventToRender | null,
-    next: EventToRender | null,
-    outputDirPath: string,
-  ) => void
-
-  beforeEach(async () => {
+  beforeEach(() => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     outputDirPath = join(tmpDirPath, 'output')
-
-    buildEventPageMock = mock.fn(() => '<html>fake-page</html>')
-
-    mock.module('../../src/presenters/build-event-page.js', { defaultExport: buildEventPageMock })
-
-    renderEvent = (await import('../../src/services/render-event.js')).default
   })
 
   afterEach(() => {
     delete process.env.MHDB_DB_PATH
     rmSync(tmpDirPath, { recursive: true, force: true })
-    mock.restoreAll()
   })
 
-  it('writes index.html and copies the illustration to <outputDirPath>/<year>/<season>/<slug>/', () => {
+  it('writes the rendered page and copies the illustration to <outputDirPath>/<year>/<season>/<slug>/', () => {
     /** Path to the test SQLite file (file itself never created); used to derive the blob dir. */
     const dbPath = join(tmpDirPath, 'test.sqlite')
 
@@ -80,24 +59,31 @@ describe('renderEvent', () => {
       updatedAt: '2026-05-05 12:00:00',
     }
 
-    /** Stand-in for the previous in-season event; threaded through to `buildEventViewModel`. */
+    /** Stand-in for the previous in-season event; threaded through to the rendered page. */
     const prevEvent: EventToRender = { ...event, id: 6, slug: 'norman-prologue', title: 'Norman Prologue' }
 
-    /** Stand-in for the next in-season event; threaded through to `buildEventViewModel`. */
+    /** Stand-in for the next in-season event; threaded through to the rendered page. */
     const nextEvent: EventToRender = { ...event, id: 8, slug: 'aftermath', title: 'Aftermath' }
 
     renderEvent(event, prevEvent, nextEvent, outputDirPath)
 
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, '1066', '3', 'battle-of-hastings', 'index.html'), 'utf8'),
-      '<html>fake-page</html>',
+    /** Rendered page on disk. */
+    const pageHtml = readFileSync(
+      join(outputDirPath, '1066', '3', 'battle-of-hastings', 'index.html'),
+      'utf8',
     )
-    assert.strictEqual(buildEventPageMock.mock.callCount(), 1)
-    /** View model that real `buildEventViewModel` produced and `buildEventPage` was called with. */
-    const renderedViewModel = buildEventPageMock.mock.calls[0].arguments[0] as EventPageViewModel
-    assert.strictEqual(renderedViewModel.title.inlineHtml, 'Battle of Hastings')
-    assert.strictEqual(renderedViewModel.siblingNavigation.prevLink?.path, '1066/3/norman-prologue/index.html')
-    assert.strictEqual(renderedViewModel.siblingNavigation.nextLink?.path, '1066/3/aftermath/index.html')
+
+    /** Expected anchor for the previous-event link in the entry nav. */
+    const expectedPrevAnchor = '<a class="entry-nav-link" '
+      + 'href="1066/3/norman-prologue/index.html">← Norman Prologue</a>'
+
+    /** Expected anchor for the next-event link in the entry nav. */
+    const expectedNextAnchor = '<a class="entry-nav-link" '
+      + 'href="1066/3/aftermath/index.html">Aftermath →</a>'
+
+    assert.ok(pageHtml.includes('<title>Battle of Hastings - MHDB</title>'))
+    assert.ok(pageHtml.includes(expectedPrevAnchor))
+    assert.ok(pageHtml.includes(expectedNextAnchor))
     assert.strictEqual(
       readFileSync(join(outputDirPath, '1066', '3', 'battle-of-hastings', 'illustration.png'), 'utf8'),
       'illustration-bytes',
@@ -123,10 +109,7 @@ describe('renderEvent', () => {
 
       renderEvent(event, null, null, outputDirPath)
 
-      assert.strictEqual(
-        readFileSync(join(outputDirPath, '2026', '1', 'fall-of-rome', 'index.html'), 'utf8'),
-        '<html>fake-page</html>',
-      )
+      assert.ok(existsSync(join(outputDirPath, '2026', '1', 'fall-of-rome', 'index.html')))
       assert.strictEqual(
         existsSync(join(outputDirPath, '2026', '1', 'fall-of-rome', 'illustration.png')),
         false,

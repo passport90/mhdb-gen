@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventPageViewModel from '../../src/types/event-page-view-model.js'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import renderEvents from '../../src/services/render-events.js'
 import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
@@ -68,19 +68,8 @@ describe('renderEvents', () => {
   /** Database handle threaded into the SUT. */
   let db: DatabaseSync
 
-  /** Mock for `buildEventPage`; the only seam still hollow on the spine. */
-  let buildEventPageMock: ReturnType<typeof mock.fn>
-
   /** Message stream, reset per test. */
   let messageStream: PassThrough
-
-  /** SUT, dynamically re-imported per test so the static imports resolve through the mocked loader. */
-  let renderEvents: (
-    db: DatabaseSync,
-    ids: number[],
-    outputDirPath: string,
-    messageStream: PassThrough,
-  ) => SeasonalSlot[]
 
   /**
    * Inserts an event row carrying every field `findEventById` hydrates.
@@ -107,7 +96,7 @@ describe('renderEvents', () => {
     )
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     messageStream = new PassThrough()
 
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
@@ -119,18 +108,11 @@ describe('renderEvents', () => {
     insertEventRow(firstEvent)
     insertEventRow(firstEventSibling)
     insertEventRow(secondEvent)
-
-    buildEventPageMock = mock.fn(() => '<html>fake-page</html>')
-
-    mock.module('../../src/presenters/build-event-page.js', { defaultExport: buildEventPageMock })
-
-    renderEvents = (await import('../../src/services/render-events.js')).default
   })
 
   afterEach(() => {
     db.close()
     rmSync(tmpDirPath, { recursive: true, force: true })
-    mock.restoreAll()
   })
 
   it('renders each event in id order, dedupes seasons across same-slot events, returns distinct slots', () => {
@@ -142,34 +124,28 @@ describe('renderEvents', () => {
       '[1/3] first-event\n[2/3] first-event-sibling\n[3/3] second-event\n',
     )
 
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, '2026', '1', 'first-event', 'index.html'), 'utf8'),
-      '<html>fake-page</html>',
+    /** Rendered page for `firstEvent`; inspected for title and threaded next link. */
+    const firstEventHtml = readFileSync(
+      join(outputDirPath, '2026', '1', 'first-event', 'index.html'),
+      'utf8',
     )
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, '2026', '1', 'first-event-sibling', 'index.html'), 'utf8'),
-      '<html>fake-page</html>',
+    assert.ok(firstEventHtml.includes('<title>First Event - MHDB</title>'))
+    assert.ok(firstEventHtml.includes('href="2026/1/first-event-sibling/index.html"'))
+
+    /** Rendered page for `firstEventSibling`; inspected for title and threaded prev link. */
+    const firstEventSiblingHtml = readFileSync(
+      join(outputDirPath, '2026', '1', 'first-event-sibling', 'index.html'),
+      'utf8',
     )
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, '2026', '2', 'second-event', 'index.html'), 'utf8'),
-      '<html>fake-page</html>',
+    assert.ok(firstEventSiblingHtml.includes('<title>First Event Sibling - MHDB</title>'))
+    assert.ok(firstEventSiblingHtml.includes('href="2026/1/first-event/index.html"'))
+
+    /** Rendered page for `secondEvent`; inspected for title — different slot, no siblings threaded. */
+    const secondEventHtml = readFileSync(
+      join(outputDirPath, '2026', '2', 'second-event', 'index.html'),
+      'utf8',
     )
-
-    /** View models received by `buildEventPage`, one per rendered event; inspected for sibling-threading. */
-    const viewModels = buildEventPageMock.mock.calls.map((c) => c.arguments[0] as EventPageViewModel)
-    assert.strictEqual(viewModels.length, 3)
-
-    assert.strictEqual(viewModels[0].title.plainText, 'First Event')
-    assert.strictEqual(viewModels[0].siblingNavigation.prevLink, null)
-    assert.strictEqual(viewModels[0].siblingNavigation.nextLink?.path, '2026/1/first-event-sibling/index.html')
-
-    assert.strictEqual(viewModels[1].title.plainText, 'First Event Sibling')
-    assert.strictEqual(viewModels[1].siblingNavigation.prevLink?.path, '2026/1/first-event/index.html')
-    assert.strictEqual(viewModels[1].siblingNavigation.nextLink, null)
-
-    assert.strictEqual(viewModels[2].title.plainText, 'Second Event')
-    assert.strictEqual(viewModels[2].siblingNavigation.prevLink, null)
-    assert.strictEqual(viewModels[2].siblingNavigation.nextLink, null)
+    assert.ok(secondEventHtml.includes('<title>Second Event - MHDB</title>'))
 
     /** Stamped `rendered_at` for every event row, asserted as a side effect of real `markRendered`. */
     const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()

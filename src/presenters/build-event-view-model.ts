@@ -49,7 +49,7 @@ const buildEventViewModel = (
   },
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
   illustrationFileName: event.illustrationHash !== null ? ILLUSTRATION_FILE_NAME : null,
-  descriptionHtml: marked.parse(event.description, { async: false }),
+  descriptionHtml: marked.parse(event.description, { async: false }).trimEnd(),
   siblingNavigation: {
     prevLink: buildSiblingLink(prevEvent),
     nextLink: buildSiblingLink(nextEvent),

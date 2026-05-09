@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= it.title.plainText %> - MHDB</title>
+    <base href="<%= it.rootBasePath %>">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a class="brand-mark" href="index.html" aria-label="MHDB home">MHDB</a>
+      </div>
+    </header>
+    <div class="breadcrumbs-bar">
+      <div class="breadcrumbs-inner">
+        <div class="breadcrumbs-main">
+          <nav aria-label="breadcrumb">
+            <a href="index.html">Home</a>
+            <a href="<%= it.breadcrumb.year.indexPagePath %>"><%= it.breadcrumb.year.label %></a>
+            <a href="<%= it.breadcrumb.season.indexPagePath %>"><%= it.breadcrumb.season.label %></a>
+            <span class="current"><%~ it.title.inlineHtml %></span>
+          </nav>
+        </div>
+        <div class="breadcrumbs-meta"></div>
+      </div>
+    </div>
+    <main>
+<% if (it.illustrationFileName !== null) { %>
+      <figure class="event-illustration">
+        <img src="<%= it.illustrationFileName %>" alt="">
+        <figcaption class="event-illustration-title">
+          <h1 class="title-with-subtitle event-title"><%~ it.title.inlineHtml %></h1>
+        </figcaption>
+      </figure>
+<% } %>
+      <div class="detail-layout">
+        <section class="detail-secondary" aria-label="Event details">
+          <dl class="detail-meta">
+            <div class="detail-meta-item">
+              <dt>Season</dt>
+              <dd><a href="<%= it.breadcrumb.season.indexPagePath %>"><%= it.breadcrumb.season.label %></a></dd>
+            </div>
+            <div class="detail-meta-item">
+              <dt>Date</dt>
+              <dd><%= it.dateRangeLabel %></dd>
+            </div>
+          </dl>
+        </section>
+        <div class="main-content">
+<% if (it.illustrationFileName === null) { %>
+          <h1 class="title-with-subtitle event-title"><%~ it.title.inlineHtml %></h1>
+<% } %>
+          <div class="description"><%~ it.descriptionHtml %></div>
+        </div>
+      </div>
+      <div class="entry-nav" aria-label="Season entry navigation">
+        <div class="entry-nav-slot">
+<% const prevLink = it.siblingNavigation.prevLink; %>
+<% if (prevLink !== null) { %>
+          <a class="entry-nav-link" href="<%= prevLink.path %>">← <%~ prevLink.titleInlineHtml %></a>
+<% } else { %>
+          <a class="entry-nav-link" href="<%= it.breadcrumb.season.indexPagePath %>">Start of season</a>
+<% } %>
+        </div>
+        <div class="entry-nav-slot">
+<% const nextLink = it.siblingNavigation.nextLink; %>
+<% if (nextLink !== null) { %>
+          <a class="entry-nav-link" href="<%= nextLink.path %>"><%~ nextLink.titleInlineHtml %> →</a>
+<% } else { %>
+          <a class="entry-nav-link" href="<%= it.breadcrumb.season.indexPagePath %>">End of season</a>
+<% } %>
+        </div>
+      </div>
+      <div class="paper-stamp">
+        <span class="stamp">Updated <%= it.updatedAtLabel %> UTC</span>
+      </div>
+    </main>
+  </body>
+</html>

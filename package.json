@@ -12,10 +12,10 @@
   },
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "tsc -p tsconfig.prod.json",
+    "build": "tsc -p tsconfig.prod.json && cp -R src/templates dist/templates",
     "lint": "eslint src test",
     "pretest": "rm -rf build",
-    "test": "tsc && node --test --experimental-test-module-mocks 'build/test/**/*.test.js'",
+    "test": "tsc && cp -R src/templates build/src/templates && node --test --experimental-test-module-mocks 'build/test/**/*.test.js'",
     "typecheck": "tsc --noEmit",
     "validate": "pnpm typecheck && pnpm lint && pnpm test"
   },

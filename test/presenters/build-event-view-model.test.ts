@@ -61,7 +61,7 @@ describe('buildEventViewModel', () => {
     assert.strictEqual(viewModel.breadcrumb.season.indexPagePath, '1066/3/index.html')
     assert.strictEqual(viewModel.illustrationFileName, 'illustration.png')
     assert.strictEqual(viewModel.dateRangeLabel, 'October 14, 1066')
-    assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>\n')
+    assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>')
     assert.deepStrictEqual(viewModel.siblingNavigation.prevLink, {
       path: '1066/3/norman-prologue/index.html',
       titleInlineHtml: 'Norman <em>Prologue</em>',
