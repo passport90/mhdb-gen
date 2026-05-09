@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import type IllustrationSource from '../types/illustration-source.js'
-import hashFile from './hash-file.js'
+import hashFile from '../helpers/hash-file.js'
 
 /**
  * Reconciles the blob store entry for the given slug with argv intent: copies

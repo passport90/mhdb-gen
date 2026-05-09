@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
-import hashFile from '../../src/services/hash-file.js'
+import hashFile from '../../src/helpers/hash-file.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
