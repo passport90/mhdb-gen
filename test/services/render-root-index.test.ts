@@ -6,11 +6,11 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderRootIndex', () => {
-  /** Sentinel returned by the mocked repo, traced into the view-model builder's call args. */
+  /** Sentinel returned by the mocked repo, traced into the decade-rows builder's call args. */
   const sentinelYears = [1066, 2026]
 
-  /** Sentinel returned by the mocked view-model builder, traced into the page builder's call args. */
-  const sentinelViewModel = { tag: 'sentinel-view-model' }
+  /** Sentinel returned by the mocked decade-rows builder, traced into the page builder's call args. */
+  const sentinelDecadeRows = [{ decadeLabel: 'sentinel', yearLinks: [] }]
 
   /** Sentinel HTML returned by the mocked page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-root-index</html>'
@@ -18,8 +18,8 @@ describe('renderRootIndex', () => {
   /** Mock for `findYearsWithEvents`; the leaf is hollow during the orchestrator's descent. */
   const findYearsWithEventsMock = mock.fn(() => sentinelYears)
 
-  /** Mock for `buildRootIndexViewModel`; hollow during descent. */
-  const buildRootIndexViewModelMock = mock.fn((): unknown => sentinelViewModel)
+  /** Mock for `buildDecadeRows`; hollow during descent. */
+  const buildDecadeRowsMock = mock.fn(() => sentinelDecadeRows)
 
   /** Mock for `buildRootIndexPage`; hollow during descent. */
   const buildRootIndexPageMock = mock.fn(() => sentinelHtml)
@@ -42,8 +42,8 @@ describe('renderRootIndex', () => {
       { defaultExport: findYearsWithEventsMock },
     )
     mock.module(
-      '../../src/presenters/build-root-index-view-model.js',
-      { defaultExport: buildRootIndexViewModelMock },
+      '../../src/presenters/build-decade-rows.js',
+      { defaultExport: buildDecadeRowsMock },
     )
     mock.module(
       '../../src/presenters/build-root-index-page.js',
@@ -59,7 +59,7 @@ describe('renderRootIndex', () => {
     outputDirPath = join(tmpDirPath, 'output')
 
     findYearsWithEventsMock.mock.resetCalls()
-    buildRootIndexViewModelMock.mock.resetCalls()
+    buildDecadeRowsMock.mock.resetCalls()
     buildRootIndexPageMock.mock.resetCalls()
   })
 
@@ -68,12 +68,12 @@ describe('renderRootIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the repo, view-model builder, and page builder, writing the page to <outputDirPath>/index.html', () => {
+  it('chains the repo, decade-rows builder, and page builder, writing the page to <outputDirPath>/index.html', () => {
     renderRootIndex(db, outputDirPath)
 
     assert.deepStrictEqual(findYearsWithEventsMock.mock.calls[0]?.arguments, [db])
-    assert.deepStrictEqual(buildRootIndexViewModelMock.mock.calls[0]?.arguments, [sentinelYears])
-    assert.deepStrictEqual(buildRootIndexPageMock.mock.calls[0]?.arguments, [sentinelViewModel])
+    assert.deepStrictEqual(buildDecadeRowsMock.mock.calls[0]?.arguments, [sentinelYears])
+    assert.deepStrictEqual(buildRootIndexPageMock.mock.calls[0]?.arguments, [sentinelDecadeRows])
     assert.strictEqual(
       readFileSync(join(outputDirPath, 'index.html'), 'utf8'),
       sentinelHtml,

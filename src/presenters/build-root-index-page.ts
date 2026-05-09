@@ -1,12 +1,13 @@
+import type DecadeRow from '../types/decade-row.js'
+
 /**
- * Applies the eta root-index template to the view model. Hollow; takes the view model opaquely
- * via `unknown` until `buildRootIndexViewModel` defines the shape.
+ * Applies the eta root-index template to the decade-by-year matrix.
  *
- * @param viewModel - Pre-resolved view model produced by `buildRootIndexViewModel`.
+ * @param decadeRows - Decade rows in ascending order; empty for the no-events page.
  * @returns Full HTML document for the root `index.html` page.
  */
-const buildRootIndexPage = (viewModel: unknown): string => {
-  void viewModel
+const buildRootIndexPage = (decadeRows: DecadeRow[]): string => {
+  void decadeRows
 
   throw new Error('buildRootIndexPage: not yet implemented')
 }

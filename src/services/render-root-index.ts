@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
+import buildDecadeRows from '../presenters/build-decade-rows.js'
 import buildRootIndexPage from '../presenters/build-root-index-page.js'
-import buildRootIndexViewModel from '../presenters/build-root-index-view-model.js'
 import findYearsWithEvents from '../repositories/find-years-with-events.js'
 import { join } from 'node:path'
 
@@ -18,10 +18,10 @@ const renderRootIndex = (
 ): void => {
   /** Years with at least one event, ascending. */
   const years = findYearsWithEvents(db)
-  /** View model projecting `years` into a template-ready shape. */
-  const viewModel = buildRootIndexViewModel(years)
+  /** Decade-by-year matrix produced from `years`. */
+  const decadeRows = buildDecadeRows(years)
   /** Rendered HTML for the root index page. */
-  const html = buildRootIndexPage(viewModel)
+  const html = buildRootIndexPage(decadeRows)
 
   mkdirSync(outputDirPath, { recursive: true })
   writeFileSync(join(outputDirPath, 'index.html'), html)
