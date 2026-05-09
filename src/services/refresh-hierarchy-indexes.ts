@@ -1,9 +1,13 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type SeasonalSlot from '../types/seasonal-slot.js'
+import renderRootIndex from './render-root-index.js'
+import renderSeasonIndex from './render-season-index.js'
+import renderYearIndex from './render-year-index.js'
 
 /**
  * Re-renders the root, year, and season index pages whose subtrees were touched this run —
- * either by an event re-rendered or an orphan directory pruned.
+ * either by an event re-rendered or an orphan directory pruned. Skipped entirely when no subtree
+ * changed.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param outputDirPath - Output root.
@@ -16,12 +20,63 @@ const refreshHierarchyIndexes = (
   seasonsRendered: SeasonalSlot[],
   seasonsPruned: SeasonalSlot[],
 ): void => {
-  void db
-  void outputDirPath
-  void seasonsRendered
-  void seasonsPruned
+  if (seasonsRendered.length === 0 && seasonsPruned.length === 0) return
 
-  throw new Error('refreshHierarchyIndexes: not yet implemented')
+  renderRootIndex(db, outputDirPath)
+
+  /** Distinct years across both inputs; year index refreshed once per. */
+  const touchedYearSet = collectTouchedYearSet(seasonsRendered, seasonsPruned)
+  for (const year of touchedYearSet) {
+    renderYearIndex(db, outputDirPath, year)
+  }
+
+  /** Distinct (year, season) slots across both inputs; season index refreshed once per. */
+  const touchedSlots = collectTouchedSlots(seasonsRendered, seasonsPruned)
+  for (const slot of touchedSlots) {
+    renderSeasonIndex(db, outputDirPath, slot)
+  }
+}
+
+/**
+ * Collects the distinct slots across `seasonsRendered` and `seasonsPruned`, deduping by `(year, season)`.
+ *
+ * @param seasonsRendered - Seasons with re-rendered events.
+ * @param seasonsPruned - Seasons whose orphan subtrees were pruned.
+ * @returns Array of distinct slots, in encounter order (rendered first, then pruned).
+ */
+const collectTouchedSlots = (
+  seasonsRendered: SeasonalSlot[],
+  seasonsPruned: SeasonalSlot[],
+): SeasonalSlot[] => {
+  /** Distinct slots keyed by `year:season`; preserves first-encounter order via Map insertion order. */
+  const slotByKeyMap = new Map<string, SeasonalSlot>()
+
+  for (const slot of [...seasonsRendered, ...seasonsPruned]) {
+    /** Composite key uniquely identifying `slot`. */
+    const slotKey = `${slot.seasonalYear}:${slot.season}`
+    if (!slotByKeyMap.has(slotKey)) slotByKeyMap.set(slotKey, slot)
+  }
+
+  return [...slotByKeyMap.values()]
+}
+
+/**
+ * Collects the distinct years across `seasonsRendered` and `seasonsPruned`.
+ *
+ * @param seasonsRendered - Seasons with re-rendered events.
+ * @param seasonsPruned - Seasons whose orphan subtrees were pruned.
+ * @returns Set of years touched by either input.
+ */
+const collectTouchedYearSet = (
+  seasonsRendered: SeasonalSlot[],
+  seasonsPruned: SeasonalSlot[],
+): Set<number> => {
+  /** Distinct years across both inputs. */
+  const yearSet = new Set<number>()
+  for (const slot of seasonsRendered) yearSet.add(slot.seasonalYear)
+  for (const slot of seasonsPruned) yearSet.add(slot.seasonalYear)
+
+  return yearSet
 }
 
 export default refreshHierarchyIndexes
