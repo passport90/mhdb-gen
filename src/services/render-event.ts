@@ -1,7 +1,7 @@
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import type EventToRender from '../types/event-to-render.js'
-import buildEventPage from './build-event-page.js'
-import buildEventViewModel from './build-event-view-model.js'
+import buildEventPage from '../presenters/build-event-page.js'
+import buildEventViewModel from '../presenters/build-event-view-model.js'
 import { join } from 'node:path'
 
 /**

@@ -14,37 +14,18 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderEvent', () => {
-  /** Sentinel view model returned by the mocked `buildEventViewModel`; identity-checked downstream. */
-  const sentinelViewModel: EventPageViewModel = {
-    title: 'sentinel',
-    seasonalYear: 0,
-    seasonLabel: 'sentinel',
-    yearPath: 'sentinel',
-    seasonPath: 'sentinel',
-    illustration: null,
-    dateRange: 'sentinel',
-    descriptionHtml: 'sentinel',
-    prevLink: null,
-    nextLink: null,
-    updatedAt: 'sentinel',
-    rootBasePath: 'sentinel',
-  }
-
   /** Tmp directory created fresh per test; holds the output tree and the blob store. */
   let tmpDirPath: string
 
   /** Output root passed to the SUT; the SUT's `mkdirSync` creates it lazily. */
   let outputDirPath: string
 
-  /** Mock for `buildEventViewModel`; returns the sentinel view model. */
-  let buildEventViewModelMock: ReturnType<typeof mock.fn>
-
   /** Mock for `buildEventPage`; returns a sentinel HTML string. */
   let buildEventPageMock: ReturnType<typeof mock.fn>
 
   /**
-   * SUT, dynamically re-imported per test so the static imports of `buildEventViewModel` and
-   * `buildEventPage` resolve through the mocked loader.
+   * SUT, dynamically re-imported per test so the static import of `buildEventPage` resolves through
+   * the mocked loader.
    */
   let renderEvent: (
     event: EventToRender,
@@ -57,11 +38,9 @@ describe('renderEvent', () => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     outputDirPath = join(tmpDirPath, 'output')
 
-    buildEventViewModelMock = mock.fn(() => sentinelViewModel)
     buildEventPageMock = mock.fn(() => '<html>fake-page</html>')
 
-    mock.module('../../src/services/build-event-view-model.js', { defaultExport: buildEventViewModelMock })
-    mock.module('../../src/services/build-event-page.js', { defaultExport: buildEventPageMock })
+    mock.module('../../src/presenters/build-event-page.js', { defaultExport: buildEventPageMock })
 
     renderEvent = (await import('../../src/services/render-event.js')).default
   })
@@ -113,10 +92,12 @@ describe('renderEvent', () => {
       readFileSync(join(outputDirPath, '1066', '3', 'battle-of-hastings', 'index.html'), 'utf8'),
       '<html>fake-page</html>',
     )
-    assert.strictEqual(buildEventViewModelMock.mock.callCount(), 1)
-    assert.deepStrictEqual(buildEventViewModelMock.mock.calls[0].arguments, [event, prevEvent, nextEvent])
     assert.strictEqual(buildEventPageMock.mock.callCount(), 1)
-    assert.deepStrictEqual(buildEventPageMock.mock.calls[0].arguments, [sentinelViewModel])
+    /** View model that real `buildEventViewModel` produced and `buildEventPage` was called with. */
+    const renderedViewModel = buildEventPageMock.mock.calls[0].arguments[0] as EventPageViewModel
+    assert.strictEqual(renderedViewModel.title.inlineHtml, 'Battle of Hastings')
+    assert.strictEqual(renderedViewModel.siblingNavigation.prevLink?.path, '1066/3/norman-prologue/index.html')
+    assert.strictEqual(renderedViewModel.siblingNavigation.nextLink?.path, '1066/3/aftermath/index.html')
     assert.strictEqual(
       readFileSync(join(outputDirPath, '1066', '3', 'battle-of-hastings', 'illustration.png'), 'utf8'),
       'illustration-bytes',

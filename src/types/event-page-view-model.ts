@@ -1,36 +1,57 @@
-/** Hyperlink to a peer event — path to navigate to and label to display. */
-interface EventLink {
-  /** Relative URL pointing to the peer event's bundle. */
-  path: string
-  /** Peer event's raw title; the eta template applies the inline-markdown filter at render time. */
-  title: string
+import type EventLink from './event-link.js'
+
+/** Parent navigation cluster — pointers up the hierarchy from event to season to year. */
+interface Breadcrumb {
+  /** Year level of the breadcrumb. */
+  year: BreadcrumbLevel
+  /** Season level of the breadcrumb. */
+  season: BreadcrumbLevel
 }
 
-/** View model consumed by `buildEventPage`'s eta template — fully resolved paths, labels, and rendered HTML. */
-interface EventPageViewModel {
-  /** Event's raw title; the eta template applies the inline-markdown filter at render time. */
-  title: string
-  /** Seasonal year shown in the breadcrumb. */
-  seasonalYear: number
-  /** Human-readable season label, e.g. `Spring`. */
-  seasonLabel: string
-  /** Relative URL pointing to the year index page. */
-  yearPath: string
-  /** Relative URL pointing to the season index page. */
-  seasonPath: string
-  /** Filename of the bundled illustration (`illustration.png`); `null` when the event has none. */
-  illustration: string | null
-  /** Formatted date range; equals the start date alone for single-day events. */
-  dateRange: string
-  /** Event description rendered to HTML by `marked`; empty string when the description is empty. */
-  descriptionHtml: string
+/** One level of the breadcrumb — display label plus link to that level's index page. */
+interface BreadcrumbLevel {
+  /** Human-readable label, e.g. `1066` or `Fall 1066`. */
+  label: string
+  /** Root-relative URL pointing to the level's index page, e.g. `1066/index.html` or `1066/3/index.html`. */
+  indexPagePath: string
+}
+
+/** Event title rendered into both display surfaces — inline HTML for the heading, plain text for `<title>`. */
+interface EventTitle {
+  /** Inline HTML — markdown processed, no wrapping `<p>` tag. */
+  inlineHtml: string
+  /** Plain text with all markdown stripped — used inside the `<title>` tag. */
+  plainText: string
+}
+
+/** Links to the previous and next events in the same season — for in-season navigation between events. */
+interface SiblingNavigation {
   /** Link to the previous event in the same season; `null` at the start of the season. */
   prevLink: EventLink | null
   /** Link to the next event in the same season; `null` at the end of the season. */
   nextLink: EventLink | null
-  /** Raw `events.updated_at` stamp; the eta `updated_stamp` macro formats it. */
-  updatedAt: string
-  /** Relative path to the output root, used for `<base href>`, e.g. `../../../`. */
+}
+
+/**
+ * View model consumed by `buildEventPage`'s eta template — every field is template-ready, no filters
+ * applied at render time.
+ */
+interface EventPageViewModel {
+  /** Event title in its two rendered forms. */
+  title: EventTitle
+  /** Parent navigation cluster — year and season levels. */
+  breadcrumb: Breadcrumb
+  /** Formatted inclusive date range, e.g. `October 14, 1066` (single day) or `April 15–22, 2026` (same month). */
+  dateRangeLabel: string
+  /** Bundled illustration filename, sibling to the event's `index.html`; `null` when the event has none. */
+  illustrationFileName: 'illustration.png' | null
+  /** Event description rendered to HTML by `marked`; empty string when the description is empty. */
+  descriptionHtml: string
+  /** Prev/next links to the in-season neighbors. */
+  siblingNavigation: SiblingNavigation
+  /** Formatted update timestamp label, e.g. `May 5, 2026 12:00:00`. */
+  updatedAtLabel: string
+  /** Relative path to the output root for `<base href>`, e.g. `../../../`. */
   rootBasePath: string
 }
 
