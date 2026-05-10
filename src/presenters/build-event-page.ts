@@ -1,12 +1,5 @@
-import { Eta } from 'eta'
+import ETA_ENGINE from './eta-engine.js'
 import type EventPageViewModel from '../types/event-page-view-model.js'
-import { fileURLToPath } from 'node:url'
-
-/** Filesystem path to the templates directory; resolved relative to this compiled module. */
-const TEMPLATE_DIR_PATH = fileURLToPath(new URL('../templates/', import.meta.url))
-
-/** Eta engine configured to load `.eta` templates from `TEMPLATE_DIR_PATH`. */
-const ETA_ENGINE = new Eta({ views: TEMPLATE_DIR_PATH })
 
 /**
  * Applies the eta event template to the view model.
