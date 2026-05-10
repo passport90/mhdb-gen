@@ -1,9 +1,16 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type SeasonalSlot from '../types/seasonal-slot.js'
+import buildSeasonIndexPage from '../presenters/build-season-index-page.js'
+import buildSeasonIndexViewModel from '../presenters/build-season-index-view-model.js'
+import findEventsInSeason from '../repositories/find-events-in-season.js'
+import findNextSeasonWithEvents from '../repositories/find-next-season-with-events.js'
+import findPrevSeasonWithEvents from '../repositories/find-prev-season-with-events.js'
+import { join } from 'node:path'
 
 /**
  * Re-renders the season index page at `<outputDirPath>/<year>/<season>/index.html`, listing the
- * events in that season.
+ * events in the slot and providing prev/next navigation among slots that have events.
  *
  * @param db - Database handle.
  * @param outputDirPath - Output root.
@@ -14,11 +21,22 @@ const renderSeasonIndex = (
   outputDirPath: string,
   slot: SeasonalSlot,
 ): void => {
-  void db
-  void outputDirPath
-  void slot
+  /** Events in the slot, in position order. */
+  const events = findEventsInSeason(db, slot.seasonalYear, slot.season)
+  /** Closest earlier slot with events, or `null` when this is the earliest. */
+  const prevSlot = findPrevSeasonWithEvents(db, slot.seasonalYear, slot.season)
+  /** Closest later slot with events, or `null` when this is the latest. */
+  const nextSlot = findNextSeasonWithEvents(db, slot.seasonalYear, slot.season)
+  /** View model assembled from the queried data. */
+  const viewModel = buildSeasonIndexViewModel(slot, events, prevSlot, nextSlot)
+  /** Rendered HTML for the season index page. */
+  const html = buildSeasonIndexPage(viewModel)
 
-  throw new Error('renderSeasonIndex: not yet implemented')
+  /** Season directory under the output root. */
+  const seasonDirPath = join(outputDirPath, String(slot.seasonalYear), String(slot.season))
+
+  mkdirSync(seasonDirPath, { recursive: true })
+  writeFileSync(join(seasonDirPath, 'index.html'), html)
 }
 
 export default renderSeasonIndex
