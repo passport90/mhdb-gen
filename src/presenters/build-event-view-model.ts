@@ -5,6 +5,7 @@ import SEASON_NAME_BY_NUMBER from '../constants/season-names.js'
 import buildDateRangeLabel from './build-date-range-label.js'
 import buildUpdatedAtLabel from './build-updated-at-label.js'
 import { marked } from 'marked'
+import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 
 /** Relative path from an event page (depth 3) up to the output root. */
 const EVENT_PAGE_ROOT_BASE_PATH = '../../../'
@@ -102,14 +103,6 @@ const buildSiblingLink = (siblingEvent: EventToRender | null): EventLink | null 
  * @returns Year index page URL.
  */
 const buildYearIndexPagePath = (year: number): string => `${year}/index.html`
-
-/**
- * Renders inline markdown to HTML — no wrapping `<p>` tag.
- *
- * @param text - Markdown source.
- * @returns Inline HTML fragment.
- */
-const renderInlineMarkdown = (text: string): string => marked.parseInline(text, { async: false })
 
 /**
  * Strips inline emphasis markers (`*`, `_`, `` ` ``) from `text`, leaving plain text.
