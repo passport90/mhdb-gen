@@ -11,11 +11,18 @@ import type SeasonalSlot from '../types/seasonal-slot.js'
  * @returns Next slot with events, or `null` when none exists.
  */
 const findNextSeasonWithEvents = (db: DatabaseSync, year: number, season: number): SeasonalSlot | null => {
-  void db
-  void year
-  void season
+  /** Single row holding the smallest (year, season) strictly greater than the reference, or `undefined`. */
+  const row = db.prepare(`
+    SELECT seasonal_year AS seasonalYear, season
+    FROM events
+    WHERE (seasonal_year, season) > (?, ?)
+    ORDER BY seasonal_year ASC, season ASC
+    LIMIT 1
+  `).get(year, season)
 
-  throw new Error('findNextSeasonWithEvents: not yet implemented')
+  if (row === undefined) return null
+
+  return { seasonalYear: row.seasonalYear as number, season: row.season as number }
 }
 
 export default findNextSeasonWithEvents

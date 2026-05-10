@@ -11,9 +11,6 @@ describe('renderSeasonIndex', () => {
   /** Sentinel returned by the events repo, traced into the view-model builder's call args. */
   const sentinelEvents = [{ tag: 'sentinel-event' }]
 
-  /** Sentinel returned by the next-season repo. */
-  const sentinelNextSlot: SeasonalSlot = { seasonalYear: 1066, season: 2 }
-
   /** Sentinel view model returned by the view-model builder, traced into the page builder. */
   const sentinelViewModel = { tag: 'sentinel-view-model' }
 
@@ -22,9 +19,6 @@ describe('renderSeasonIndex', () => {
 
   /** Mock for `findEventsInSeason`. */
   const findEventsInSeasonMock = mock.fn((): unknown[] => sentinelEvents)
-
-  /** Mock for `findNextSeasonWithEvents`. */
-  const findNextSeasonWithEventsMock = mock.fn((): SeasonalSlot | null => sentinelNextSlot)
 
   /** Mock for `buildSeasonIndexViewModel`. */
   const buildSeasonIndexViewModelMock = mock.fn((): unknown => sentinelViewModel)
@@ -68,10 +62,6 @@ describe('renderSeasonIndex', () => {
       { defaultExport: findEventsInSeasonMock },
     )
     mock.module(
-      '../../src/repositories/find-next-season-with-events.js',
-      { defaultExport: findNextSeasonWithEventsMock },
-    )
-    mock.module(
       '../../src/presenters/build-season-index-view-model.js',
       { defaultExport: buildSeasonIndexViewModelMock },
     )
@@ -92,7 +82,6 @@ describe('renderSeasonIndex', () => {
     db = new DatabaseSync(dbPath)
 
     findEventsInSeasonMock.mock.resetCalls()
-    findNextSeasonWithEventsMock.mock.resetCalls()
     buildSeasonIndexViewModelMock.mock.resetCalls()
     buildSeasonIndexPageMock.mock.resetCalls()
   })
@@ -102,21 +91,21 @@ describe('renderSeasonIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the events + prev-season repos and the next-season + presenter mocks, writing to the slot folder', () => {
+  it('chains the events + prev/next-season repos and the presenter mocks, writing to the slot folder', () => {
     insertEventRow(1066, 0, 1, 'earlier-slot')
     insertEventRow(1066, 1, 1, 'subject-event')
+    insertEventRow(1066, 2, 1, 'later-slot')
 
     /** Slot being rendered. */
     const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
 
     renderSeasonIndex(db, outputDirPath, slot)
 
-    assert.deepStrictEqual(findNextSeasonWithEventsMock.mock.calls[0]?.arguments, [db, 1066, 1])
     assert.deepStrictEqual(buildSeasonIndexViewModelMock.mock.calls[0]?.arguments, [
       slot,
       sentinelEvents,
       { seasonalYear: 1066, season: 0 },
-      sentinelNextSlot,
+      { seasonalYear: 1066, season: 2 },
     ])
     assert.deepStrictEqual(buildSeasonIndexPageMock.mock.calls[0]?.arguments, [sentinelViewModel])
     assert.strictEqual(
