@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seasons <%= it.yearLabel %> - MHDB</title>
+    <base href="../">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a class="brand-mark" href="index.html" aria-label="MHDB home">MHDB</a>
+      </div>
+    </header>
+    <div class="breadcrumbs-bar">
+      <div class="breadcrumbs-inner">
+        <div class="breadcrumbs-main">
+          <nav aria-label="breadcrumb">
+            <a href="index.html">Home</a>
+            <span class="current"><%= it.yearLabel %></span>
+          </nav>
+        </div>
+        <div class="breadcrumbs-meta"></div>
+      </div>
+    </div>
+    <main>
+      <h1><%= it.yearLabel %></h1>
+      <div class="season-cards">
+<% for (const card of it.seasonCards) { %>
+<% if (card.indexPagePath !== null) { %>
+        <a class="season-card" data-season="<%= card.number %>" href="<%= card.indexPagePath %>">
+          <span class="season-card-label"><%= card.label %></span>
+        </a>
+<% } else { %>
+        <span class="season-card season-card-empty" data-season="<%= card.number %>">
+          <span class="season-card-label"><%= card.label %></span>
+        </span>
+<% } %>
+<% } %>
+      </div>
+      <div class="season-nav" aria-label="Year navigation">
+        <div class="season-nav-slot">
+<% if (it.prevYearLink !== null) { %>
+          <a class="season-nav-link" href="<%= it.prevYearLink.indexPagePath %>">← <%= it.prevYearLink.label %></a>
+<% } %>
+        </div>
+        <div class="season-nav-slot">
+<% if (it.nextYearLink !== null) { %>
+          <a class="season-nav-link" href="<%= it.nextYearLink.indexPagePath %>"><%= it.nextYearLink.label %> →</a>
+<% } %>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

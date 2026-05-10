@@ -1,22 +1,17 @@
-import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import renderYearIndex from '../../src/services/render-year-index.js'
 import { tmpdir } from 'node:os'
 
 describe('renderYearIndex', () => {
-  /** Sentinel HTML returned by the page builder, expected on disk. */
-  const sentinelHtml = '<html>sentinel-year-index</html>'
-
-  /** Mock for `buildYearIndexPage`. */
-  const buildYearIndexPageMock = mock.fn(() => sentinelHtml)
-
   /** Tmp directory holding the test SQLite file and output tree. */
   let tmpDirPath: string
 
-  /** Database handle threaded into the SUT; on-disk SQLite so `findSeasonsWithEventsInYear` can query it. */
+  /** Database handle threaded into the SUT; on-disk SQLite so the real chain can query it. */
   let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
@@ -40,18 +35,6 @@ describe('renderYearIndex', () => {
     `).run(slug, year, season, position)
   }
 
-  /** SUT, dynamically imported once after the module mocks are registered. */
-  let renderYearIndex: (db: DatabaseSync, outputDirPath: string, year: number) => void
-
-  before(async () => {
-    mock.module(
-      '../../src/presenters/build-year-index-page.js',
-      { defaultExport: buildYearIndexPageMock },
-    )
-
-    renderYearIndex = (await import('../../src/services/render-year-index.js')).default
-  })
-
   beforeEach(() => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
     /** Path to the test SQLite file. */
@@ -59,8 +42,6 @@ describe('renderYearIndex', () => {
     outputDirPath = join(tmpDirPath, 'output')
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
-
-    buildYearIndexPageMock.mock.resetCalls()
   })
 
   afterEach(() => {
@@ -68,7 +49,7 @@ describe('renderYearIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the three repos and the page builder, writing to the year folder', () => {
+  it('writes the year index page to <outputDirPath>/<year>/index.html with seasons + nav reflecting DB state', () => {
     insertEventRow(1065, 1, 1, 'earlier')
     insertEventRow(1066, 1, 1, 'a')
     insertEventRow(1066, 3, 1, 'b')
@@ -76,17 +57,14 @@ describe('renderYearIndex', () => {
 
     renderYearIndex(db, outputDirPath, 1066)
 
-    assert.deepStrictEqual(buildYearIndexPageMock.mock.calls[0]?.arguments, [
-      {
-        year: 1066,
-        seasonsWithEvents: [1, 3],
-        prevYear: 1065,
-        nextYear: 1067,
-      },
-    ])
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, '1066', 'index.html'), 'utf8'),
-      sentinelHtml,
-    )
+    /** Rendered year index on disk. */
+    const indexHtml = readFileSync(join(outputDirPath, '1066', 'index.html'), 'utf8')
+    assert.ok(indexHtml.includes('<title>Seasons 1066 - MHDB</title>'))
+    assert.ok(indexHtml.includes('<a class="season-card" data-season="1" href="1066/1/index.html">'))
+    assert.ok(indexHtml.includes('<a class="season-card" data-season="3" href="1066/3/index.html">'))
+    assert.ok(indexHtml.includes('<span class="season-card season-card-empty" data-season="0">'))
+    assert.ok(indexHtml.includes('<span class="season-card season-card-empty" data-season="2">'))
+    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1065/index.html">← 1065</a>'))
+    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1067/index.html">1067 →</a>'))
   })
 })

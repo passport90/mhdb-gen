@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import buildYearIndexPage from '../presenters/build-year-index-page.js'
+import buildYearIndexViewModel from '../presenters/build-year-index-view-model.js'
 import findNextYearWithEvents from '../repositories/find-next-year-with-events.js'
 import findPrevYearWithEvents from '../repositories/find-prev-year-with-events.js'
 import findSeasonsWithEventsInYear from '../repositories/find-seasons-with-events-in-year.js'
@@ -25,8 +26,10 @@ const renderYearIndex = (
   const prevYear = findPrevYearWithEvents(db, year)
   /** Closest later year with events, or `null` when `year` is the latest. */
   const nextYear = findNextYearWithEvents(db, year)
+  /** View model assembled from the queried data. */
+  const viewModel = buildYearIndexViewModel(year, seasonsWithEvents, prevYear, nextYear)
   /** Rendered HTML for the year index page. */
-  const html = buildYearIndexPage({ year, seasonsWithEvents, prevYear, nextYear })
+  const html = buildYearIndexPage(viewModel)
 
   /** Year directory under the output root. */
   const yearDirPath = join(outputDirPath, String(year))
