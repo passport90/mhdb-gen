@@ -24,8 +24,8 @@ const buildYearIndexViewModel = (
 ): YearIndexPageViewModel => ({
   yearLabel: String(year),
   seasonCards: buildSeasonCards(year, seasonsWithEvents),
-  prevYearLink: prevYear !== null ? buildYearLink(prevYear) : null,
-  nextYearLink: nextYear !== null ? buildYearLink(nextYear) : null,
+  prevYearLink: buildYearLink(prevYear),
+  nextYearLink: buildYearLink(nextYear),
 })
 
 /**
@@ -49,12 +49,16 @@ const buildSeasonCards = (year: number, seasonsWithEvents: number[]): SeasonCard
 /**
  * Builds a link to a year's index page.
  *
- * @param year - Seasonal year being linked to.
- * @returns Link with display label and root-relative URL.
+ * @param year - Seasonal year being linked to, or `null` to short-circuit.
+ * @returns Link with display label and root-relative URL, or `null` when `year` is `null`.
  */
-const buildYearLink = (year: number): YearLink => ({
-  label: String(year),
-  indexPagePath: `${year}/index.html`,
-})
+const buildYearLink = (year: number | null): YearLink | null => {
+  if (year === null) return null
+
+  return {
+    label: String(year),
+    indexPagePath: `${year}/index.html`,
+  }
+}
 
 export default buildYearIndexViewModel
