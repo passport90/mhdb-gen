@@ -1,6 +1,7 @@
 import type EventLink from '../types/event-link.js'
 import type EventPageViewModel from '../types/event-page-view-model.js'
 import type EventToRender from '../types/event-to-render.js'
+import SEASON_NAME_BY_NUMBER from '../constants/season-names.js'
 import buildDateRangeLabel from './build-date-range-label.js'
 import buildUpdatedAtLabel from './build-updated-at-label.js'
 import { marked } from 'marked'
@@ -10,14 +11,6 @@ const EVENT_PAGE_ROOT_BASE_PATH = '../../../'
 
 /** Filename used for every bundled illustration; sibling to the event's `index.html`. */
 const ILLUSTRATION_FILE_NAME = 'illustration.png'
-
-/** Season number → display name; matches the SQL `season` CHECK domain. */
-const SEASON_NAME_BY_NUMBER: Record<number, string> = {
-  0: 'Winter',
-  1: 'Spring',
-  2: 'Summer',
-  3: 'Fall',
-}
 
 /**
  * Projects a hydrated event plus its in-season neighbors into the view model the eta template consumes
