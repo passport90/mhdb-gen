@@ -8,12 +8,13 @@ import findSeasonsWithEventsInYear from '../repositories/find-seasons-with-event
 import { join } from 'node:path'
 
 /**
- * Re-renders the year index page at `<outputDirPath>/<year>/index.html`, listing the seasons that
- * year contains and providing prev/next navigation among years that have events.
+ * Renders the year's index page at `<outputDirPath>/<year>/index.html` when the year has events.
+ * No-ops when the year is empty in the DB — `pruneOrphanOutput` has already removed the
+ * directory and its stale index, and the renderer declines to recreate it.
  *
  * @param db - Database handle.
  * @param outputDirPath - Output root.
- * @param year - Seasonal year whose index page is being refreshed.
+ * @param year - Seasonal year whose index page is being rendered.
  */
 const renderYearIndex = (
   db: DatabaseSync,
@@ -22,6 +23,8 @@ const renderYearIndex = (
 ): void => {
   /** Season numbers in `year` that have at least one event. */
   const seasonsWithEvents = findSeasonsWithEventsInYear(db, year)
+  if (seasonsWithEvents.length === 0) return
+
   /** Closest earlier year with events, or `null` when `year` is the earliest. */
   const prevYear = findPrevYearWithEvents(db, year)
   /** Closest later year with events, or `null` when `year` is the latest. */

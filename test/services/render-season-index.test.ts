@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -79,5 +79,16 @@ describe('renderSeasonIndex', () => {
     assert.ok(indexHtml.includes('<a class="event-title" href="1066/1/second-event/index.html">Second Event</a>'))
     assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/0/index.html">← Winter 1066</a>'))
     assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/2/index.html">Summer 1066 →</a>'))
+  })
+
+  describe('when the slot has no events in the DB', () => {
+    it('writes nothing — leaves the output tree as the upstream prune left it', () => {
+      /** Slot being rendered; has zero rows in the DB. */
+      const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
+
+      renderSeasonIndex(db, outputDirPath, slot)
+
+      assert.ok(!existsSync(outputDirPath))
+    })
   })
 })

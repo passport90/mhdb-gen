@@ -5,10 +5,13 @@ import { join } from 'node:path'
 
 /**
  * Removes slug directories under `outputDirPath` whose `(seasonalYear, season, slug)` triple is
- * not in `headers`, then any season directory left empty by that pass, then any year directory
- * left empty in turn. Year and season entries are descended into only when their name matches
- * the DB's CHECK constraints (4-digit CE year, season 0-3), so non-event entries co-located
- * with the event tree are preserved.
+ * not in `headers`, then any season directory left with no remaining slug subdirectories, then
+ * any year directory left with no remaining season subdirectories. Stale `index.html` files
+ * inside an otherwise-childless season or year directory are removed alongside the directory
+ * itself, since the hierarchy exists to host event subtrees and a level with no subtrees has
+ * nothing legitimate to serve. Year and season entries are descended into only when their name
+ * matches the DB's CHECK constraints (4-digit CE year, season 0-3), so non-event entries
+ * co-located with the event tree are preserved.
  *
  * @param headers - Snapshot of every event row; each `(seasonalYear, season, slug)` is the
  *   canonical disk location for that event's output directory.
@@ -45,10 +48,10 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
         touchedSlots.push(slot)
       }
 
-      removeIfEmpty(seasonDirPath)
+      removeIfNoSubdirs(seasonDirPath)
     }
 
-    removeIfEmpty(yearDirPath)
+    removeIfNoSubdirs(yearDirPath)
   }
 
   return touchedSlots
@@ -104,14 +107,19 @@ const pruneOrphanSlugsInSeason = (
 }
 
 /**
- * Removes `dirPath` when it contains no entries; otherwise leaves it in place.
+ * Removes `dirPath` when it contains no subdirectories; files are ignored on the principle that
+ * the season/year hierarchy exists to host event subtrees, and a level with no subtrees has
+ * nothing legitimate to serve. A stale `index.html` left over from a previous render goes with
+ * the directory under the recursive `rmSync`.
  *
  * @param dirPath - Absolute path to the directory to inspect.
  */
-const removeIfEmpty = (dirPath: string): void => {
-  if (readdirSync(dirPath).length === 0) {
-    rmSync(dirPath, { recursive: true })
-  }
+const removeIfNoSubdirs = (dirPath: string): void => {
+  /** Direct children of `dirPath` with file-vs-directory information. */
+  const entries = readdirSync(dirPath, { withFileTypes: true })
+  if (entries.some((entry) => entry.isDirectory())) return
+
+  rmSync(dirPath, { recursive: true })
 }
 
 export default pruneOrphanOutput

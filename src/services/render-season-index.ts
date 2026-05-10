@@ -9,12 +9,13 @@ import findPrevSeasonWithEvents from '../repositories/find-prev-season-with-even
 import { join } from 'node:path'
 
 /**
- * Re-renders the season index page at `<outputDirPath>/<year>/<season>/index.html`, listing the
- * events in the slot and providing prev/next navigation among slots that have events.
+ * Renders the slot's index page at `<outputDirPath>/<year>/<season>/index.html` when the slot
+ * has events. No-ops when the slot is empty in the DB — `pruneOrphanOutput` has already removed
+ * the directory and its stale index, and the renderer declines to recreate it.
  *
  * @param db - Database handle.
  * @param outputDirPath - Output root.
- * @param slot - Seasonal slot whose index page is being refreshed.
+ * @param slot - Seasonal slot whose index page is being rendered.
  */
 const renderSeasonIndex = (
   db: DatabaseSync,
@@ -23,6 +24,8 @@ const renderSeasonIndex = (
 ): void => {
   /** Events in the slot, in position order. */
   const events = findEventsInSeason(db, slot.seasonalYear, slot.season)
+  if (events.length === 0) return
+
   /** Closest earlier slot with events, or `null` when this is the earliest. */
   const prevSlot = findPrevSeasonWithEvents(db, slot.seasonalYear, slot.season)
   /** Closest later slot with events, or `null` when this is the latest. */

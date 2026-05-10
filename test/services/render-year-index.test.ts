@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
@@ -66,5 +66,13 @@ describe('renderYearIndex', () => {
     assert.ok(indexHtml.includes('<span class="season-card season-card-empty" data-season="2">'))
     assert.ok(indexHtml.includes('<a class="season-nav-link" href="1065/index.html">← 1065</a>'))
     assert.ok(indexHtml.includes('<a class="season-nav-link" href="1067/index.html">1067 →</a>'))
+  })
+
+  describe('when the year has no events in the DB', () => {
+    it('writes nothing — leaves the output tree as the upstream prune left it', () => {
+      renderYearIndex(db, outputDirPath, 1066)
+
+      assert.ok(!existsSync(outputDirPath))
+    })
   })
 })

@@ -58,7 +58,7 @@ describe('pruneOrphanOutput', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('removes orphan slug-dirs, rolls up empty parents, reports touched seasons', () => {
+  it('removes orphan slug-dirs and subdirless parents (stale indexes included), reports touched seasons', () => {
     /**
      * Two headers establish the valid set: `kept-spring` lives at (2026, 1) and `moved`
      * at (2026, 2). On disk, `moved` was previously rendered at (2025, 3) — that prior
@@ -87,6 +87,8 @@ describe('pruneOrphanOutput', () => {
     seedDir('2026/1/orphan-spring')
     seedDir('2025/3/moved')
     seedDir('2024/0/orphan-only')
+    seedFile('1066/3/index.html')
+    seedFile('1066/index.html')
     seedFile('static-asset.css')
 
     /** Touched slots returned by the SUT. */
@@ -98,6 +100,8 @@ describe('pruneOrphanOutput', () => {
     assert.ok(!existsSync(join(outputDirPath, '2025')))
 
     assert.ok(!existsSync(join(outputDirPath, '2024')))
+
+    assert.ok(!existsSync(join(outputDirPath, '1066')))
 
     assert.ok(existsSync(join(outputDirPath, 'static-asset.css')))
 
