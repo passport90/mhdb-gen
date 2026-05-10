@@ -1,14 +1,12 @@
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderYearIndex', () => {
-  /** Sentinel returned by the seasons repo, traced into the page builder's call args. */
-  const sentinelSeasonsWithEvents = [1, 3]
-
   /** Sentinel returned by the prev-year repo. */
   const sentinelPrevYear = 1065
 
@@ -17,9 +15,6 @@ describe('renderYearIndex', () => {
 
   /** Sentinel HTML returned by the page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-year-index</html>'
-
-  /** Mock for `findSeasonsWithEventsInYear`. */
-  const findSeasonsWithEventsInYearMock = mock.fn(() => sentinelSeasonsWithEvents)
 
   /** Mock for `findPrevYearWithEvents`. */
   const findPrevYearWithEventsMock = mock.fn((): number | null => sentinelPrevYear)
@@ -30,23 +25,37 @@ describe('renderYearIndex', () => {
   /** Mock for `buildYearIndexPage`. */
   const buildYearIndexPageMock = mock.fn(() => sentinelHtml)
 
-  /** Sentinel database handle threaded into the SUT. */
-  let db: DatabaseSync
-
-  /** Tmp directory holding the output tree. */
+  /** Tmp directory holding the test SQLite file and output tree. */
   let tmpDirPath: string
+
+  /** Database handle threaded into the SUT; on-disk SQLite so `findSeasonsWithEventsInYear` can query it. */
+  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
+
+  /**
+   * Inserts an event row carrying just the columns this query path touches.
+   *
+   * @param year - Seasonal year of the row.
+   * @param season - Season-within-year of the row.
+   * @param position - Position-within-season of the row.
+   * @param slug - Unique slug for the row.
+   */
+  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+    db.prepare(`
+      INSERT INTO events (
+        slug, title, description, illustration_hash,
+        start_date, end_date,
+        seasonal_year, season, position
+      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
+    `).run(slug, year, season, position)
+  }
 
   /** SUT, dynamically imported once after the module mocks are registered. */
   let renderYearIndex: (db: DatabaseSync, outputDirPath: string, year: number) => void
 
   before(async () => {
-    mock.module(
-      '../../src/repositories/find-seasons-with-events-in-year.js',
-      { defaultExport: findSeasonsWithEventsInYearMock },
-    )
     mock.module(
       '../../src/repositories/find-prev-year-with-events.js',
       { defaultExport: findPrevYearWithEventsMock },
@@ -64,11 +73,13 @@ describe('renderYearIndex', () => {
   })
 
   beforeEach(() => {
-    db = new DatabaseSync(':memory:')
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    /** Path to the test SQLite file. */
+    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
+    applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
 
-    findSeasonsWithEventsInYearMock.mock.resetCalls()
     findPrevYearWithEventsMock.mock.resetCalls()
     findNextYearWithEventsMock.mock.resetCalls()
     buildYearIndexPageMock.mock.resetCalls()
@@ -79,16 +90,18 @@ describe('renderYearIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the three repos and the page builder, writing to <outputDirPath>/<year>/index.html', () => {
+  it('chains the seasons repo, prev/next-year mocks, and page builder, writing to the year folder', () => {
+    insertEventRow(1066, 1, 1, 'a')
+    insertEventRow(1066, 3, 1, 'b')
+
     renderYearIndex(db, outputDirPath, 1066)
 
-    assert.deepStrictEqual(findSeasonsWithEventsInYearMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(findPrevYearWithEventsMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(findNextYearWithEventsMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(buildYearIndexPageMock.mock.calls[0]?.arguments, [
       {
         year: 1066,
-        seasonsWithEvents: sentinelSeasonsWithEvents,
+        seasonsWithEvents: [1, 3],
         prevYear: sentinelPrevYear,
         nextYear: sentinelNextYear,
       },

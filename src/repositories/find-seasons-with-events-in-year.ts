@@ -8,10 +8,15 @@ import type { DatabaseSync } from 'node:sqlite'
  * @returns Season numbers in ascending order; empty when the year has no events.
  */
 const findSeasonsWithEventsInYear = (db: DatabaseSync, year: number): number[] => {
-  void db
-  void year
+  /** Distinct-season rows for events in `year`. */
+  const rows = db.prepare(`
+    SELECT DISTINCT season
+    FROM events
+    WHERE seasonal_year = ?
+    ORDER BY season ASC
+  `).all(year)
 
-  throw new Error('findSeasonsWithEventsInYear: not yet implemented')
+  return rows.map((row) => row.season as number)
 }
 
 export default findSeasonsWithEventsInYear
