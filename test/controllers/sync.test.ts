@@ -1,21 +1,17 @@
-import { afterEach, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import type Controller from '../../src/types/controller.js'
 import { DatabaseSync } from 'node:sqlite'
 import type EventToRender from '../../src/types/event-to-render.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
-import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import sync from '../../src/controllers/sync.js'
 import { tmpdir } from 'node:os'
 
 describe('sync', () => {
-  /**
-   * Seeded event; expected to flow through real `findEventIdsToRender` + real `findEventById`
-   * into the mocked `renderEvent`.
-   */
+  /** Seeded event; expected to flow through the full real chain into a written page on disk. */
   const theEvent: EventToRender = {
     id: 1,
     slug: 'the-event',
@@ -30,19 +26,6 @@ describe('sync', () => {
     updatedAt: '2026-05-05 12:00:00',
   }
 
-  /** Distinct seasons the rendered event occupies; expected `seasonsRendered` argument to refresh. */
-  const expectedSeasonsRendered: SeasonalSlot[] = [
-    { seasonalYear: 2026, season: 1 },
-  ]
-
-  /**
-   * Slot of the orphan directory seeded under `outputDirPath`; real `pruneOrphanOutput`
-   * should remove it and report this slot as touched.
-   */
-  const expectedSeasonsPruned: SeasonalSlot[] = [
-    { seasonalYear: 2024, season: 0 },
-  ]
-
   /** Tmp directory created fresh per test; encloses the SQLite file and the output root. */
   let tmpDirPath: string
 
@@ -52,20 +35,11 @@ describe('sync', () => {
   /** Output root for the test, exposed via `MHDB_OUTPUT_DIR_PATH`; created per-test under `tmpDirPath`. */
   let outputDirPath: string
 
-  /** Test-side database handle, used to seed the row and read back side effects; separate connection from the SUT's. */
+  /** Test-side database handle, used to seed the row and read back side effects; separate from the SUT's. */
   let db: DatabaseSync
-
-  /** Mock for `renderEvent`. */
-  let renderEventMock: ReturnType<typeof mock.fn>
-
-  /** Mock for `refreshHierarchyIndexes`. */
-  let refreshHierarchyIndexesMock: ReturnType<typeof mock.fn>
 
   /** Message stream, reset per test. */
   let messageStream: PassThrough
-
-  /** SUT, dynamically re-imported per test so the static imports resolve through the mocked loader. */
-  let sync: Controller
 
   /**
    * Inserts an event row carrying every field `findEventById` hydrates, leaving
@@ -93,7 +67,7 @@ describe('sync', () => {
     )
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     messageStream = new PassThrough()
 
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
@@ -105,6 +79,11 @@ describe('sync', () => {
     mkdirSync(assetsDirPath, { recursive: true })
     writeFileSync(join(assetsDirPath, 'style.css'), '/* stub */')
 
+    /** Blob store sibling to the SQLite file; seeded with the event's illustration source bytes. */
+    const blobDirPath = `${dbPath}.blobs`
+    mkdirSync(blobDirPath, { recursive: true })
+    writeFileSync(join(blobDirPath, `${theEvent.slug}.png`), 'illustration-bytes')
+
     process.env.MHDB_DB_PATH = dbPath
     process.env.MHDB_OUTPUT_DIR_PATH = outputDirPath
     process.env.MHDB_ASSETS_DIR_PATH = assetsDirPath
@@ -115,17 +94,6 @@ describe('sync', () => {
 
     /** Orphan slug-dir seeded under `outputDirPath` so the real prune has something to remove. */
     mkdirSync(join(outputDirPath, '2024', '0', 'orphan-leftover'), { recursive: true })
-
-    renderEventMock = mock.fn()
-    refreshHierarchyIndexesMock = mock.fn()
-
-    mock.module('../../src/services/render-event.js', { defaultExport: renderEventMock })
-    mock.module(
-      '../../src/services/refresh-hierarchy-indexes.js',
-      { defaultExport: refreshHierarchyIndexesMock },
-    )
-
-    sync = (await import('../../src/controllers/sync.js')).default
   })
 
   afterEach(() => {
@@ -134,49 +102,41 @@ describe('sync', () => {
     delete process.env.MHDB_ASSETS_DIR_PATH
     db.close()
     rmSync(tmpDirPath, { recursive: true, force: true })
-    mock.restoreAll()
   })
 
-  it('orchestrates the sync pipeline — render, mark, prune, refresh, mirror — and returns SUCCESS_EXIT_CODE', () => {
+  it('runs the full pipeline — event page, prune orphan, index pages, static assets — returns SUCCESS', () => {
     /** Exit code returned by `sync`. */
     const code = sync([], messageStream)
 
     assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
 
-    assert.strictEqual(renderEventMock.mock.callCount(), 1)
-    /** Args captured from the mocked `renderEvent` call; `updatedAt` is DB-generated, not literal-matchable. */
-    const renderArgs = renderEventMock.mock.calls[0].arguments
-    /** Event hydrated from the DB and threaded into `renderEvent`. */
-    const renderedEvent = renderArgs[0] as EventToRender
-    assert.strictEqual(renderedEvent.id, theEvent.id)
-    assert.strictEqual(renderedEvent.slug, theEvent.slug)
-    assert.strictEqual(renderedEvent.title, theEvent.title)
-    assert.strictEqual(renderedEvent.description, theEvent.description)
-    assert.strictEqual(renderedEvent.illustrationHash, theEvent.illustrationHash)
-    assert.strictEqual(renderedEvent.startDate, theEvent.startDate)
-    assert.strictEqual(renderedEvent.endDate, theEvent.endDate)
-    assert.strictEqual(renderedEvent.seasonalYear, theEvent.seasonalYear)
-    assert.strictEqual(renderedEvent.season, theEvent.season)
-    assert.strictEqual(renderedEvent.position, theEvent.position)
-    assert.match(renderedEvent.updatedAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
-    assert.strictEqual(renderArgs[1], null)
-    assert.strictEqual(renderArgs[2], null)
-    assert.strictEqual(renderArgs[3], outputDirPath)
+    /** Rendered event page on disk. */
+    const eventPageHtml = readFileSync(
+      join(outputDirPath, '2026', '1', 'the-event', 'index.html'),
+      'utf8',
+    )
+    assert.ok(eventPageHtml.includes('<title>The Event - MHDB</title>'))
+
+    /** Illustration copied alongside the event page. */
+    assert.strictEqual(
+      readFileSync(join(outputDirPath, '2026', '1', 'the-event', 'illustration.png'), 'utf8'),
+      'illustration-bytes',
+    )
 
     /** Stamped `rendered_at` on the event row, asserted as a side effect of real `markRendered`. */
     const row = db.prepare('SELECT rendered_at FROM events WHERE id = ?').get(1)
     assert.ok(row !== undefined)
     assert.notStrictEqual(row.rendered_at, null)
 
-    assert.ok(!existsSync(join(outputDirPath, '2024')))
+    /** The specific orphan slug-dir was removed by the real prune. */
+    assert.ok(!existsSync(join(outputDirPath, '2024', '0', 'orphan-leftover')))
 
-    assert.strictEqual(refreshHierarchyIndexesMock.mock.callCount(), 1)
-    /** Args passed to `refreshHierarchyIndexes`; the SUT's internal db handle isn't compared by identity. */
-    const refreshArgs = refreshHierarchyIndexesMock.mock.calls[0].arguments
-    assert.strictEqual(refreshArgs[1], outputDirPath)
-    assert.deepStrictEqual(refreshArgs[2], expectedSeasonsRendered)
-    assert.deepStrictEqual(refreshArgs[3], expectedSeasonsPruned)
+    /** Index pages produced by the real refresh chain. */
+    assert.ok(existsSync(join(outputDirPath, 'index.html')))
+    assert.ok(existsSync(join(outputDirPath, '2026', 'index.html')))
+    assert.ok(existsSync(join(outputDirPath, '2026', '1', 'index.html')))
 
+    /** Static asset mirrored from the source dir. */
     assert.strictEqual(readFileSync(join(outputDirPath, 'style.css'), 'utf8'), '/* stub */')
 
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
