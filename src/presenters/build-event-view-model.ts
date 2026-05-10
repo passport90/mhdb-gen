@@ -1,8 +1,8 @@
 import type EventLink from '../types/event-link.js'
 import type EventPageViewModel from '../types/event-page-view-model.js'
 import type EventToRender from '../types/event-to-render.js'
-import SEASON_NAME_BY_NUMBER from '../constants/season-names.js'
 import buildDateRangeLabel from './build-date-range-label.js'
+import buildSeasonLabel from './build-season-label.js'
 import buildUpdatedAtLabel from './build-updated-at-label.js'
 import { marked } from 'marked'
 import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
@@ -71,15 +71,6 @@ const buildEventPagePath = (year: number, season: number, slug: string): string 
  * @returns Season index page URL.
  */
 const buildSeasonIndexPagePath = (year: number, season: number): string => `${year}/${season}/index.html`
-
-/**
- * Builds the human-readable season label, e.g. `Spring 2026`.
- *
- * @param year - Seasonal year.
- * @param season - Season number in the SQL domain (0–3).
- * @returns Label combining the season name and the year.
- */
-const buildSeasonLabel = (year: number, season: number): string => `${SEASON_NAME_BY_NUMBER[season]} ${year}`
 
 /**
  * Builds an `EventLink` for an in-season neighbor — the path to its bundle plus its inline-rendered title.
