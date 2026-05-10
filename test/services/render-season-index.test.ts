@@ -8,17 +8,11 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderSeasonIndex', () => {
-  /** Sentinel returned by the events repo, traced into the view-model builder's call args. */
-  const sentinelEvents = [{ tag: 'sentinel-event' }]
-
   /** Sentinel view model returned by the view-model builder, traced into the page builder. */
   const sentinelViewModel = { tag: 'sentinel-view-model' }
 
   /** Sentinel HTML returned by the page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-season-index</html>'
-
-  /** Mock for `findEventsInSeason`. */
-  const findEventsInSeasonMock = mock.fn((): unknown[] => sentinelEvents)
 
   /** Mock for `buildSeasonIndexViewModel`. */
   const buildSeasonIndexViewModelMock = mock.fn((): unknown => sentinelViewModel)
@@ -36,31 +30,38 @@ describe('renderSeasonIndex', () => {
   let outputDirPath: string
 
   /**
-   * Inserts an event row carrying just the columns this query path touches.
+   * Inserts an event row carrying the columns this query path touches.
    *
    * @param year - Seasonal year of the row.
    * @param season - Season-within-year of the row.
    * @param position - Position-within-season of the row.
    * @param slug - Unique slug for the row.
+   * @param title - Event title.
+   * @param startDate - Start date in `YYYY-MM-DD`.
+   * @param endDate - End date in `YYYY-MM-DD`.
    */
-  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+  const insertEventRow = (
+    year: number,
+    season: number,
+    position: number,
+    slug: string,
+    title: string,
+    startDate: string,
+    endDate: string,
+  ): void => {
     db.prepare(`
       INSERT INTO events (
         slug, title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(slug, year, season, position)
+      ) VALUES (?, ?, 'd', NULL, ?, ?, ?, ?, ?)
+    `).run(slug, title, startDate, endDate, year, season, position)
   }
 
   /** SUT, dynamically imported once after the module mocks are registered. */
   let renderSeasonIndex: (db: DatabaseSync, outputDirPath: string, slot: SeasonalSlot) => void
 
   before(async () => {
-    mock.module(
-      '../../src/repositories/find-events-in-season.js',
-      { defaultExport: findEventsInSeasonMock },
-    )
     mock.module(
       '../../src/presenters/build-season-index-view-model.js',
       { defaultExport: buildSeasonIndexViewModelMock },
@@ -81,7 +82,6 @@ describe('renderSeasonIndex', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    findEventsInSeasonMock.mock.resetCalls()
     buildSeasonIndexViewModelMock.mock.resetCalls()
     buildSeasonIndexPageMock.mock.resetCalls()
   })
@@ -91,10 +91,11 @@ describe('renderSeasonIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the events + prev/next-season repos and the presenter mocks, writing to the slot folder', () => {
-    insertEventRow(1066, 0, 1, 'earlier-slot')
-    insertEventRow(1066, 1, 1, 'subject-event')
-    insertEventRow(1066, 2, 1, 'later-slot')
+  it('writes the rendered page to the slot folder, threading the slot events and prev/next adjacencies', () => {
+    insertEventRow(1066, 0, 1, 'earlier-slot', 'Earlier', '1066-01-01', '1066-01-02')
+    insertEventRow(1066, 1, 1, 'first-event', 'First Event', '1066-04-15', '1066-04-22')
+    insertEventRow(1066, 1, 2, 'second-event', 'Second Event', '1066-04-23', '1066-04-30')
+    insertEventRow(1066, 2, 1, 'later-slot', 'Later', '1066-07-01', '1066-07-02')
 
     /** Slot being rendered. */
     const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
@@ -103,7 +104,10 @@ describe('renderSeasonIndex', () => {
 
     assert.deepStrictEqual(buildSeasonIndexViewModelMock.mock.calls[0]?.arguments, [
       slot,
-      sentinelEvents,
+      [
+        { slug: 'first-event', title: 'First Event', startDate: '1066-04-15', endDate: '1066-04-22' },
+        { slug: 'second-event', title: 'Second Event', startDate: '1066-04-23', endDate: '1066-04-30' },
+      ],
       { seasonalYear: 1066, season: 0 },
       { seasonalYear: 1066, season: 2 },
     ])
