@@ -1,6 +1,7 @@
 import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import type SeasonIndexPageViewModel from '../../src/types/season-index-page-view-model.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
@@ -8,17 +9,11 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderSeasonIndex', () => {
-  /** Sentinel view model returned by the view-model builder, traced into the page builder. */
-  const sentinelViewModel = { tag: 'sentinel-view-model' }
-
   /** Sentinel HTML returned by the page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-season-index</html>'
 
-  /** Mock for `buildSeasonIndexViewModel`. */
-  const buildSeasonIndexViewModelMock = mock.fn((): unknown => sentinelViewModel)
-
   /** Mock for `buildSeasonIndexPage`. */
-  const buildSeasonIndexPageMock = mock.fn(() => sentinelHtml)
+  const buildSeasonIndexPageMock = mock.fn((_viewModel: SeasonIndexPageViewModel) => sentinelHtml)
 
   /** Tmp directory holding the test SQLite file and output tree. */
   let tmpDirPath: string
@@ -63,10 +58,6 @@ describe('renderSeasonIndex', () => {
 
   before(async () => {
     mock.module(
-      '../../src/presenters/build-season-index-view-model.js',
-      { defaultExport: buildSeasonIndexViewModelMock },
-    )
-    mock.module(
       '../../src/presenters/build-season-index-page.js',
       { defaultExport: buildSeasonIndexPageMock },
     )
@@ -82,7 +73,6 @@ describe('renderSeasonIndex', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    buildSeasonIndexViewModelMock.mock.resetCalls()
     buildSeasonIndexPageMock.mock.resetCalls()
   })
 
@@ -102,16 +92,21 @@ describe('renderSeasonIndex', () => {
 
     renderSeasonIndex(db, outputDirPath, slot)
 
-    assert.deepStrictEqual(buildSeasonIndexViewModelMock.mock.calls[0]?.arguments, [
-      slot,
-      [
-        { slug: 'first-event', title: 'First Event', startDate: '1066-04-15', endDate: '1066-04-22' },
-        { slug: 'second-event', title: 'Second Event', startDate: '1066-04-23', endDate: '1066-04-30' },
-      ],
-      { seasonalYear: 1066, season: 0 },
-      { seasonalYear: 1066, season: 2 },
-    ])
-    assert.deepStrictEqual(buildSeasonIndexPageMock.mock.calls[0]?.arguments, [sentinelViewModel])
+    /** View model that real `buildSeasonIndexViewModel` produced and `buildSeasonIndexPage` was called with. */
+    const renderedViewModel = buildSeasonIndexPageMock.mock.calls[0]?.arguments[0]
+    assert.ok(renderedViewModel !== undefined)
+    assert.strictEqual(renderedViewModel.seasonLabel, 'Spring 1066')
+    assert.strictEqual(renderedViewModel.timelineEntries.length, 2)
+    assert.strictEqual(renderedViewModel.timelineEntries[0]?.eventPagePath, '1066/1/first-event/index.html')
+    assert.strictEqual(renderedViewModel.timelineEntries[1]?.eventPagePath, '1066/1/second-event/index.html')
+    assert.deepStrictEqual(renderedViewModel.prevSeasonLink, {
+      label: 'Winter 1066',
+      indexPagePath: '1066/0/index.html',
+    })
+    assert.deepStrictEqual(renderedViewModel.nextSeasonLink, {
+      label: 'Summer 1066',
+      indexPagePath: '1066/2/index.html',
+    })
     assert.strictEqual(
       readFileSync(join(outputDirPath, '1066', '1', 'index.html'), 'utf8'),
       sentinelHtml,
