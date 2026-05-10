@@ -1,66 +1,47 @@
-import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import renderRootIndex from '../../src/services/render-root-index.js'
 import { tmpdir } from 'node:os'
 
 describe('renderRootIndex', () => {
-  /** Sentinel returned by the mocked repo, traced into the decade-rows builder's call args. */
-  const sentinelYears = [1066, 2026]
-
-  /** Sentinel returned by the mocked decade-rows builder, traced into the page builder's call args. */
-  const sentinelDecadeRows = [{ decadeLabel: 'sentinel', yearLinks: [] }]
-
-  /** Sentinel HTML returned by the mocked page builder, expected on disk. */
-  const sentinelHtml = '<html>sentinel-root-index</html>'
-
-  /** Mock for `findYearsWithEvents`; the leaf is hollow during the orchestrator's descent. */
-  const findYearsWithEventsMock = mock.fn(() => sentinelYears)
-
-  /** Mock for `buildDecadeRows`; hollow during descent. */
-  const buildDecadeRowsMock = mock.fn(() => sentinelDecadeRows)
-
-  /** Mock for `buildRootIndexPage`; hollow during descent. */
-  const buildRootIndexPageMock = mock.fn(() => sentinelHtml)
-
-  /** Sentinel database handle threaded into the SUT. */
-  let db: DatabaseSync
-
-  /** Tmp directory holding the output tree. */
+  /** Tmp directory holding the test SQLite file and output tree. */
   let tmpDirPath: string
+
+  /** Database handle threaded into the SUT; on-disk SQLite so the real chain can query it. */
+  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
 
-  /** SUT, dynamically imported once after the module mocks are registered. */
-  let renderRootIndex: (db: DatabaseSync, outputDirPath: string) => void
-
-  before(async () => {
-    mock.module(
-      '../../src/repositories/find-years-with-events.js',
-      { defaultExport: findYearsWithEventsMock },
-    )
-    mock.module(
-      '../../src/presenters/build-decade-rows.js',
-      { defaultExport: buildDecadeRowsMock },
-    )
-    mock.module(
-      '../../src/presenters/build-root-index-page.js',
-      { defaultExport: buildRootIndexPageMock },
-    )
-
-    renderRootIndex = (await import('../../src/services/render-root-index.js')).default
-  })
+  /**
+   * Inserts an event row carrying just the columns the root-index query path touches.
+   *
+   * @param year - Seasonal year of the row.
+   * @param season - Season-within-year of the row.
+   * @param position - Position-within-season of the row.
+   * @param slug - Unique slug for the row.
+   */
+  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+    db.prepare(`
+      INSERT INTO events (
+        slug, title, description, illustration_hash,
+        start_date, end_date,
+        seasonal_year, season, position
+      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
+    `).run(slug, year, season, position)
+  }
 
   beforeEach(() => {
-    db = new DatabaseSync(':memory:')
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    /** Path to the test SQLite file. */
+    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
-
-    findYearsWithEventsMock.mock.resetCalls()
-    buildDecadeRowsMock.mock.resetCalls()
-    buildRootIndexPageMock.mock.resetCalls()
+    applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
@@ -68,15 +49,18 @@ describe('renderRootIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the repo, decade-rows builder, and page builder, writing the page to <outputDirPath>/index.html', () => {
+  it('writes the root index to <outputDirPath>/index.html, with year cells reflecting DB state', () => {
+    insertEventRow(1066, 3, 1, 'a')
+    insertEventRow(2026, 1, 1, 'b')
+
     renderRootIndex(db, outputDirPath)
 
-    assert.deepStrictEqual(findYearsWithEventsMock.mock.calls[0]?.arguments, [db])
-    assert.deepStrictEqual(buildDecadeRowsMock.mock.calls[0]?.arguments, [sentinelYears])
-    assert.deepStrictEqual(buildRootIndexPageMock.mock.calls[0]?.arguments, [sentinelDecadeRows])
-    assert.strictEqual(
-      readFileSync(join(outputDirPath, 'index.html'), 'utf8'),
-      sentinelHtml,
-    )
+    /** Rendered root index on disk. */
+    const indexHtml = readFileSync(join(outputDirPath, 'index.html'), 'utf8')
+    assert.ok(indexHtml.includes('<title>MHDB</title>'))
+    assert.ok(indexHtml.includes('<th scope="row">1060s</th>'))
+    assert.ok(indexHtml.includes('<a href="1066/index.html">1066</a>'))
+    assert.ok(indexHtml.includes('<th scope="row">2020s</th>'))
+    assert.ok(indexHtml.includes('<a href="2026/index.html">2026</a>'))
   })
 })
