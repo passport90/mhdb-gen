@@ -1,8 +1,1159 @@
-/* mhdb-gen base stylesheet — placeholder; per-template styling lands later */
+/*
+ * MHDB Stylesheet
+ *
+ * #1.  Variables
+ * #2.  Base (iPad mini portrait 744px)
+ * #3.  Typography
+ * #4.  Links
+ * #5.  Lists
+ * #6.  Header & Navigation
+ * #7.  Main Content
+ * #8.  Detail Page Layout
+ * #9.  Decade Index Table
+ * #10. Season Watermark
+ * #11. Season Cards
+ * #12. Event Illustration
+ * #13. Stamps
+ * #14. Description Content
+ * #15. Desktop (min-width: 1024px)
+ * #16. Phone (max-width: 480px)
+ */
+
+:root {
+    --bg: #f7f2ec;
+    --card: #fff8ef;
+    --text: #1f1a17;
+    --muted: #6f5d51;
+    --accent: #c25c2a;
+    --accent-strong: #aa3d16;
+    --border: #efe3d7;
+    --shadow: 0 18px 48px rgba(61, 41, 21, 0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --sans: "Work Sans", "Inter", -apple-system, system-ui, sans-serif;
+    --serif: "Source Serif 4", "Iowan Old Style", "Palatino", "Book Antiqua", Georgia, serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --season-mark-mask-winter: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%274%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M50%2010V90%27%2F%3E%3Cpath%20d%3D%27M10%2050H90%27%2F%3E%3Cpath%20d%3D%27M22%2022L78%2078%27%2F%3E%3Cpath%20d%3D%27M78%2022L22%2078%27%2F%3E%3Cpath%20d%3D%27M50%2030L44%2024M50%2030L56%2024%27%2F%3E%3Cpath%20d%3D%27M50%2070L44%2076M50%2070L56%2076%27%2F%3E%3Cpath%20d%3D%27M30%2050L24%2044M30%2050L24%2056%27%2F%3E%3Cpath%20d%3D%27M70%2050L76%2044M70%2050L76%2056%27%2F%3E%3Cpath%20d%3D%27M34%2034L28%2028M34%2034L28%2040%27%2F%3E%3Cpath%20d%3D%27M66%2066L72%2060M66%2066L72%2072%27%2F%3E%3Cpath%20d%3D%27M66%2034L72%2028M66%2034L72%2040%27%2F%3E%3Cpath%20d%3D%27M34%2066L28%2060M34%2066L28%2072%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+    --season-mark-mask-spring: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'0%200%20100%20100'%3E%3Cg%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'4'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Ccircle%20cx%3D'50'%20cy%3D'30'%20r%3D'14'/%3E%3Ccircle%20cx%3D'30'%20cy%3D'50'%20r%3D'14'/%3E%3Ccircle%20cx%3D'50'%20cy%3D'70'%20r%3D'14'/%3E%3Ccircle%20cx%3D'70'%20cy%3D'50'%20r%3D'14'/%3E%3Ccircle%20cx%3D'50'%20cy%3D'50'%20r%3D'7'/%3E%3C/g%3E%3C/svg%3E");
+    --season-mark-mask-summer: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'0%200%20100%20100'%3E%3Cg%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'4'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Ccircle%20cx%3D'50'%20cy%3D'50'%20r%3D'18'/%3E%3Cpath%20d%3D'M50%208V22'/%3E%3Cpath%20d%3D'M50%2078V92'/%3E%3Cpath%20d%3D'M8%2050H22'/%3E%3Cpath%20d%3D'M78%2050H92'/%3E%3Cpath%20d%3D'M20%2020L30%2030'/%3E%3Cpath%20d%3D'M70%2070L80%2080'/%3E%3Cpath%20d%3D'M80%2020L70%2030'/%3E%3Cpath%20d%3D'M30%2070L20%2080'/%3E%3C/g%3E%3C/svg%3E");
+    --season-mark-mask-fall: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%274%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M50%206L60%2028L74%2016L62%2034L88%2032L72%2048L82%2064L64%2056L56%2072L50%2066L44%2072L36%2056L18%2064L28%2048L12%2032L38%2034L26%2016L40%2028Z%27%2F%3E%3Cpath%20d%3D%27M50%2066V86%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+
+/* ============================================
+   #2. BASE (optimised for iPad mini portrait 744px)
+   ============================================ */
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-  font-family: system-ui, sans-serif;
-  max-width: 48rem;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  line-height: 1.6;
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.75;
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at 10% 20%, rgba(219, 196, 173, 0.15), transparent 26%),
+                radial-gradient(circle at 80% 0%, rgba(255, 200, 160, 0.18), transparent 30%),
+                var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   #3. TYPOGRAPHY
+   ============================================ */
+
+h1, h2, h3 {
+    font-family: var(--serif);
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1b120d;
+    margin-bottom: 1.25rem;
+}
+
+.title-with-subtitle:has(+ .subtitle) {
+    margin-bottom: 0rem;
+}
+
+h2 {
+    font-size: 1.55rem;
+    font-weight: 600;
+    color: #2b1c14;
+    margin: 2.25rem 0 0.9rem;
+    letter-spacing: 0;
+}
+
+.subtitle {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    color: #6f5d51;
+    margin: -0.2rem 0 0.8rem;
+}
+
+
+h3 {
+    font-size: 1.1rem;
+    font-weight: 650;
+    color: #3d271b;
+    margin: 1.8rem 0 0.7rem;
+    letter-spacing: 0.03em;
+}
+
+p {
+    margin: 0 0 1.2rem 0;
+    color: var(--text);
+}
+
+strong {
+    font-weight: 700;
+    color: #2b1c14;
+}
+
+/* ============================================
+   #4. LINKS
+   ============================================ */
+
+a {
+    color: var(--accent-strong);
+    text-decoration: none;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    text-decoration-color: rgba(170, 61, 22, 0.4);
+}
+
+a:not(.brand-mark):hover {
+    color: #8f2d08;
+    text-decoration: underline;
+}
+
+/* ============================================
+   #5. LISTS
+   ============================================ */
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+
+li {
+    margin-bottom: 0.75rem;
+    line-height: 1.65;
+    position: relative;
+    padding-left: 1.35rem;
+}
+
+li::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    position: absolute;
+    left: 0;
+    top: 0.65em;
+    box-shadow: 0 6px 14px rgba(194, 92, 42, 0.28);
+}
+
+li a {
+    display: inline-block;
+}
+
+.season-timeline {
+    list-style: none;
+    padding-left: 2rem;
+    margin: 0.5rem 0 1.5rem 0;
+    position: relative;
+}
+
+.season-timeline::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    width: 2px;
+    background: linear-gradient(
+        180deg,
+        rgba(194, 92, 42, 0) 0%,
+        rgba(194, 92, 42, 0.35) 8%,
+        rgba(194, 92, 42, 0.35) 92%,
+        rgba(194, 92, 42, 0) 100%
+    );
+}
+
+.season-timeline li {
+    margin-bottom: 1.5rem;
+    padding-left: 0;
+    line-height: 1.5;
+    position: relative;
+}
+
+.season-timeline li:last-child {
+    margin-bottom: 0;
+}
+
+.season-timeline li::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 2px solid var(--accent);
+    position: absolute;
+    left: -2rem;
+    top: 0.15rem;
+    box-shadow: 0 0 0 3px var(--card);
+    z-index: 1;
+}
+
+.season-timeline .event-date {
+    display: block;
+    font-family: var(--serif);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    font-variant: small-caps;
+    margin-bottom: 0.15rem;
+}
+
+.season-timeline .event-title {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.event-title {
+    font-style: normal;
+}
+
+/* ============================================
+   #6. HEADER & NAVIGATION
+   ============================================ */
+
+header {
+    background-color: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 0 0.6rem;
+    box-shadow: 0 10px 30px rgba(41, 26, 16, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+header::after {
+    content: "";
+    display: block;
+    height: 3px;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);
+}
+
+.header-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.breadcrumbs-bar {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0.5rem 1.25rem;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.breadcrumbs-bar:empty::before {
+    content: "";
+    display: block;
+    height: 1.6rem;
+}
+
+nav {
+    margin-top: 0.5rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+}
+
+nav.main-nav {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+nav.main-nav a {
+    position: relative;
+    padding: 0.5rem 0.85rem 0.75rem;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: var(--accent-strong);
+    border: none;
+    text-decoration: none;
+    transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    box-shadow: none;
+    border-bottom: 2px solid transparent;
+}
+
+nav.main-nav a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-strong);
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+nav.main-nav a:hover,
+nav.main-nav a:focus-visible {
+    color: #7c2400;
+    border-bottom-color: var(--accent-strong);
+    text-decoration: none;
+}
+
+nav.main-nav a:hover::after,
+nav.main-nav a:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) rotate(45deg) translateY(2px);
+}
+
+.brand-mark {
+    font-family: var(--serif);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--accent-strong);
+    text-decoration: none;
+    font-size: 1.05rem;
+    padding: 0.35rem 0.5rem 0.15rem;
+    border-bottom: 3px solid var(--accent-strong);
+    border-radius: 0 0 4px 4px;
+    transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.brand-mark:hover,
+.brand-mark:focus-visible {
+    color: #7c2400;
+    border-bottom-color: #7c2400;
+    transform: translateY(1px);
+    text-decoration: none;
+}
+
+nav[aria-label="breadcrumb"] {
+    font-size: 0.85rem;
+    color: var(--muted);
+    gap: 0;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+nav[aria-label="breadcrumb"] a {
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--muted);
+    border-radius: 4px;
+}
+
+nav[aria-label="breadcrumb"] a:hover {
+    color: var(--accent-strong);
+    text-decoration: underline;
+}
+
+nav[aria-label="breadcrumb"] > * + *::before {
+    content: "/";
+    margin: 0 0.45rem;
+    color: var(--muted);
+    letter-spacing: 0;
+}
+
+nav[aria-label="breadcrumb"] .current {
+    color: var(--text);
+    font-weight: 650;
+    letter-spacing: 0.03em;
+}
+
+.breadcrumbs-inner {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+}
+
+.breadcrumbs-main {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.breadcrumbs-meta {
+    display: block;
+    text-align: right;
+    flex: 0 0 auto;
+}
+
+.season-nav,
+.entry-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+}
+
+.season-nav {
+    margin: 1.25rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.season-nav a,
+.entry-nav a {
+    color: var(--accent-strong);
+    text-decoration: none;
+}
+
+.season-nav a:hover,
+.season-nav a:focus-visible,
+.entry-nav a:hover,
+.entry-nav a:focus-visible {
+    text-decoration: underline;
+}
+
+.season-nav .season-nav-muted,
+.entry-nav .entry-nav-muted {
+    color: var(--muted);
+}
+
+.season-nav-slot:last-child,
+.entry-nav-slot:last-child {
+    text-align: right;
+}
+
+.entry-nav {
+    margin: 0.75rem 0 0;
+    padding-bottom: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+/* ============================================
+   #7. MAIN CONTENT
+   ============================================ */
+
+main {
+    max-width: 1040px;
+    margin: 0.8rem 1rem 2.4rem;
+    padding: 2.25rem 1.5rem;
+    background-color: var(--card);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    position: relative;
+}
+
+/* ============================================
+   #8. DETAIL PAGE LAYOUT
+   ============================================ */
+
+.detail-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.main-content .description > :first-child {
+    margin-top: 0;
+}
+
+/* Sidebar: inline metadata at base width */
+.detail-secondary {
+    width: 100%;
+    background: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.detail-secondary::before {
+    display: none;
+}
+
+/* Semantic metadata list */
+.detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+
+.detail-meta-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+}
+
+.detail-meta-item + .detail-meta-item::before {
+    content: "\00b7";
+    margin: 0 0.5rem;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.detail-meta dt {
+    display: none;
+}
+
+.detail-meta dd {
+    margin: 0;
+    padding: 0;
+    color: var(--muted);
+}
+
+.detail-meta dd a {
+    color: var(--accent-strong);
+}
+
+/* ============================================
+   #9. DECADE INDEX TABLE
+   ============================================ */
+
+.decade-index {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: 0 0 1.5rem;
+}
+
+.decade-index caption {
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--muted);
+    text-align: left;
+    caption-side: top;
+    padding: 0 0 0.75rem;
+}
+
+.decade-index thead th {
+    font-family: var(--serif);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--muted);
+    text-align: center;
+    padding: 0 0 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.decade-index tbody tr {
+    border-bottom: 1px solid var(--border);
+}
+
+.decade-index tbody tr:last-child {
+    border-bottom: none;
+}
+
+.decade-index th[scope="row"] {
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    text-align: left;
+    padding: 0.65rem 0.75rem 0.65rem 0;
+    white-space: nowrap;
+}
+
+.decade-index td {
+    text-align: center;
+    padding: 0.65rem 0.25rem;
+    font-size: 0.95rem;
+}
+
+.decade-index td a {
+    text-decoration: none;
+}
+
+.decade-index td a:hover {
+    text-decoration: underline;
+}
+
+.decade-empty {
+    color: var(--border);
+}
+
+/* ============================================
+   #10. SEASON WATERMARK (paper-stamp style)
+   Requires <body data-season="0..3">
+   ============================================ */
+
+body[data-season] {
+    --season-mark-mask: none;
+    --season-mark-size: 320px;
+    --season-mark-offset: -80px;
+}
+
+body[data-season="0"] { --season-mark-mask: var(--season-mark-mask-winter); }
+body[data-season="1"] { --season-mark-mask: var(--season-mark-mask-spring); }
+body[data-season="2"] { --season-mark-mask: var(--season-mark-mask-summer); }
+body[data-season="3"] { --season-mark-mask: var(--season-mark-mask-fall); }
+
+body[data-season] main {
+    overflow: hidden;
+}
+
+body[data-season] main::before,
+body[data-season] main::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 0;
+
+    -webkit-mask-image: var(--season-mark-mask);
+    mask-image: var(--season-mark-mask);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: var(--season-mark-size);
+    mask-size: var(--season-mark-size);
+    -webkit-mask-position: right var(--season-mark-offset) top var(--season-mark-offset);
+    mask-position: right var(--season-mark-offset) top var(--season-mark-offset);
+}
+
+/* Deboss: highlight (top-left) + shadow (bottom-right), no colored fill */
+body[data-season] main::before {
+    background: rgba(255, 255, 255, 0.45);
+    transform: translate(-1px, -1px);
+    opacity: 0.35;
+}
+
+body[data-season] main::after {
+    background: rgba(0, 0, 0, 0.25);
+    transform: translate(1px, 1px);
+    opacity: 0.26;
+}
+
+/* ============================================
+   #11. SEASON CARDS (year index page)
+   ============================================ */
+
+.season-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 0 1.5rem;
+}
+
+.season-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1.5rem;
+    border: none;
+    background: transparent;
+    text-decoration: none;
+}
+
+/* Ruled lines: top row gets bottom rule, left column gets right rule */
+.season-card:nth-child(-n+2) {
+    border-bottom: 1px solid var(--border);
+}
+
+.season-card:nth-child(odd) {
+    border-right: 1px solid var(--border);
+}
+
+.season-card-empty {
+    cursor: default;
+}
+
+.season-card-empty .season-card-label {
+    color: var(--border);
+}
+
+.season-card:hover:not(.season-card-empty) .season-card-label {
+    text-decoration: underline;
+}
+
+.season-card-label {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent-strong);
+    position: relative;
+    z-index: 1;
+}
+
+/* Card watermark — reuses the same season SVG masks */
+.season-card::before,
+.season-card::after {
+    content: "";
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 120px;
+    mask-size: 120px;
+    -webkit-mask-position: right -10px top -10px;
+    mask-position: right -10px top -10px;
+}
+
+.season-card::before {
+    background: rgba(255, 255, 255, 0.45);
+    transform: translate(-1px, -1px);
+    opacity: 0.35;
+}
+
+.season-card::after {
+    background: rgba(0, 0, 0, 0.25);
+    transform: translate(1px, 1px);
+    opacity: 0.26;
+}
+
+.season-card[data-season="0"]::before,
+.season-card[data-season="0"]::after {
+    -webkit-mask-image: var(--season-mark-mask-winter);
+    mask-image: var(--season-mark-mask-winter);
+}
+
+.season-card[data-season="1"]::before,
+.season-card[data-season="1"]::after {
+    -webkit-mask-image: var(--season-mark-mask-spring);
+    mask-image: var(--season-mark-mask-spring);
+}
+
+.season-card[data-season="2"]::before,
+.season-card[data-season="2"]::after {
+    -webkit-mask-image: var(--season-mark-mask-summer);
+    mask-image: var(--season-mark-mask-summer);
+}
+
+.season-card[data-season="3"]::before,
+.season-card[data-season="3"]::after {
+    -webkit-mask-image: var(--season-mark-mask-fall);
+    mask-image: var(--season-mark-mask-fall);
+}
+
+.season-card-empty::before,
+.season-card-empty::after {
+    opacity: 0.12;
+}
+
+/* ============================================
+   #12. EVENT ILLUSTRATION
+   ============================================ */
+
+.event-illustration {
+    margin: -2.25rem -1.5rem 0.35rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.event-illustration img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.event-illustration-title {
+    position: static;
+    background: none;
+    padding: 1rem 1.5rem 0;
+}
+
+.event-illustration-title .event-title {
+    color: #1b120d;
+    font-size: 2.2rem;
+    text-shadow: none;
+    margin-bottom: 0;
+}
+
+/* ============================================
+   #13. STAMPS
+   ============================================ */
+
+.paper-stamp {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+}
+
+.stamp {
+    display: inline-block;
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    font-size: 0.74rem;
+    color: rgba(196, 173, 150, 0.25);
+    line-height: 1.05;
+    text-transform: uppercase;
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9),
+        0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   #14. DESCRIPTION CONTENT
+   ============================================ */
+
+.description {
+    line-height: 1.85;
+    color: #2d1d14;
+    font-size: 1.11rem;
+}
+
+.description h1 {
+    font-size: 2.1rem;
+    margin-top: 2.2rem;
+    margin-bottom: 1rem;
+}
+
+.description h2 {
+    font-size: 1.55rem;
+    margin-top: 1.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.description h3 {
+    font-size: 1.2rem;
+    margin-top: 1.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.description p {
+    margin-bottom: 1.2rem;
+}
+
+.description ul,
+.description ol {
+    margin-bottom: 1.35rem;
+    padding-left: 1.5rem;
+    line-height: 1.7;
+}
+
+.description ul {
+    list-style-type: disc;
+}
+
+.description ol {
+    list-style-type: decimal;
+}
+
+.description li {
+    margin-bottom: 0.45rem;
+    padding-left: 0.25rem;
+}
+
+.description li::before {
+    display: none;
+}
+
+.description blockquote {
+    margin: 1.35rem 0;
+    padding: 1rem 1.3rem;
+    border-left: 4px solid var(--accent);
+    background-color: rgba(194, 92, 42, 0.08);
+    font-style: italic;
+    color: #4b3022;
+    border-radius: 0 6px 6px 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.description code {
+    background-color: #f1e4d7;
+    padding: 0.2em 0.45em;
+    border-radius: 4px;
+    font-size: 0.92em;
+    font-family: "SF Mono", "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+    color: #3a2419;
+}
+
+.description pre {
+    background-color: #281b12;
+    color: #f7f2ec;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.description pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+/* ============================================
+   #15. DESKTOP (min-width: 1024px)
+   ============================================ */
+
+@media (min-width: 1024px) {
+    header {
+        padding: 1rem 0 0.2rem;
+    }
+
+    .header-inner {
+        padding: 0 2.5rem;
+    }
+
+    .breadcrumbs-bar {
+        padding: 0.5rem 2.5rem;
+        min-height: 48px;
+    }
+
+    main {
+        padding: 3rem 2.75rem;
+        margin: 0.3rem auto 2.4rem;
+    }
+
+    body[data-season] {
+        --season-mark-size: clamp(240px, 46vw, 440px);
+        --season-mark-offset: calc(var(--season-mark-size) / -4);
+    }
+
+    h1 {
+        font-size: 2.6rem;
+    }
+
+    h2 {
+        font-size: 1.85rem;
+    }
+
+    /* Event illustration: overlay title */
+    .event-illustration {
+        margin: -3rem -2.75rem 1.25rem;
+    }
+
+    .event-illustration-title {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 5rem 2.75rem 1.5rem;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+    }
+
+    .event-illustration-title .event-title {
+        color: #fff;
+        font-size: 3.2rem;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    /* Detail layout: sidebar on right */
+    .detail-layout {
+        flex-direction: row;
+        gap: 2.8rem;
+        align-items: flex-start;
+    }
+
+    .main-content {
+        order: 0;
+    }
+
+    .detail-secondary {
+        width: 280px;
+        flex-shrink: 0;
+        padding: 1.5rem 1.25rem 1.5rem 1.6rem;
+        margin-bottom: 0;
+        order: 1;
+    }
+
+    .detail-secondary::before {
+        display: block;
+        content: "";
+        position: absolute;
+        top: 1rem;
+        bottom: 1rem;
+        left: 0.4rem;
+        width: 1px;
+        background: linear-gradient(
+            180deg,
+            rgba(42, 26, 14, 0) 0%,
+            rgba(42, 26, 14, 0.16) 50%,
+            rgba(42, 26, 14, 0) 100%
+        );
+        box-shadow:
+            1px 0 4px rgba(0, 0, 0, 0.06),
+            -1px 0 2px rgba(255, 255, 255, 0.35);
+        pointer-events: none;
+    }
+
+    /* Sidebar metadata: vertical with labels */
+    .detail-meta {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .detail-meta-item {
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 1rem;
+    }
+
+    .detail-meta-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .detail-meta-item + .detail-meta-item::before {
+        display: none;
+    }
+
+    .detail-meta dt {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: #3b281d;
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .detail-meta dd {
+        font-size: 0.97rem;
+        line-height: 1.6;
+        color: var(--text);
+    }
+
+    .description {
+        font-size: 1.05rem;
+    }
+
+    .paper-stamp {
+        bottom: 1.2rem;
+        right: 1.2rem;
+    }
+}
+
+/* ============================================
+   #16. PHONE (max-width: 480px)
+   ============================================ */
+
+@media (max-width: 480px) {
+    .header-inner {
+        padding: 0 0.75rem;
+    }
+
+    .breadcrumbs-bar {
+        padding: 0.5rem 0.75rem;
+    }
+
+    main {
+        padding: 1.5rem 1rem;
+        margin: 0.5rem 0.5rem 2rem;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    h2 {
+        font-size: 1.35rem;
+    }
+
+    .season-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .season-card:nth-child(odd) {
+        border-right: none;
+    }
+
+    .season-card:nth-child(-n+2) {
+        border-bottom: none;
+    }
+
+    .season-card:not(:last-child) {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .decade-index thead {
+        display: none;
+    }
+
+    .decade-index tbody tr {
+        display: block;
+        padding: 0.6rem 0;
+    }
+
+    .decade-index th[scope="row"] {
+        display: block;
+        padding: 0 0 0.2rem;
+    }
+
+    .decade-index td {
+        display: inline;
+        padding: 0;
+    }
+
+    .decade-index td a {
+        margin-right: 0.75rem;
+    }
+
+    .decade-empty {
+        display: none;
+    }
+
+    .event-illustration {
+        margin: -1.5rem -1rem 1rem;
+    }
+
+    .event-illustration-title {
+        padding: 0.75rem 1rem 0;
+    }
+
+    .event-illustration-title .event-title {
+        font-size: 1.8rem;
+    }
+
+    .description {
+        font-size: 1rem;
+    }
+
+    .paper-stamp {
+        bottom: 0.75rem;
+        right: 0.75rem;
+    }
 }

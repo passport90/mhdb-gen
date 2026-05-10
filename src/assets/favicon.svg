@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <rect width="16" height="16" fill="#1a1a1a"/>
-  <text x="8" y="12" text-anchor="middle" font-family="serif" font-size="12" fill="#fff">H</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#2d1d14"/>
+  <g fill="#c25c2a">
+    <rect x="14" y="14" width="16" height="4"/>
+    <rect x="18" y="14" width="8" height="36"/>
+    <rect x="14" y="46" width="16" height="4"/>
+    <rect x="34" y="14" width="16" height="4"/>
+    <rect x="38" y="14" width="8" height="36"/>
+    <rect x="34" y="46" width="16" height="4"/>
+    <rect x="26" y="29" width="12" height="6"/>
+  </g>
 </svg>
