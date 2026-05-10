@@ -7,14 +7,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderYearIndex', () => {
-  /** Sentinel returned by the next-year repo. */
-  const sentinelNextYear = 1067
-
   /** Sentinel HTML returned by the page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-year-index</html>'
-
-  /** Mock for `findNextYearWithEvents`. */
-  const findNextYearWithEventsMock = mock.fn((): number | null => sentinelNextYear)
 
   /** Mock for `buildYearIndexPage`. */
   const buildYearIndexPageMock = mock.fn(() => sentinelHtml)
@@ -51,10 +45,6 @@ describe('renderYearIndex', () => {
 
   before(async () => {
     mock.module(
-      '../../src/repositories/find-next-year-with-events.js',
-      { defaultExport: findNextYearWithEventsMock },
-    )
-    mock.module(
       '../../src/presenters/build-year-index-page.js',
       { defaultExport: buildYearIndexPageMock },
     )
@@ -70,7 +60,6 @@ describe('renderYearIndex', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    findNextYearWithEventsMock.mock.resetCalls()
     buildYearIndexPageMock.mock.resetCalls()
   })
 
@@ -79,20 +68,20 @@ describe('renderYearIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the seasons + prev-year repos and the next-year mock + page builder, writing to the year folder', () => {
+  it('chains the three repos and the page builder, writing to the year folder', () => {
     insertEventRow(1065, 1, 1, 'earlier')
     insertEventRow(1066, 1, 1, 'a')
     insertEventRow(1066, 3, 1, 'b')
+    insertEventRow(1067, 1, 1, 'later')
 
     renderYearIndex(db, outputDirPath, 1066)
 
-    assert.deepStrictEqual(findNextYearWithEventsMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(buildYearIndexPageMock.mock.calls[0]?.arguments, [
       {
         year: 1066,
         seasonsWithEvents: [1, 3],
         prevYear: 1065,
-        nextYear: sentinelNextYear,
+        nextYear: 1067,
       },
     ])
     assert.strictEqual(
