@@ -7,17 +7,11 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('renderYearIndex', () => {
-  /** Sentinel returned by the prev-year repo. */
-  const sentinelPrevYear = 1065
-
   /** Sentinel returned by the next-year repo. */
   const sentinelNextYear = 1067
 
   /** Sentinel HTML returned by the page builder, expected on disk. */
   const sentinelHtml = '<html>sentinel-year-index</html>'
-
-  /** Mock for `findPrevYearWithEvents`. */
-  const findPrevYearWithEventsMock = mock.fn((): number | null => sentinelPrevYear)
 
   /** Mock for `findNextYearWithEvents`. */
   const findNextYearWithEventsMock = mock.fn((): number | null => sentinelNextYear)
@@ -57,10 +51,6 @@ describe('renderYearIndex', () => {
 
   before(async () => {
     mock.module(
-      '../../src/repositories/find-prev-year-with-events.js',
-      { defaultExport: findPrevYearWithEventsMock },
-    )
-    mock.module(
       '../../src/repositories/find-next-year-with-events.js',
       { defaultExport: findNextYearWithEventsMock },
     )
@@ -80,7 +70,6 @@ describe('renderYearIndex', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    findPrevYearWithEventsMock.mock.resetCalls()
     findNextYearWithEventsMock.mock.resetCalls()
     buildYearIndexPageMock.mock.resetCalls()
   })
@@ -90,19 +79,19 @@ describe('renderYearIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the seasons repo, prev/next-year mocks, and page builder, writing to the year folder', () => {
+  it('chains the seasons + prev-year repos and the next-year mock + page builder, writing to the year folder', () => {
+    insertEventRow(1065, 1, 1, 'earlier')
     insertEventRow(1066, 1, 1, 'a')
     insertEventRow(1066, 3, 1, 'b')
 
     renderYearIndex(db, outputDirPath, 1066)
 
-    assert.deepStrictEqual(findPrevYearWithEventsMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(findNextYearWithEventsMock.mock.calls[0]?.arguments, [db, 1066])
     assert.deepStrictEqual(buildYearIndexPageMock.mock.calls[0]?.arguments, [
       {
         year: 1066,
         seasonsWithEvents: [1, 3],
-        prevYear: sentinelPrevYear,
+        prevYear: 1065,
         nextYear: sentinelNextYear,
       },
     ])
