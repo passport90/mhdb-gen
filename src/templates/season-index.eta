@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= it.seasonLabel %> - MHDB</title>
+    <base href="../../">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a class="brand-mark" href="index.html" aria-label="MHDB home">MHDB</a>
+      </div>
+    </header>
+    <div class="breadcrumbs-bar">
+      <div class="breadcrumbs-inner">
+        <div class="breadcrumbs-main">
+          <nav aria-label="breadcrumb">
+            <a href="index.html">Home</a>
+            <a href="<%= it.yearIndexPagePath %>"><%= it.yearLabel %></a>
+            <span class="current"><%= it.seasonLabel %></span>
+          </nav>
+        </div>
+        <div class="breadcrumbs-meta"></div>
+      </div>
+    </div>
+    <main>
+      <h1><%= it.seasonLabel %></h1>
+      <ol class="season-timeline">
+<% for (const entry of it.timelineEntries) { %>
+        <li>
+          <span class="event-date"><%= entry.dateRangeLabel %></span>
+          <a class="event-title" href="<%= entry.eventPagePath %>"><%~ entry.titleInlineHtml %></a>
+        </li>
+<% } %>
+      </ol>
+      <div class="season-nav" aria-label="Season navigation">
+        <div class="season-nav-slot">
+<% if (it.prevSeasonLink !== null) { %>
+          <a class="season-nav-link" href="<%= it.prevSeasonLink.indexPagePath %>">← <%= it.prevSeasonLink.label %></a>
+<% } %>
+        </div>
+        <div class="season-nav-slot">
+<% if (it.nextSeasonLink !== null) { %>
+          <a class="season-nav-link" href="<%= it.nextSeasonLink.indexPagePath %>"><%= it.nextSeasonLink.label %> →</a>
+<% } %>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
