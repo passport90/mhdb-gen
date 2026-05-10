@@ -2,6 +2,7 @@ import { afterEach, before, beforeEach, describe, it, mock } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
+import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -9,9 +10,6 @@ import { tmpdir } from 'node:os'
 describe('renderSeasonIndex', () => {
   /** Sentinel returned by the events repo, traced into the view-model builder's call args. */
   const sentinelEvents = [{ tag: 'sentinel-event' }]
-
-  /** Sentinel returned by the prev-season repo. */
-  const sentinelPrevSlot: SeasonalSlot = { seasonalYear: 1066, season: 0 }
 
   /** Sentinel returned by the next-season repo. */
   const sentinelNextSlot: SeasonalSlot = { seasonalYear: 1066, season: 2 }
@@ -25,9 +23,6 @@ describe('renderSeasonIndex', () => {
   /** Mock for `findEventsInSeason`. */
   const findEventsInSeasonMock = mock.fn((): unknown[] => sentinelEvents)
 
-  /** Mock for `findPrevSeasonWithEvents`. */
-  const findPrevSeasonWithEventsMock = mock.fn((): SeasonalSlot | null => sentinelPrevSlot)
-
   /** Mock for `findNextSeasonWithEvents`. */
   const findNextSeasonWithEventsMock = mock.fn((): SeasonalSlot | null => sentinelNextSlot)
 
@@ -37,14 +32,32 @@ describe('renderSeasonIndex', () => {
   /** Mock for `buildSeasonIndexPage`. */
   const buildSeasonIndexPageMock = mock.fn(() => sentinelHtml)
 
-  /** Sentinel database handle threaded into the SUT. */
-  let db: DatabaseSync
-
-  /** Tmp directory holding the output tree. */
+  /** Tmp directory holding the test SQLite file and output tree. */
   let tmpDirPath: string
+
+  /** Database handle threaded into the SUT; on-disk SQLite so `findPrevSeasonWithEvents` can query it. */
+  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
+
+  /**
+   * Inserts an event row carrying just the columns this query path touches.
+   *
+   * @param year - Seasonal year of the row.
+   * @param season - Season-within-year of the row.
+   * @param position - Position-within-season of the row.
+   * @param slug - Unique slug for the row.
+   */
+  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+    db.prepare(`
+      INSERT INTO events (
+        slug, title, description, illustration_hash,
+        start_date, end_date,
+        seasonal_year, season, position
+      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
+    `).run(slug, year, season, position)
+  }
 
   /** SUT, dynamically imported once after the module mocks are registered. */
   let renderSeasonIndex: (db: DatabaseSync, outputDirPath: string, slot: SeasonalSlot) => void
@@ -53,10 +66,6 @@ describe('renderSeasonIndex', () => {
     mock.module(
       '../../src/repositories/find-events-in-season.js',
       { defaultExport: findEventsInSeasonMock },
-    )
-    mock.module(
-      '../../src/repositories/find-prev-season-with-events.js',
-      { defaultExport: findPrevSeasonWithEventsMock },
     )
     mock.module(
       '../../src/repositories/find-next-season-with-events.js',
@@ -75,12 +84,14 @@ describe('renderSeasonIndex', () => {
   })
 
   beforeEach(() => {
-    db = new DatabaseSync(':memory:')
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
+    /** Path to the test SQLite file. */
+    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
+    applyMigrations(dbPath)
+    db = new DatabaseSync(dbPath)
 
     findEventsInSeasonMock.mock.resetCalls()
-    findPrevSeasonWithEventsMock.mock.resetCalls()
     findNextSeasonWithEventsMock.mock.resetCalls()
     buildSeasonIndexViewModelMock.mock.resetCalls()
     buildSeasonIndexPageMock.mock.resetCalls()
@@ -91,19 +102,20 @@ describe('renderSeasonIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('chains the three repos and the two presenters, writing to <outputDirPath>/<year>/<season>/index.html', () => {
+  it('chains the events + prev-season repos and the next-season + presenter mocks, writing to the slot folder', () => {
+    insertEventRow(1066, 0, 1, 'earlier-slot')
+    insertEventRow(1066, 1, 1, 'subject-event')
+
     /** Slot being rendered. */
     const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
 
     renderSeasonIndex(db, outputDirPath, slot)
 
-    assert.deepStrictEqual(findEventsInSeasonMock.mock.calls[0]?.arguments, [db, 1066, 1])
-    assert.deepStrictEqual(findPrevSeasonWithEventsMock.mock.calls[0]?.arguments, [db, 1066, 1])
     assert.deepStrictEqual(findNextSeasonWithEventsMock.mock.calls[0]?.arguments, [db, 1066, 1])
     assert.deepStrictEqual(buildSeasonIndexViewModelMock.mock.calls[0]?.arguments, [
       slot,
       sentinelEvents,
-      sentinelPrevSlot,
+      { seasonalYear: 1066, season: 0 },
       sentinelNextSlot,
     ])
     assert.deepStrictEqual(buildSeasonIndexPageMock.mock.calls[0]?.arguments, [sentinelViewModel])
