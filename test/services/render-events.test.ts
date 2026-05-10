@@ -162,4 +162,21 @@ describe('renderEvents', () => {
 
     assert.deepStrictEqual(seasonsRendered, expectedSeasonsRendered)
   })
+
+  describe('when the id list is empty', () => {
+    it('returns an empty slot list, writes nothing, and leaves every rendered_at null', () => {
+      /** Distinct seasons returned by the SUT. */
+      const seasonsRendered = renderEvents(db, [], outputDirPath, messageStream)
+
+      assert.deepStrictEqual(seasonsRendered, [])
+      assert.strictEqual(messageStream.read(), null)
+
+      /** `rendered_at` for every seeded row; should remain null since no event was rendered. */
+      const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()
+      assert.strictEqual(renderedAtById.length, 3)
+      assert.strictEqual(renderedAtById[0]?.rendered_at, null)
+      assert.strictEqual(renderedAtById[1]?.rendered_at, null)
+      assert.strictEqual(renderedAtById[2]?.rendered_at, null)
+    })
+  })
 })
