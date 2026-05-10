@@ -16,7 +16,7 @@ import { join } from 'node:path'
  * @param headers - Snapshot of every event row; each `(seasonalYear, season, slug)` is the
  *   canonical disk location for that event's output directory.
  * @param outputDirPath - Output root walked for orphan directories.
- * @returns Seasons whose subtree was touched by deletions, so their indexes can be refreshed.
+ * @returns Distinct slots containing at least one event whose orphan output was pruned this run.
  */
 const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): SeasonalSlot[] => {
   /** Set of `(year, season, slug)` triples currently in the DB; encoded as `/`-joined strings for membership lookup. */

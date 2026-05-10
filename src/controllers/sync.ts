@@ -31,13 +31,13 @@ const sync: Controller = (_args, messageStream) => {
     /** Surrogate ids of the events that need rendering this run. */
     const ids = findEventIdsToRender(headers, outputDirPath)
 
-    /** Distinct seasons whose subtree gained at least one re-rendered event this run. */
-    const seasonsRendered = renderEvents(db, ids, outputDirPath, messageStream)
+    /** Distinct slots containing at least one event re-rendered this run. */
+    const slotsWithRenderedEvents = renderEvents(db, ids, outputDirPath, messageStream)
 
-    /** Seasons whose subtrees were touched by orphan deletion. */
-    const seasonsPruned = pruneOrphanOutput(headers, outputDirPath)
+    /** Distinct slots containing at least one event whose orphan output was pruned this run. */
+    const slotsWithPrunedEvents = pruneOrphanOutput(headers, outputDirPath)
 
-    refreshHierarchyIndexes(db, outputDirPath, seasonsRendered, seasonsPruned)
+    refreshHierarchyIndexes(db, outputDirPath, slotsWithRenderedEvents, slotsWithPrunedEvents)
   })
 
   copyDirectory(assetsDirPath, outputDirPath)

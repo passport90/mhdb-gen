@@ -116,8 +116,8 @@ describe('renderEvents', () => {
   })
 
   it('renders each event in id order, dedupes seasons across same-slot events, returns distinct slots', () => {
-    /** Distinct seasons returned by the SUT. */
-    const seasonsRendered = renderEvents(db, [1, 2, 3], outputDirPath, messageStream)
+    /** Distinct slots returned by the SUT. */
+    const slotsWithRenderedEvents = renderEvents(db, [1, 2, 3], outputDirPath, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
@@ -155,20 +155,20 @@ describe('renderEvents', () => {
     assert.notStrictEqual(renderedAtById[2]?.rendered_at, null)
 
     /** Distinct (year, season) slots — three events live across two seasons; dedup collapses to two. */
-    const expectedSeasonsRendered: SeasonalSlot[] = [
+    const expectedSlotsWithRenderedEvents: SeasonalSlot[] = [
       { seasonalYear: 2026, season: 1 },
       { seasonalYear: 2026, season: 2 },
     ]
 
-    assert.deepStrictEqual(seasonsRendered, expectedSeasonsRendered)
+    assert.deepStrictEqual(slotsWithRenderedEvents, expectedSlotsWithRenderedEvents)
   })
 
   describe('when the id list is empty', () => {
     it('returns an empty slot list, writes nothing, and leaves every rendered_at null', () => {
-      /** Distinct seasons returned by the SUT. */
-      const seasonsRendered = renderEvents(db, [], outputDirPath, messageStream)
+      /** Distinct slots returned by the SUT. */
+      const slotsWithRenderedEvents = renderEvents(db, [], outputDirPath, messageStream)
 
-      assert.deepStrictEqual(seasonsRendered, [])
+      assert.deepStrictEqual(slotsWithRenderedEvents, [])
       assert.strictEqual(messageStream.read(), null)
 
       /** `rendered_at` for every seeded row; should remain null since no event was rendered. */

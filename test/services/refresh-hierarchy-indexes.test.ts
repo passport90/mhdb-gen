@@ -55,18 +55,18 @@ describe('refreshHierarchyIndexes', () => {
     insertEventRow(2026, 1, 1, 'b')
     insertEventRow(2026, 2, 1, 'c')
 
-    /** Two slots in 2026, freshly rendered. */
-    const seasonsRendered: SeasonalSlot[] = [
+    /** Two slots in 2026 each containing a freshly rendered event. */
+    const slotsWithRenderedEvents: SeasonalSlot[] = [
       { seasonalYear: 2026, season: 1 },
       { seasonalYear: 2026, season: 2 },
     ]
 
-    /** One slot in 1066, pruned this run — the orchestrator should refresh its indexes too. */
-    const seasonsPruned: SeasonalSlot[] = [
+    /** One slot in 1066 whose orphan event output was pruned this run — orchestrator should refresh its indexes too. */
+    const slotsWithPrunedEvents: SeasonalSlot[] = [
       { seasonalYear: 1066, season: 3 },
     ]
 
-    refreshHierarchyIndexes(db, outputDirPath, seasonsRendered, seasonsPruned)
+    refreshHierarchyIndexes(db, outputDirPath, slotsWithRenderedEvents, slotsWithPrunedEvents)
 
     assert.ok(existsSync(join(outputDirPath, 'index.html')))
     assert.ok(existsSync(join(outputDirPath, '1066', 'index.html')))

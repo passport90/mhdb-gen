@@ -9,15 +9,15 @@ import renderEvent from './render-event.js'
 /**
  * Renders each event identified by `ids` and stamps `rendered_at` on success.
  * Writes one `[i/n] <slug>` progress line per event. Returns the distinct
- * `(seasonal_year, season)` slots that received a render. `ids` must be ordered
- * by `(seasonal_year, season, position)`; the returned slot list relies on
- * same-slot events being consecutive.
+ * `(seasonal_year, season)` slots that contain at least one rendered event.
+ * `ids` must be ordered by `(seasonal_year, season, position)`; the returned
+ * slot list relies on same-slot events being consecutive.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param ids - Event surrogate ids to render, ordered as above.
  * @param outputDirPath - Output root passed through to the renderer.
  * @param messageStream - Receives one progress line per event rendered.
- * @returns Distinct seasons that received at least one render this call.
+ * @returns Distinct slots containing at least one event rendered this call.
  */
 const renderEvents = (
   db: DatabaseSync,
@@ -25,13 +25,13 @@ const renderEvents = (
   outputDirPath: string,
   messageStream: Writable,
 ): SeasonalSlot[] => {
-  /** Distinct seasons accumulated across the loop. */
-  const seasonsRendered: SeasonalSlot[] = []
+  /** Distinct slots containing at least one event rendered this call; accumulated across the loop. */
+  const slotsWithRenderedEvents: SeasonalSlot[] = []
 
   /** Slot of the previously appended entry; `null` before the first append. */
   let lastSlot: SeasonalSlot | null = null
 
-  if (ids.length === 0) return seasonsRendered
+  if (ids.length === 0) return slotsWithRenderedEvents
 
   /** Previous iteration's event; carries forward to become `prevEvent` for the next iteration when same-slot. */
   let prevEvent: EventToRender | null = null
@@ -51,7 +51,7 @@ const renderEvents = (
 
     if (lastSlot === null || !areSeasonalSlotsEqual(lastSlot, currentEvent)) {
       lastSlot = { seasonalYear: currentEvent.seasonalYear, season: currentEvent.season }
-      seasonsRendered.push(lastSlot)
+      slotsWithRenderedEvents.push(lastSlot)
     }
 
     messageStream.write(`[${index + 1}/${ids.length}] ${currentEvent.slug}\n`)
@@ -63,7 +63,7 @@ const renderEvents = (
     if (nextEvent !== null) currentEvent = nextEvent
   }
 
-  return seasonsRendered
+  return slotsWithRenderedEvents
 }
 
 /**
