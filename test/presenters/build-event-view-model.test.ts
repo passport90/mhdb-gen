@@ -59,7 +59,7 @@ describe('buildEventViewModel', () => {
     assert.strictEqual(viewModel.breadcrumb.year.indexPagePath, '1066/index.html')
     assert.strictEqual(viewModel.breadcrumb.season.label, 'Fall 1066')
     assert.strictEqual(viewModel.breadcrumb.season.indexPagePath, '1066/3/index.html')
-    assert.strictEqual(viewModel.illustrationFileName, 'illustration.png')
+    assert.strictEqual(viewModel.illustrationPath, '1066/3/battle-of-hastings/illustration.png')
     assert.strictEqual(viewModel.dateRangeLabel, 'October 14, 1066')
     assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>')
     assert.deepStrictEqual(viewModel.siblingNavigation.prevLink, {
@@ -75,11 +75,11 @@ describe('buildEventViewModel', () => {
   })
 
   describe('when the event has no illustration', () => {
-    it('sets illustrationFileName to null', () => {
+    it('sets illustrationPath to null', () => {
       /** View model produced by the SUT. */
       const viewModel = buildEventViewModel({ ...baseEvent, illustrationHash: null }, null, null)
 
-      assert.strictEqual(viewModel.illustrationFileName, null)
+      assert.strictEqual(viewModel.illustrationPath, null)
     })
   })
 

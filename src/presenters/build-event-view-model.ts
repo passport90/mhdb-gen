@@ -10,7 +10,7 @@ import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 /** Relative path from an event page (depth 3) up to the output root. */
 const EVENT_PAGE_ROOT_BASE_PATH = '../../../'
 
-/** Filename used for every bundled illustration; sibling to the event's `index.html`. */
+/** Filename written to disk by `render-event` and served back to the browser. Sibling to the event's `index.html`. */
 const ILLUSTRATION_FILE_NAME = 'illustration.png'
 
 /**
@@ -42,7 +42,9 @@ const buildEventViewModel = (
     },
   },
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
-  illustrationFileName: event.illustrationHash !== null ? ILLUSTRATION_FILE_NAME : null,
+  illustrationPath: event.illustrationHash !== null
+    ? buildIllustrationPath(event.seasonalYear, event.season, event.slug)
+    : null,
   descriptionHtml: marked.parse(event.description, { async: false }).trimEnd(),
   siblingNavigation: {
     prevLink: buildSiblingLink(prevEvent),
@@ -62,6 +64,17 @@ const buildEventViewModel = (
  */
 const buildEventPagePath = (year: number, season: number, slug: string): string =>
   `${year}/${season}/${slug}/index.html`
+
+/**
+ * Root-relative URL of an event's bundled illustration, e.g. `1066/3/battle-of-hastings/illustration.png`.
+ *
+ * @param year - Event's seasonal year.
+ * @param season - Event's season number.
+ * @param slug - Event's slug.
+ * @returns Illustration URL.
+ */
+const buildIllustrationPath = (year: number, season: number, slug: string): string =>
+  `${year}/${season}/${slug}/${ILLUSTRATION_FILE_NAME}`
 
 /**
  * Root-relative URL of a season's index page.

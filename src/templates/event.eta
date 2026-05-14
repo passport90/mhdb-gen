@@ -28,9 +28,9 @@
       </div>
     </div>
     <main>
-<% if (it.illustrationFileName !== null) { %>
+<% if (it.illustrationPath !== null) { %>
       <figure class="event-illustration">
-        <img src="<%= it.illustrationFileName %>" alt="">
+        <img src="<%= it.illustrationPath %>" alt="">
         <figcaption class="event-illustration-title">
           <h1 class="title-with-subtitle event-title"><%~ it.title.inlineHtml %></h1>
         </figcaption>
@@ -50,7 +50,7 @@
           </dl>
         </section>
         <div class="main-content">
-<% if (it.illustrationFileName === null) { %>
+<% if (it.illustrationPath === null) { %>
           <h1 class="title-with-subtitle event-title"><%~ it.title.inlineHtml %></h1>
 <% } %>
           <div class="description"><%~ it.descriptionHtml %></div>

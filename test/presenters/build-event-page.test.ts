@@ -15,7 +15,7 @@ describe('buildEventPage', () => {
       season: { label: 'Fall 1066', indexPagePath: '1066/3/index.html' },
     },
     dateRangeLabel: 'October 14, 1066',
-    illustrationFileName: 'illustration.png',
+    illustrationPath: '1066/3/battle-of-hastings/illustration.png',
     descriptionHtml: '<p>A <em>decisive</em> victory.</p>',
     siblingNavigation: {
       prevLink: {
@@ -64,7 +64,7 @@ describe('buildEventPage', () => {
     </div>
     <main>
       <figure class="event-illustration">
-        <img src="illustration.png" alt="">
+        <img src="1066/3/battle-of-hastings/illustration.png" alt="">
         <figcaption class="event-illustration-title">
           <h1 class="title-with-subtitle event-title">Battle of <em>Hastings</em></h1>
         </figcaption>
@@ -111,7 +111,7 @@ describe('buildEventPage', () => {
   describe('when the event has no illustration', () => {
     it('skips the figure block and renders the title h1 inside main-content', () => {
       /** View model with the illustration omitted. */
-      const viewModel: EventPageViewModel = { ...baseViewModel, illustrationFileName: null }
+      const viewModel: EventPageViewModel = { ...baseViewModel, illustrationPath: null }
 
       /** Rendered HTML produced by the SUT. */
       const renderedHtml = buildEventPage(viewModel)

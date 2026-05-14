@@ -43,8 +43,11 @@ interface EventPageViewModel {
   breadcrumb: Breadcrumb
   /** Formatted inclusive date range, e.g. `October 14, 1066` (single day) or `April 15–22, 2026` (same month). */
   dateRangeLabel: string
-  /** Bundled illustration filename, sibling to the event's `index.html`; `null` when the event has none. */
-  illustrationFileName: 'illustration.png' | null
+  /**
+   * Root-relative URL of the bundled illustration, e.g. `1066/3/battle-of-hastings/illustration.png`;
+   * `null` when the event has none. Resolved against `<base href>` at render time.
+   */
+  illustrationPath: string | null
   /** Event description rendered to HTML by `marked`; empty string when the description is empty. */
   descriptionHtml: string
   /** Prev/next links to the in-season neighbors. */
