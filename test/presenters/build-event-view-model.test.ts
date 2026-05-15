@@ -71,7 +71,6 @@ describe('buildEventViewModel', () => {
       titleInlineHtml: 'Aftermath',
     })
     assert.strictEqual(viewModel.updatedAtLabel, 'May 5, 2026 12:00:00')
-    assert.strictEqual(viewModel.rootBasePath, '../../../')
   })
 
   describe('when the event has no illustration', () => {

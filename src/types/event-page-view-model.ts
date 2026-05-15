@@ -54,8 +54,6 @@ interface EventPageViewModel {
   siblingNavigation: SiblingNavigation
   /** Formatted update timestamp label, e.g. `May 5, 2026 12:00:00`. */
   updatedAtLabel: string
-  /** Relative path to the output root for `<base href>`, e.g. `../../../`. */
-  rootBasePath: string
 }
 
 export default EventPageViewModel

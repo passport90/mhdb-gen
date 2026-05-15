@@ -7,9 +7,6 @@ import buildUpdatedAtLabel from './build-updated-at-label.js'
 import { marked } from 'marked'
 import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 
-/** Relative path from an event page (depth 3) up to the output root. */
-const EVENT_PAGE_ROOT_BASE_PATH = '../../../'
-
 /** Filename written to disk by `render-event` and served back to the browser. Sibling to the event's `index.html`. */
 const ILLUSTRATION_FILE_NAME = 'illustration.png'
 
@@ -51,7 +48,6 @@ const buildEventViewModel = (
     nextLink: buildSiblingLink(nextEvent),
   },
   updatedAtLabel: buildUpdatedAtLabel(event.updatedAt),
-  rootBasePath: EVENT_PAGE_ROOT_BASE_PATH,
 })
 
 /**

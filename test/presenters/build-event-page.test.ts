@@ -28,7 +28,6 @@ describe('buildEventPage', () => {
       },
     },
     updatedAtLabel: 'May 5, 2026 12:00:00',
-    rootBasePath: '../../../',
   }
 
   it('renders the full event page with every section populated', () => {
