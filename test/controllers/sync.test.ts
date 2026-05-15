@@ -92,8 +92,8 @@ describe('sync', () => {
 
     insertEventRow(theEvent)
 
-    /** Orphan slug-dir seeded under `outputDirPath` so the real prune has something to remove. */
-    mkdirSync(join(outputDirPath, '2024', '0', 'orphan-leftover'), { recursive: true })
+    /** Orphan event bundle seeded under `outputDirPath` so the real prune has something to remove. */
+    mkdirSync(join(outputDirPath, '2024', '0', '99-orphan-leftover'), { recursive: true })
   })
 
   afterEach(() => {
@@ -112,14 +112,14 @@ describe('sync', () => {
 
     /** Rendered event page on disk. */
     const eventPageHtml = readFileSync(
-      join(outputDirPath, '2026', '1', 'the-event', 'index.html'),
+      join(outputDirPath, '2026', '1', '1-the-event', 'index.html'),
       'utf8',
     )
     assert.ok(eventPageHtml.includes('<title>The Event - MHDB</title>'))
 
     /** Illustration copied alongside the event page. */
     assert.strictEqual(
-      readFileSync(join(outputDirPath, '2026', '1', 'the-event', 'illustration.png'), 'utf8'),
+      readFileSync(join(outputDirPath, '2026', '1', '1-the-event', 'illustration.png'), 'utf8'),
       'illustration-bytes',
     )
 
@@ -128,8 +128,8 @@ describe('sync', () => {
     assert.ok(row !== undefined)
     assert.notStrictEqual(row.rendered_at, null)
 
-    /** The specific orphan slug-dir was removed by the real prune. */
-    assert.ok(!existsSync(join(outputDirPath, '2024', '0', 'orphan-leftover')))
+    /** The specific orphan bundle was removed by the real prune. */
+    assert.ok(!existsSync(join(outputDirPath, '2024', '0', '99-orphan-leftover')))
 
     /** Index pages produced by the real refresh chain. */
     assert.ok(existsSync(join(outputDirPath, 'index.html')))

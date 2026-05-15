@@ -17,6 +17,7 @@ const findAllEventHeaders = (db: DatabaseSync): EventHeader[] => {
       slug,
       seasonal_year AS seasonalYear,
       season,
+      position,
       rendered_at AS renderedAt,
       updated_at AS updatedAt
     FROM events
@@ -28,6 +29,7 @@ const findAllEventHeaders = (db: DatabaseSync): EventHeader[] => {
     slug: row?.slug,
     seasonalYear: row?.seasonalYear,
     season: row?.season,
+    position: row?.position,
     renderedAt: row?.renderedAt,
     updatedAt: row?.updatedAt,
   })) as EventHeader[]

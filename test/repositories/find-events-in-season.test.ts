@@ -56,7 +56,7 @@ describe('findEventsInSeason', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('returns the events in the slot, position-ordered, skinny shape (slug/title/startDate/endDate)', () => {
+  it('returns the events in the slot, position-ordered, skinny shape (position/slug/title/startDate/endDate)', () => {
     insertEventRow(1066, 1, 2, 'second', 'Second Event', '1066-04-15', '1066-04-22')
     insertEventRow(1066, 1, 1, 'first', 'First Event', '1066-04-01', '1066-04-05')
     insertEventRow(1066, 3, 1, 'other-slot', 'Wrong Slot', '1066-10-14', '1066-10-14')
@@ -65,8 +65,8 @@ describe('findEventsInSeason', () => {
     const events = findEventsInSeason(db, 1066, 1)
 
     assert.deepStrictEqual(events, [
-      { slug: 'first', title: 'First Event', startDate: '1066-04-01', endDate: '1066-04-05' },
-      { slug: 'second', title: 'Second Event', startDate: '1066-04-15', endDate: '1066-04-22' },
+      { position: 1, slug: 'first', title: 'First Event', startDate: '1066-04-01', endDate: '1066-04-05' },
+      { position: 2, slug: 'second', title: 'Second Event', startDate: '1066-04-15', endDate: '1066-04-22' },
     ])
   })
 })

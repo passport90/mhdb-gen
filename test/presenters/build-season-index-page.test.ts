@@ -13,12 +13,12 @@ describe('buildSeasonIndexPage', () => {
       {
         dateRangeLabel: 'April 15–22, 1066',
         titleInlineHtml: 'First <em>Event</em>',
-        eventPagePath: '1066/1/first/index.html',
+        eventPagePath: '1066/1/1-first/index.html',
       },
       {
         dateRangeLabel: 'May 1, 1066',
         titleInlineHtml: 'Second Event',
-        eventPagePath: '1066/1/second/index.html',
+        eventPagePath: '1066/1/2-second/index.html',
       },
     ],
     prevSeasonLink: { label: 'Winter 1066', indexPagePath: '1066/0/index.html' },
@@ -60,11 +60,11 @@ describe('buildSeasonIndexPage', () => {
       <ol class="season-timeline">
         <li>
           <span class="event-date">April 15–22, 1066</span>
-          <a class="event-title" href="1066/1/first/index.html">First <em>Event</em></a>
+          <a class="event-title" href="1066/1/1-first/index.html">First <em>Event</em></a>
         </li>
         <li>
           <span class="event-date">May 1, 1066</span>
-          <a class="event-title" href="1066/1/second/index.html">Second Event</a>
+          <a class="event-title" href="1066/1/2-second/index.html">Second Event</a>
         </li>
       </ol>
       <div class="season-nav" aria-label="Season navigation">

@@ -13,6 +13,7 @@ const findEventsInSeason = (db: DatabaseSync, year: number, season: number): Tim
   /** Raw rows for events in the slot; SQL aliases match the type's camelCase keys. */
   const rows = db.prepare(`
     SELECT
+      position,
       slug,
       title,
       start_date AS startDate,
@@ -23,6 +24,7 @@ const findEventsInSeason = (db: DatabaseSync, year: number, season: number): Tim
   `).all(year, season)
 
   return rows.map((row) => ({
+    position: row?.position as number,
     slug: row?.slug as string,
     title: row?.title as string,
     startDate: row?.startDate as string,

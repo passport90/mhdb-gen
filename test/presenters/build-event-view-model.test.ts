@@ -15,7 +15,7 @@ describe('buildEventViewModel', () => {
     endDate: '1066-10-14',
     seasonalYear: 1066,
     season: 3,
-    position: 1,
+    position: 2,
     updatedAt: '2026-05-05 12:00:00',
   }
 
@@ -30,7 +30,7 @@ describe('buildEventViewModel', () => {
     endDate: '1066-09-28',
     seasonalYear: 1066,
     season: 3,
-    position: 0,
+    position: 1,
     updatedAt: '2026-05-05 12:00:00',
   }
 
@@ -45,7 +45,7 @@ describe('buildEventViewModel', () => {
     endDate: '1066-12-25',
     seasonalYear: 1066,
     season: 3,
-    position: 2,
+    position: 3,
     updatedAt: '2026-05-05 12:00:00',
   }
 
@@ -59,15 +59,15 @@ describe('buildEventViewModel', () => {
     assert.strictEqual(viewModel.breadcrumb.year.indexPagePath, '1066/index.html')
     assert.strictEqual(viewModel.breadcrumb.season.label, 'Fall 1066')
     assert.strictEqual(viewModel.breadcrumb.season.indexPagePath, '1066/3/index.html')
-    assert.strictEqual(viewModel.illustrationPath, '1066/3/battle-of-hastings/illustration.png')
+    assert.strictEqual(viewModel.illustrationPath, '1066/3/2-battle-of-hastings/illustration.png')
     assert.strictEqual(viewModel.dateRangeLabel, 'October 14, 1066')
     assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>')
     assert.deepStrictEqual(viewModel.siblingNavigation.prevLink, {
-      path: '1066/3/norman-prologue/index.html',
+      path: '1066/3/1-norman-prologue/index.html',
       titleInlineHtml: 'Norman <em>Prologue</em>',
     })
     assert.deepStrictEqual(viewModel.siblingNavigation.nextLink, {
-      path: '1066/3/aftermath/index.html',
+      path: '1066/3/3-aftermath/index.html',
       titleInlineHtml: 'Aftermath',
     })
     assert.strictEqual(viewModel.updatedAtLabel, 'May 5, 2026 12:00:00')

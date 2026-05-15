@@ -5,7 +5,7 @@ import { join } from 'node:path'
 /**
  * Returns the ids of events whose output is stale or missing on disk — those whose
  * `renderedAt` is null or older than `updatedAt`, plus those whose
- * `<outputDirPath>/<seasonalYear>/<season>/<slug>/` directory does not exist.
+ * `<outputDirPath>/<seasonalYear>/<season>/<position>-<slug>/` directory does not exist.
  *
  * @param headers - Snapshot of every event row, ordered by `(seasonal_year, season, position)`.
  * @param outputDirPath - Output root used to check directory presence.
@@ -21,7 +21,7 @@ const findEventIdsToRender = (headers: EventHeader[], outputDirPath: string): nu
       outputDirPath,
       String(header.seasonalYear),
       String(header.season),
-      header.slug,
+      `${header.position}-${header.slug}`,
     )
 
     if (isRenderStale(header) || !existsSync(dirPath)) {

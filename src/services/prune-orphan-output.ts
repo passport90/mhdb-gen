@@ -8,23 +8,26 @@ const SEASON_INDEX_FILE_NAME = 'index.html'
 
 /**
  * Removes every entry under `outputDirPath/<year>/<season>/` that is not the season-index
- * `index.html` or a canonical slug directory whose `(seasonalYear, season, slug)` triple is in
- * `headers` — orphan slug-dirs, junk files, and stray non-canonical subdirectories all go. Empty
- * season directories left after that pass (no canonical slug-dirs survive) are removed entirely,
- * sweeping the stale season-index along with them. Year directories left with no remaining
- * season subdirectories are removed for the same reason, sweeping the stale year-index. Year and
- * season entries are descended into only when their name matches the DB's CHECK constraints
- * (4-digit CE year, season 0-3), so non-event entries co-located with the event tree at higher
- * levels are preserved.
+ * `index.html` or a canonical `<position>-<slug>` directory whose
+ * `(seasonalYear, season, position, slug)` quadruple is in `headers` — orphan event bundles,
+ * junk files, and stray non-canonical subdirectories all go. Empty season directories left after
+ * that pass (no canonical bundles survive) are removed entirely, sweeping the stale season-index
+ * along with them. Year directories left with no remaining season subdirectories are removed for
+ * the same reason, sweeping the stale year-index. Year and season entries are descended into
+ * only when their name matches the DB's CHECK constraints (4-digit CE year, season 0-3), so
+ * non-event entries co-located with the event tree at higher levels are preserved.
  *
- * @param headers - Snapshot of every event row; each `(seasonalYear, season, slug)` is the
- *   canonical disk location for that event's output directory.
+ * @param headers - Snapshot of every event row; each `(seasonalYear, season, position, slug)` is
+ *   the canonical disk location for that event's output directory.
  * @param outputDirPath - Output root walked for orphan directories.
  * @returns Distinct slots containing at least one entry pruned this run.
  */
 const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): SeasonalSlot[] => {
-  /** Set of `(year, season, slug)` triples currently in the DB; encoded as `/`-joined strings for membership lookup. */
-  const validKeySet = new Set(headers.map(h => `${h.seasonalYear}/${h.season}/${h.slug}`))
+  /**
+   * Set of `(year, season, position-slug)` keys currently in the DB; encoded as `/`-joined
+   * strings for membership lookup.
+   */
+  const validKeySet = new Set(headers.map(h => `${h.seasonalYear}/${h.season}/${h.position}-${h.slug}`))
 
   /** Slots accumulated for return — one entry per season that lost at least one entry this run. */
   const touchedSlots: SeasonalSlot[] = []
@@ -84,12 +87,12 @@ const parseSeason = (entry: Dirent): number | null =>
 
 /**
  * Removes every entry under `seasonDirPath` that is neither the season-index `index.html` nor a
- * canonical slug directory in `validKeySet` — orphan slug-dirs, junk files, and stray
- * non-canonical subdirectories all go.
+ * canonical `<position>-<slug>` directory in `validKeySet` — orphan event bundles, junk files,
+ * and stray non-canonical subdirectories all go.
  *
  * @param seasonDirPath - Absolute path to the season directory whose children are to be checked.
  * @param slot - The `(seasonalYear, season)` of `seasonDirPath`; used to build the membership key.
- * @param validKeySet - Canonical `(year, season, slug)` triples currently in the DB.
+ * @param validKeySet - Canonical `(year, season, position-slug)` keys currently in the DB.
  * @returns `true` when at least one entry was removed; `false` otherwise.
  */
 const pruneSeasonOrphans = (
@@ -128,14 +131,14 @@ const removeIfNoSubdirs = (dirPath: string): void => {
 
 /**
  * Reports whether `entry` should be preserved during the season-level prune — true for the
- * canonical season-index `index.html` (owned by the events hierarchy orchestrator) and for slug
- * directories whose `(seasonalYear, season, slug)` triple is in `validKeySet`. Anything else —
- * orphan slug-dirs, junk files, stray non-canonical subdirectories — returns false and is
- * eligible for deletion.
+ * canonical season-index `index.html` (owned by the events hierarchy orchestrator) and for
+ * `<position>-<slug>` directories whose `(seasonalYear, season, position, slug)` quadruple is in
+ * `validKeySet`. Anything else — orphan event bundles, junk files, stray non-canonical
+ * subdirectories — returns false and is eligible for deletion.
  *
  * @param entry - Filesystem entry to classify.
  * @param slot - Seasonal slot supplying the year/season half of the membership key.
- * @param validKeySet - Canonical `(year, season, slug)` triples currently in the DB.
+ * @param validKeySet - Canonical `(year, season, position-slug)` keys currently in the DB.
  * @returns `true` when the entry should survive the prune.
  */
 const shouldEntryBePreserved = (

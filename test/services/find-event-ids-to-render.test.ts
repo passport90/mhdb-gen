@@ -19,11 +19,17 @@ describe('findEventIdsToRender', () => {
    *
    * @param seasonalYear - Seasonal year segment of the directory path.
    * @param season - Season segment of the directory path.
-   * @param slug - Slug segment of the directory path.
+   * @param position - Position within the season; prefix of the bundle directory name.
+   * @param slug - Slug suffix of the bundle directory name.
    */
-  const seedOutputDir = (seasonalYear: number, season: number, slug: string): void => {
+  const seedOutputDir = (
+    seasonalYear: number,
+    season: number,
+    position: number,
+    slug: string,
+  ): void => {
     mkdirSync(
-      join(outputDirPath, String(seasonalYear), String(season), slug),
+      join(outputDirPath, String(seasonalYear), String(season), `${position}-${slug}`),
       { recursive: true },
     )
   }
@@ -48,6 +54,7 @@ describe('findEventIdsToRender', () => {
         slug: 'stale-with-dir',
         seasonalYear: 2026,
         season: 0,
+        position: 1,
         renderedAt: null,
         updatedAt: '2026-04-01 00:00:00',
       },
@@ -56,6 +63,7 @@ describe('findEventIdsToRender', () => {
         slug: 'stale-no-dir',
         seasonalYear: 2026,
         season: 1,
+        position: 1,
         renderedAt: null,
         updatedAt: '2026-04-01 00:00:00',
       },
@@ -64,6 +72,7 @@ describe('findEventIdsToRender', () => {
         slug: 'fresh-with-dir',
         seasonalYear: 2026,
         season: 2,
+        position: 1,
         renderedAt: '2099-01-01 00:00:00',
         updatedAt: '2026-04-01 00:00:00',
       },
@@ -72,13 +81,14 @@ describe('findEventIdsToRender', () => {
         slug: 'fresh-no-dir',
         seasonalYear: 2026,
         season: 3,
+        position: 1,
         renderedAt: '2099-01-01 00:00:00',
         updatedAt: '2026-04-01 00:00:00',
       },
     ]
 
-    seedOutputDir(2026, 0, 'stale-with-dir')
-    seedOutputDir(2026, 2, 'fresh-with-dir')
+    seedOutputDir(2026, 0, 1, 'stale-with-dir')
+    seedOutputDir(2026, 2, 1, 'fresh-with-dir')
 
     /** Ids returned by the SUT. */
     const ids = findEventIdsToRender(headers, outputDirPath)

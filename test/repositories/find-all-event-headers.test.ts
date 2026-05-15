@@ -103,6 +103,7 @@ describe('findAllEventHeaders', () => {
     assert.strictEqual(headers[0]?.slug, 'last-spring')
     assert.strictEqual(headers[0]?.seasonalYear, 2025)
     assert.strictEqual(headers[0]?.season, 1)
+    assert.strictEqual(headers[0]?.position, 1)
     assert.strictEqual(headers[0]?.renderedAt, null)
     assert.strictEqual(headers[0]?.updatedAt, '2025-04-01 00:00:00')
 
@@ -110,13 +111,16 @@ describe('findAllEventHeaders', () => {
     assert.strictEqual(headers[1]?.slug, 'next-spring-first')
     assert.strictEqual(headers[1]?.seasonalYear, 2026)
     assert.strictEqual(headers[1]?.season, 1)
+    assert.strictEqual(headers[1]?.position, 1)
     assert.strictEqual(headers[1]?.renderedAt, '2026-04-15 00:00:00')
     assert.strictEqual(headers[1]?.updatedAt, '2026-04-01 00:00:00')
 
     assert.strictEqual(headers[2]?.id, 3)
     assert.strictEqual(headers[2]?.slug, 'next-spring-second')
+    assert.strictEqual(headers[2]?.position, 2)
 
     assert.strictEqual(headers[3]?.id, 1)
     assert.strictEqual(headers[3]?.slug, 'next-summer')
+    assert.strictEqual(headers[3]?.position, 1)
   })
 })

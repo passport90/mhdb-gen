@@ -40,7 +40,7 @@ const buildEventViewModel = (
   },
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
   illustrationPath: event.illustrationHash !== null
-    ? buildIllustrationPath(event.seasonalYear, event.season, event.slug)
+    ? buildIllustrationPath(event.seasonalYear, event.season, event.position, event.slug)
     : null,
   descriptionHtml: marked.parse(event.description, { async: false }).trimEnd(),
   siblingNavigation: {
@@ -51,26 +51,31 @@ const buildEventViewModel = (
 })
 
 /**
- * Root-relative URL of an event's page, e.g. `1066/3/battle-of-hastings/index.html`.
+ * Root-relative URL of an event's page, e.g. `1066/3/1-battle-of-hastings/index.html`. The
+ * `<position>-<slug>` bundle name keeps URLs sortable in chronological order within a slot and
+ * matches the source markdown filename convention.
  *
  * @param year - Event's seasonal year.
  * @param season - Event's season number.
+ * @param position - Event's position within its season; the prefix in the bundle name.
  * @param slug - Event's slug.
  * @returns Event page URL.
  */
-const buildEventPagePath = (year: number, season: number, slug: string): string =>
-  `${year}/${season}/${slug}/index.html`
+const buildEventPagePath = (year: number, season: number, position: number, slug: string): string =>
+  `${year}/${season}/${position}-${slug}/index.html`
 
 /**
- * Root-relative URL of an event's bundled illustration, e.g. `1066/3/battle-of-hastings/illustration.png`.
+ * Root-relative URL of an event's bundled illustration, e.g.
+ * `1066/3/1-battle-of-hastings/illustration.png`.
  *
  * @param year - Event's seasonal year.
  * @param season - Event's season number.
+ * @param position - Event's position within its season; the prefix in the bundle name.
  * @param slug - Event's slug.
  * @returns Illustration URL.
  */
-const buildIllustrationPath = (year: number, season: number, slug: string): string =>
-  `${year}/${season}/${slug}/${ILLUSTRATION_FILE_NAME}`
+const buildIllustrationPath = (year: number, season: number, position: number, slug: string): string =>
+  `${year}/${season}/${position}-${slug}/${ILLUSTRATION_FILE_NAME}`
 
 /**
  * Root-relative URL of a season's index page.
@@ -91,7 +96,12 @@ const buildSiblingLink = (siblingEvent: EventToRender | null): EventLink | null 
   if (siblingEvent === null) return null
 
   return {
-    path: buildEventPagePath(siblingEvent.seasonalYear, siblingEvent.season, siblingEvent.slug),
+    path: buildEventPagePath(
+      siblingEvent.seasonalYear,
+      siblingEvent.season,
+      siblingEvent.position,
+      siblingEvent.slug,
+    ),
     titleInlineHtml: renderInlineMarkdown(siblingEvent.title),
   }
 }

@@ -30,7 +30,7 @@ describe('renderEvent', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('writes the rendered page and copies the illustration to <outputDirPath>/<year>/<season>/<slug>/', () => {
+  it('writes the page and copies the illustration to <outputDirPath>/<year>/<season>/<position>-<slug>/', () => {
     /** Path to the test SQLite file (file itself never created); used to derive the blob dir. */
     const dbPath = join(tmpDirPath, 'test.sqlite')
 
@@ -55,37 +55,49 @@ describe('renderEvent', () => {
       endDate: '1066-10-14',
       seasonalYear: 1066,
       season: 3,
-      position: 1,
+      position: 2,
       updatedAt: '2026-05-05 12:00:00',
     }
 
     /** Stand-in for the previous in-season event; threaded through to the rendered page. */
-    const prevEvent: EventToRender = { ...event, id: 6, slug: 'norman-prologue', title: 'Norman Prologue' }
+    const prevEvent: EventToRender = {
+      ...event,
+      id: 6,
+      slug: 'norman-prologue',
+      title: 'Norman Prologue',
+      position: 1,
+    }
 
     /** Stand-in for the next in-season event; threaded through to the rendered page. */
-    const nextEvent: EventToRender = { ...event, id: 8, slug: 'aftermath', title: 'Aftermath' }
+    const nextEvent: EventToRender = {
+      ...event,
+      id: 8,
+      slug: 'aftermath',
+      title: 'Aftermath',
+      position: 3,
+    }
 
     renderEvent(event, prevEvent, nextEvent, outputDirPath)
 
     /** Rendered page on disk. */
     const pageHtml = readFileSync(
-      join(outputDirPath, '1066', '3', 'battle-of-hastings', 'index.html'),
+      join(outputDirPath, '1066', '3', '2-battle-of-hastings', 'index.html'),
       'utf8',
     )
 
     /** Expected anchor for the previous-event link in the entry nav. */
     const expectedPrevAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3/norman-prologue/index.html">← Norman Prologue</a>'
+      + 'href="1066/3/1-norman-prologue/index.html">← Norman Prologue</a>'
 
     /** Expected anchor for the next-event link in the entry nav. */
     const expectedNextAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3/aftermath/index.html">Aftermath →</a>'
+      + 'href="1066/3/3-aftermath/index.html">Aftermath →</a>'
 
     assert.ok(pageHtml.includes('<title>Battle of Hastings - MHDB</title>'))
     assert.ok(pageHtml.includes(expectedPrevAnchor))
     assert.ok(pageHtml.includes(expectedNextAnchor))
     assert.strictEqual(
-      readFileSync(join(outputDirPath, '1066', '3', 'battle-of-hastings', 'illustration.png'), 'utf8'),
+      readFileSync(join(outputDirPath, '1066', '3', '2-battle-of-hastings', 'illustration.png'), 'utf8'),
       'illustration-bytes',
     )
   })
@@ -109,9 +121,9 @@ describe('renderEvent', () => {
 
       renderEvent(event, null, null, outputDirPath)
 
-      assert.ok(existsSync(join(outputDirPath, '2026', '1', 'fall-of-rome', 'index.html')))
+      assert.ok(existsSync(join(outputDirPath, '2026', '1', '1-fall-of-rome', 'index.html')))
       assert.strictEqual(
-        existsSync(join(outputDirPath, '2026', '1', 'fall-of-rome', 'illustration.png')),
+        existsSync(join(outputDirPath, '2026', '1', '1-fall-of-rome', 'illustration.png')),
         false,
       )
     })

@@ -1,8 +1,8 @@
 import type EventKeyBundle from './event-key-bundle.js'
-import type SeasonalSlot from './seasonal-slot.js'
+import type EventSlot from './event-slot.js'
 
 /** Event-row projection carrying identifiers, seasonal coordinates, and sync-state timestamps — no authored content. */
-interface EventHeader extends EventKeyBundle, SeasonalSlot {
+interface EventHeader extends EventKeyBundle, EventSlot {
   /** Last sync render timestamp, or `null` when the row has never been rendered. */
   renderedAt: string | null
   /** Last content-column modification timestamp, maintained by the `events_update_timestamp` trigger. */

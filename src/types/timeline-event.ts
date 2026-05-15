@@ -1,6 +1,8 @@
 /** Skinny event row used to render an event in a season-index timeline. */
 interface TimelineEvent {
-  /** Slug for the event; used in the per-event URL. */
+  /** Position of the event within its season; used as the disambiguating prefix in the URL. */
+  position: number
+  /** Slug for the event; used as the URL suffix after the position prefix. */
   slug: string
   /** Event title in markdown form; rendered to inline HTML by the view-model builder. */
   title: string

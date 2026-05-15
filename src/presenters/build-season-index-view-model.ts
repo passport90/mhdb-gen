@@ -57,7 +57,7 @@ const buildSeasonLink = (slot: SeasonalSlot | null): SeasonLink | null => {
 const buildTimelineEntry = (slot: SeasonalSlot, event: TimelineEvent): SeasonTimelineEntry => ({
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
   titleInlineHtml: renderInlineMarkdown(event.title),
-  eventPagePath: `${slot.seasonalYear}/${slot.season}/${event.slug}/index.html`,
+  eventPagePath: `${slot.seasonalYear}/${slot.season}/${event.position}-${event.slug}/index.html`,
 })
 
 export default buildSeasonIndexViewModel

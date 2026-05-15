@@ -70,6 +70,7 @@ describe('pruneOrphanOutput', () => {
         slug: 'kept-spring',
         seasonalYear: 2026,
         season: 1,
+        position: 1,
         renderedAt: '2026-04-15 00:00:00',
         updatedAt: '2026-04-01 00:00:00',
       },
@@ -78,16 +79,17 @@ describe('pruneOrphanOutput', () => {
         slug: 'moved',
         seasonalYear: 2026,
         season: 2,
+        position: 1,
         renderedAt: '2026-06-15 00:00:00',
         updatedAt: '2026-06-01 00:00:00',
       },
     ]
 
-    seedDir('2026/1/kept-spring')
-    seedDir('2026/1/orphan-spring')
+    seedDir('2026/1/1-kept-spring')
+    seedDir('2026/1/9-orphan-spring')
     seedFile('2026/1/notes.txt')
-    seedDir('2025/3/moved')
-    seedDir('2024/0/orphan-only')
+    seedDir('2025/3/1-moved')
+    seedDir('2024/0/8-orphan-only')
     seedFile('2024/1/notes.txt')
     seedFile('1066/3/index.html')
     seedFile('1066/index.html')
@@ -96,8 +98,8 @@ describe('pruneOrphanOutput', () => {
     /** Touched slots returned by the SUT. */
     const touchedSlots = pruneOrphanOutput(headers, outputDirPath)
 
-    assert.ok(existsSync(join(outputDirPath, '2026/1/kept-spring')))
-    assert.ok(!existsSync(join(outputDirPath, '2026/1/orphan-spring')))
+    assert.ok(existsSync(join(outputDirPath, '2026/1/1-kept-spring')))
+    assert.ok(!existsSync(join(outputDirPath, '2026/1/9-orphan-spring')))
     assert.ok(!existsSync(join(outputDirPath, '2026/1/notes.txt')))
 
     assert.ok(!existsSync(join(outputDirPath, '2025')))

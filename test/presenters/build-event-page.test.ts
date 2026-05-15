@@ -15,15 +15,15 @@ describe('buildEventPage', () => {
       season: { label: 'Fall 1066', indexPagePath: '1066/3/index.html' },
     },
     dateRangeLabel: 'October 14, 1066',
-    illustrationPath: '1066/3/battle-of-hastings/illustration.png',
+    illustrationPath: '1066/3/2-battle-of-hastings/illustration.png',
     descriptionHtml: '<p>A <em>decisive</em> victory.</p>',
     siblingNavigation: {
       prevLink: {
-        path: '1066/3/norman-prologue/index.html',
+        path: '1066/3/1-norman-prologue/index.html',
         titleInlineHtml: 'Norman Prologue',
       },
       nextLink: {
-        path: '1066/3/aftermath/index.html',
+        path: '1066/3/3-aftermath/index.html',
         titleInlineHtml: 'Aftermath',
       },
     },
@@ -63,7 +63,7 @@ describe('buildEventPage', () => {
     </div>
     <main>
       <figure class="event-illustration">
-        <img src="1066/3/battle-of-hastings/illustration.png" alt="">
+        <img src="1066/3/2-battle-of-hastings/illustration.png" alt="">
         <figcaption class="event-illustration-title">
           <h1 class="title-with-subtitle event-title">Battle of <em>Hastings</em></h1>
         </figcaption>
@@ -87,10 +87,10 @@ describe('buildEventPage', () => {
       </div>
       <div class="entry-nav" aria-label="Season entry navigation">
         <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3/norman-prologue/index.html">← Norman Prologue</a>
+          <a class="entry-nav-link" href="1066/3/1-norman-prologue/index.html">← Norman Prologue</a>
         </div>
         <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3/aftermath/index.html">Aftermath →</a>
+          <a class="entry-nav-link" href="1066/3/3-aftermath/index.html">Aftermath →</a>
         </div>
       </div>
       <div class="paper-stamp">

@@ -5,8 +5,8 @@ import buildEventViewModel from '../presenters/build-event-view-model.js'
 import { join } from 'node:path'
 
 /**
- * Writes the event's HTML page to `<outputDirPath>/<year>/<season>/<slug>/index.html`, copying the
- * illustration alongside it when the event has one.
+ * Writes the event's HTML page to `<outputDirPath>/<year>/<season>/<position>-<slug>/index.html`,
+ * copying the illustration alongside it when the event has one.
  *
  * @param event - Event to render.
  * @param prevEvent - Previous event in the same season, or `null` at the start of the season.
@@ -24,7 +24,7 @@ const renderEvent = (
     outputDirPath,
     String(event.seasonalYear),
     String(event.season),
-    event.slug,
+    `${event.position}-${event.slug}`,
   )
 
   /** View model fed to the eta template. */
