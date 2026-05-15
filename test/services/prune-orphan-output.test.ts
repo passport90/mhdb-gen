@@ -58,7 +58,7 @@ describe('pruneOrphanOutput', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('removes orphan slug-dirs and subdirless parents (stale indexes included), reports touched seasons', () => {
+  it('removes orphan entries plus season-level junk, sweeps empty parents, reports touched seasons', () => {
     /**
      * Two headers establish the valid set: `kept-spring` lives at (2026, 1) and `moved`
      * at (2026, 2). On disk, `moved` was previously rendered at (2025, 3) — that prior
@@ -85,8 +85,10 @@ describe('pruneOrphanOutput', () => {
 
     seedDir('2026/1/kept-spring')
     seedDir('2026/1/orphan-spring')
+    seedFile('2026/1/notes.txt')
     seedDir('2025/3/moved')
     seedDir('2024/0/orphan-only')
+    seedFile('2024/1/notes.txt')
     seedFile('1066/3/index.html')
     seedFile('1066/index.html')
     seedFile('static-asset.css')
@@ -96,6 +98,7 @@ describe('pruneOrphanOutput', () => {
 
     assert.ok(existsSync(join(outputDirPath, '2026/1/kept-spring')))
     assert.ok(!existsSync(join(outputDirPath, '2026/1/orphan-spring')))
+    assert.ok(!existsSync(join(outputDirPath, '2026/1/notes.txt')))
 
     assert.ok(!existsSync(join(outputDirPath, '2025')))
 
@@ -111,6 +114,7 @@ describe('pruneOrphanOutput', () => {
       sortedSlots,
       [
         { seasonalYear: 2024, season: 0 },
+        { seasonalYear: 2024, season: 1 },
         { seasonalYear: 2025, season: 3 },
         { seasonalYear: 2026, season: 1 },
       ],
