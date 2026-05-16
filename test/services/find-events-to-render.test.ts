@@ -52,7 +52,10 @@ describe('findEventsToRender', () => {
     const listings: EventListing[] = [
       {
         id: 1,
+        title: 'Stale With Dir',
         slug: 'stale-with-dir',
+        startDate: '2026-01-01',
+        endDate: '2026-01-02',
         seasonalYear: 2026,
         season: 0,
         position: 1,
@@ -61,7 +64,10 @@ describe('findEventsToRender', () => {
       },
       {
         id: 2,
+        title: 'Stale No Dir',
         slug: 'stale-no-dir',
+        startDate: '2026-04-01',
+        endDate: '2026-04-02',
         seasonalYear: 2026,
         season: 1,
         position: 1,
@@ -70,7 +76,10 @@ describe('findEventsToRender', () => {
       },
       {
         id: 3,
+        title: 'Fresh With Dir',
         slug: 'fresh-with-dir',
+        startDate: '2026-07-01',
+        endDate: '2026-07-02',
         seasonalYear: 2026,
         season: 2,
         position: 1,
@@ -79,7 +88,10 @@ describe('findEventsToRender', () => {
       },
       {
         id: 4,
+        title: 'Fresh No Dir',
         slug: 'fresh-no-dir',
+        startDate: '2026-10-01',
+        endDate: '2026-10-02',
         seasonalYear: 2026,
         season: 3,
         position: 1,

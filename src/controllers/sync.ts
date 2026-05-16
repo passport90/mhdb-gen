@@ -40,7 +40,7 @@ const sync: Controller = (_args, messageStream) => {
     /** Distinct slots containing at least one event whose orphan output was pruned this run. */
     const slotsWithPrunedEvents = pruneOrphanOutput(listings, outputDirPath)
 
-    refreshHierarchyIndexes(db, outputDirPath, slotsWithRenderedEvents, slotsWithPrunedEvents)
+    refreshHierarchyIndexes(db, outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
   })
 
   copyDirectory(assetsDirPath, outputDirPath)
@@ -60,21 +60,13 @@ const copyDirectory = (srcDirPath: string, destDirPath: string): void => {
 }
 
 /**
- * Wraps a raw `EventListingRow` into an `EventListing` by deriving the URL slug from the title.
- * Keeps the slug-derivation seam at the controller so the repo stays SQL-only and the
- * downstream sync services consume `listing.slug` directly.
+ * Wraps a raw `EventListingRow` into an `EventListing` by augmenting it with the URL
+ * slug derived from the title. Keeps the slug-derivation seam at the controller so the
+ * repo stays SQL-only and the downstream sync services consume `listing.slug` directly.
  *
  * @param row - Raw listing row from `findAllEventListings`.
  * @returns Listing with the pre-derived slug field, ready for sync decision-side services.
  */
-const hydrateListing = (row: EventListingRow): EventListing => ({
-  id: row.id,
-  seasonalYear: row.seasonalYear,
-  season: row.season,
-  position: row.position,
-  slug: slugify(row.title),
-  renderedAt: row.renderedAt,
-  updatedAt: row.updatedAt,
-})
+const hydrateListing = (row: EventListingRow): EventListing => ({ ...row, slug: slugify(row.title) })
 
 export default sync

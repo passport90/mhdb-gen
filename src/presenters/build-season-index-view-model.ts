@@ -1,8 +1,8 @@
+import type EventListing from '../types/event-listing.js'
 import type SeasonIndexPageViewModel from '../types/season-index-page-view-model.js'
 import type SeasonLink from '../types/season-link.js'
 import type SeasonTimelineEntry from '../types/season-timeline-entry.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
-import type TimelineEvent from '../types/timeline-event.js'
 import buildDateRangeLabel from './build-date-range-label.js'
 import buildEventPagePath from './build-event-page-path.js'
 import buildSeasonIndexPagePath from './build-season-index-page-path.js'
@@ -22,7 +22,7 @@ import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
  */
 const buildSeasonIndexViewModel = (
   slot: SeasonalSlot,
-  events: TimelineEvent[],
+  events: EventListing[],
   prevSlot: SeasonalSlot | null,
   nextSlot: SeasonalSlot | null,
 ): SeasonIndexPageViewModel => ({
@@ -53,10 +53,10 @@ const buildSeasonLink = (slot: SeasonalSlot | null): SeasonLink | null => {
  * Builds a single timeline entry for an event in the slot.
  *
  * @param slot - Slot the event belongs to (for the path prefix).
- * @param event - Skinny event row.
+ * @param event - Event listing for the row being projected.
  * @returns Pre-rendered entry for the eta template.
  */
-const buildTimelineEntry = (slot: SeasonalSlot, event: TimelineEvent): SeasonTimelineEntry => ({
+const buildTimelineEntry = (slot: SeasonalSlot, event: EventListing): SeasonTimelineEntry => ({
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
   titleInlineHtml: renderInlineMarkdown(event.title),
   eventPagePath: buildEventPagePath(slot.seasonalYear, slot.season, event.position, event.slug),

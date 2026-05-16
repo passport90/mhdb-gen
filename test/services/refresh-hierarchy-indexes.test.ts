@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import type EventListing from '../../src/types/event-listing.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
@@ -54,6 +55,49 @@ describe('refreshHierarchyIndexes', () => {
     insertEventRow(2026, 1, 1)
     insertEventRow(2026, 2, 1)
 
+    /**
+     * Listings the SUT threads into `renderSeasonIndex`; matches the seeded rows by slot so
+     * the season-index renderer projects a non-empty timeline for each touched slot.
+     */
+    const listings: EventListing[] = [
+      {
+        id: 1,
+        title: 'Hastings',
+        slug: 'hastings',
+        startDate: '1066-10-14',
+        endDate: '1066-10-14',
+        seasonalYear: 1066,
+        season: 3,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1066-10-01 00:00:00',
+      },
+      {
+        id: 2,
+        title: 'Spring Event',
+        slug: 'spring-event',
+        startDate: '2026-04-01',
+        endDate: '2026-04-08',
+        seasonalYear: 2026,
+        season: 1,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '2026-04-01 00:00:00',
+      },
+      {
+        id: 3,
+        title: 'Summer Event',
+        slug: 'summer-event',
+        startDate: '2026-07-01',
+        endDate: '2026-07-08',
+        seasonalYear: 2026,
+        season: 2,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '2026-07-01 00:00:00',
+      },
+    ]
+
     /** Two slots in 2026 each containing a freshly rendered event. */
     const slotsWithRenderedEvents: SeasonalSlot[] = [
       { seasonalYear: 2026, season: 1 },
@@ -65,7 +109,7 @@ describe('refreshHierarchyIndexes', () => {
       { seasonalYear: 1066, season: 3 },
     ]
 
-    refreshHierarchyIndexes(db, outputDirPath, slotsWithRenderedEvents, slotsWithPrunedEvents)
+    refreshHierarchyIndexes(db, outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
 
     assert.ok(existsSync(join(outputDirPath, 'index.html')))
     assert.ok(existsSync(join(outputDirPath, '1066', 'index.html')))
@@ -77,7 +121,7 @@ describe('refreshHierarchyIndexes', () => {
 
   describe('when no seasons were rendered or pruned', () => {
     it('writes nothing — every child renderer is skipped', () => {
-      refreshHierarchyIndexes(db, outputDirPath, [], [])
+      refreshHierarchyIndexes(db, outputDirPath, [], [], [])
 
       assert.ok(!existsSync(outputDirPath))
     })

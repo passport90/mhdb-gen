@@ -25,12 +25,16 @@ describe('findAllEventListings', () => {
    *
    * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
    * @param title - Title stored in the row.
+   * @param startDate - Start date stored in the row.
+   * @param endDate - End date stored in the row.
    * @param renderedAt - Value for `rendered_at`; `null` is the never-rendered arm.
    * @param updatedAt - Value for `updated_at`.
    */
   const insertEventRow = (
     slot: EventSlot,
     title: string,
+    startDate: string,
+    endDate: string,
     renderedAt: string | null,
     updatedAt: string,
   ): void => {
@@ -43,8 +47,8 @@ describe('findAllEventListings', () => {
     `).run(
       title,
       'body',
-      '2026-01-01',
-      '2026-12-31',
+      startDate,
+      endDate,
       slot.seasonalYear,
       slot.season,
       slot.position,
@@ -71,24 +75,32 @@ describe('findAllEventListings', () => {
     insertEventRow(
       { seasonalYear: 2026, season: 2, position: 1 },
       'Next Summer',
+      '2026-07-01',
+      '2026-07-08',
       '2026-06-01 00:00:00',
       '2026-05-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2025, season: 1, position: 1 },
       'Last Spring',
+      '2025-04-01',
+      '2025-04-08',
       null,
       '2025-04-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2026, season: 1, position: 2 },
       'Next Spring Second',
+      '2026-04-23',
+      '2026-04-30',
       '2026-04-15 00:00:00',
       '2026-04-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2026, season: 1, position: 1 },
       'Next Spring First',
+      '2026-04-15',
+      '2026-04-22',
       '2026-04-15 00:00:00',
       '2026-04-01 00:00:00',
     )
@@ -100,6 +112,8 @@ describe('findAllEventListings', () => {
 
     assert.strictEqual(listings[0]?.id, 2)
     assert.strictEqual(listings[0]?.title, 'Last Spring')
+    assert.strictEqual(listings[0]?.startDate, '2025-04-01')
+    assert.strictEqual(listings[0]?.endDate, '2025-04-08')
     assert.strictEqual(listings[0]?.seasonalYear, 2025)
     assert.strictEqual(listings[0]?.season, 1)
     assert.strictEqual(listings[0]?.position, 1)
@@ -108,6 +122,8 @@ describe('findAllEventListings', () => {
 
     assert.strictEqual(listings[1]?.id, 4)
     assert.strictEqual(listings[1]?.title, 'Next Spring First')
+    assert.strictEqual(listings[1]?.startDate, '2026-04-15')
+    assert.strictEqual(listings[1]?.endDate, '2026-04-22')
     assert.strictEqual(listings[1]?.seasonalYear, 2026)
     assert.strictEqual(listings[1]?.season, 1)
     assert.strictEqual(listings[1]?.position, 1)

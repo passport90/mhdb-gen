@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
+import type EventListing from '../../src/types/event-listing.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
-import type TimelineEvent from '../../src/types/timeline-event.js'
 import assert from 'node:assert/strict'
 import buildSeasonIndexViewModel from '../../src/presenters/build-season-index-view-model.js'
 
@@ -8,21 +8,31 @@ describe('buildSeasonIndexViewModel', () => {
   /** Slot of the page being projected. */
   const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
 
-  /** Two events in the slot, in position order. */
-  const events: TimelineEvent[] = [
+  /** Two listings in the slot, in position order. */
+  const events: EventListing[] = [
     {
-      position: 1,
+      id: 1,
       title: 'First *Event*',
       slug: 'first-event',
       startDate: '1066-04-15',
       endDate: '1066-04-22',
+      seasonalYear: 1066,
+      season: 1,
+      position: 1,
+      renderedAt: null,
+      updatedAt: '1066-04-01 00:00:00',
     },
     {
-      position: 2,
+      id: 2,
       title: 'Second Event',
       slug: 'second-event',
       startDate: '1066-05-01',
       endDate: '1066-05-01',
+      seasonalYear: 1066,
+      season: 1,
+      position: 2,
+      renderedAt: null,
+      updatedAt: '1066-04-01 00:00:00',
     },
   ]
 

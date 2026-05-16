@@ -1,21 +1,14 @@
-import type EventSlot from './event-slot.js'
+import type EventListingRow from './event-listing-row.js'
 
 /**
- * Event-listing projection used by sync decision-side services
- * (`findEventsToRender`, `pruneOrphanOutput`) — identifiers, slot coordinates, the
- * pre-derived URL slug, and sync-state timestamps. The slug is computed once in the sync
- * controller from the title on the underlying `EventListingRow`, so downstream consumers
- * never need to know about slugify.
+ * Per-event data threaded through the sync run — every field on `EventListingRow`
+ * plus the URL slug derived from the row's title by the sync controller's
+ * `hydrateListing`. Consumed by every decision-side and listing-side service
+ * (`findEventsToRender`, `pruneOrphanOutput`, `renderEvents`, `renderSeasonIndex`).
  */
-interface EventListing extends EventSlot {
-  /** Surrogate primary key from the `events` table. */
-  id: number
-  /** URL slug derived from the underlying row's title via `slugify`; pre-computed by the controller. */
+interface EventListing extends EventListingRow {
+  /** URL slug derived from `title` via `slugify`; pre-computed by the controller. */
   slug: string
-  /** Last sync render timestamp, or `null` when the row has never been rendered. */
-  renderedAt: string | null
-  /** Last content-column modification timestamp, maintained by the `events_update_timestamp` trigger. */
-  updatedAt: string
 }
 
 export default EventListing

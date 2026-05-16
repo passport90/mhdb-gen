@@ -67,7 +67,10 @@ describe('pruneOrphanOutput', () => {
     const listings: EventListing[] = [
       {
         id: 1,
+        title: 'Kept Spring',
         slug: 'kept-spring',
+        startDate: '2026-04-15',
+        endDate: '2026-04-22',
         seasonalYear: 2026,
         season: 1,
         position: 1,
@@ -76,7 +79,10 @@ describe('pruneOrphanOutput', () => {
       },
       {
         id: 2,
+        title: 'Moved',
         slug: 'moved',
+        startDate: '2026-06-01',
+        endDate: '2026-06-08',
         seasonalYear: 2026,
         season: 2,
         position: 1,
