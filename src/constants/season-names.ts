@@ -1,9 +1,9 @@
-/** Season number → display name; matches the SQL `season` CHECK domain (0–3). */
-const SEASON_NAME_BY_NUMBER: Record<number, string> = {
-  0: 'Winter',
-  1: 'Spring',
-  2: 'Summer',
-  3: 'Fall',
-}
+/** Season display name indexed by the SQL `season` domain (0–3). */
+const SEASON_NAMES: readonly string[] = [
+  'Winter',
+  'Spring',
+  'Summer',
+  'Fall',
+]
 
-export default SEASON_NAME_BY_NUMBER
+export default SEASON_NAMES
