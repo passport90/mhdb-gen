@@ -4,7 +4,7 @@ import type EventHeaderRow from '../types/event-header-row.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import { cpSync } from 'node:fs'
 import findAllEventHeaders from '../repositories/find-all-event-headers.js'
-import findEventIdsToRender from '../services/find-event-ids-to-render.js'
+import findEventsToRender from '../services/find-events-to-render.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
 import renderEvents from '../services/render-events.js'
@@ -31,11 +31,11 @@ const sync: Controller = (_args, messageStream) => {
     /** Snapshot of every event row, threaded through the decision-side services with pre-derived slug. */
     const headers = findAllEventHeaders(db).map(hydrateHeader)
 
-    /** Surrogate ids of the events that need rendering this run. */
-    const ids = findEventIdsToRender(headers, outputDirPath)
+    /** Headers of the events that need rendering this run; carry the slug forward to the renderer. */
+    const eventsToRender = findEventsToRender(headers, outputDirPath)
 
     /** Distinct slots containing at least one event re-rendered this run. */
-    const slotsWithRenderedEvents = renderEvents(db, ids, outputDirPath, messageStream)
+    const slotsWithRenderedEvents = renderEvents(db, eventsToRender, outputDirPath, messageStream)
 
     /** Distinct slots containing at least one event whose orphan output was pruned this run. */
     const slotsWithPrunedEvents = pruneOrphanOutput(headers, outputDirPath)

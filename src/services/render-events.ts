@@ -1,29 +1,30 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type EventRow from '../types/event-row.js'
+import type EventBody from '../types/event-body.js'
+import type EventHeader from '../types/event-header.js'
 import type EventToRender from '../types/event-to-render.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import type { Writable } from 'node:stream'
-import findEventById from '../repositories/find-event-by-id.js'
+import findEventBodyById from '../repositories/find-event-body-by-id.js'
 import markRendered from '../repositories/mark-rendered.js'
 import renderEvent from './render-event.js'
-import slugify from '../helpers/slugify.js'
 
 /**
- * Renders each event identified by `ids` and stamps `rendered_at` on success.
+ * Renders each event identified by `headers` and stamps `rendered_at` on success.
  * Writes one `[i/n] <position>-<slug>` progress line per event. Returns the distinct
  * `(seasonal_year, season)` slots that contain at least one rendered event.
- * `ids` must be ordered by `(seasonal_year, season, position)`; the returned
+ * `headers` must be ordered by `(seasonal_year, season, position)`; the returned
  * slot list relies on same-slot events being consecutive.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
- * @param ids - Event surrogate ids to render, ordered as above.
+ * @param headers - Headers of events to render, ordered as above; each carries the
+ *   pre-derived slug, so the renderer never re-slugifies.
  * @param outputDirPath - Output root passed through to the renderer.
  * @param messageStream - Receives one progress line per event rendered.
  * @returns Distinct slots containing at least one event rendered this call.
  */
 const renderEvents = (
   db: DatabaseSync,
-  ids: number[],
+  headers: EventHeader[],
   outputDirPath: string,
   messageStream: Writable,
 ): SeasonalSlot[] => {
@@ -33,17 +34,19 @@ const renderEvents = (
   /** Slot of the previously appended entry; `null` before the first append. */
   let lastSlot: SeasonalSlot | null = null
 
-  if (ids.length === 0) return slotsWithRenderedEvents
+  if (headers.length === 0) return slotsWithRenderedEvents
 
   /** Previous iteration's event; carries forward to become `prevEvent` for the next iteration when same-slot. */
   let prevEvent: EventToRender | null = null
 
   /** Event being rendered this iteration; hydrated up-front so the loop can peek ahead one row. */
-  let currentEvent: EventToRender = hydrateEvent(findEventById(db, ids[0]))
+  let currentEvent: EventToRender = hydrateEvent(headers[0], findEventBodyById(db, headers[0].id))
 
-  for (let index = 0; index < ids.length; index++) {
-    /** Peek-ahead hydration of the next event; `null` past the last id. */
-    const nextEvent = index + 1 < ids.length ? hydrateEvent(findEventById(db, ids[index + 1])) : null
+  for (let index = 0; index < headers.length; index++) {
+    /** Peek-ahead hydration of the next event; `null` past the last header. */
+    const nextEvent = index + 1 < headers.length
+      ? hydrateEvent(headers[index + 1], findEventBodyById(db, headers[index + 1].id))
+      : null
 
     /** Previous event gated to same-slot; `null` when from a different slot or absent. */
     const prevSiblingEvent = pickSibling(prevEvent, currentEvent)
@@ -57,7 +60,7 @@ const renderEvents = (
     }
 
     /** Progress line written for this iteration; `<position>-<slug>` mirrors the on-disk bundle name. */
-    const progressLine = `[${index + 1}/${ids.length}] ${currentEvent.position}-${currentEvent.slug}\n`
+    const progressLine = `[${index + 1}/${headers.length}] ${currentEvent.position}-${currentEvent.slug}\n`
 
     messageStream.write(progressLine)
 
@@ -82,14 +85,24 @@ const areSeasonalSlotsEqual = (a: SeasonalSlot, b: SeasonalSlot): boolean =>
   a.seasonalYear === b.seasonalYear && a.season === b.season
 
 /**
- * Wraps a raw `EventRow` from the database into an `EventToRender` by deriving the URL slug
- * from the title. Keeps the slug-derivation seam at the service boundary so the repo stays
- * SQL-only and downstream consumers read `event.slug` directly.
+ * Combines a header (identifying tuple, pre-derived slug, last-modified timestamp) with the
+ * body fetched from the database into an `EventToRender`. Lets the renderer consume the
+ * full event shape without the service re-slugifying or the repo redundantly re-selecting
+ * header columns.
  *
- * @param row - Raw event row from `findEventById`.
- * @returns Render-ready event with the pre-derived slug field.
+ * @param header - Header for the event, carrying id, slot, slug, and updatedAt.
+ * @param body - Body fields from `findEventBodyById` — title, description, illustration hash, dates.
+ * @returns Render-ready event combining header and body.
  */
-const hydrateEvent = (row: EventRow): EventToRender => ({ ...row, slug: slugify(row.title) })
+const hydrateEvent = (header: EventHeader, body: EventBody): EventToRender => ({
+  id: header.id,
+  seasonalYear: header.seasonalYear,
+  season: header.season,
+  position: header.position,
+  slug: header.slug,
+  updatedAt: header.updatedAt,
+  ...body,
+})
 
 /**
  * Picks `candidateEvent` when it shares a season slot with `currentEvent`, otherwise `null` — gates a

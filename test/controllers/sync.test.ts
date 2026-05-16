@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventRow from '../../src/types/event-row.js'
+import type EventBody from '../../src/types/event-body.js'
+import type EventSlot from '../../src/types/event-slot.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -11,19 +12,17 @@ import sync from '../../src/controllers/sync.js'
 import { tmpdir } from 'node:os'
 
 describe('sync', () => {
-  /** Seeded event; expected to flow through the full real chain into a written page on disk. */
-  const theEvent: EventRow = {
-    id: 1,
+  /** Body fields for the seeded event; expected to flow through the full real chain into a written page on disk. */
+  const theEventBody: EventBody = {
     title: 'The Event',
     description: '\nbody\n',
     illustrationHash: 'hash-1',
     startDate: '2026-04-15',
     endDate: '2026-04-22',
-    seasonalYear: 2026,
-    season: 1,
-    position: 1,
-    updatedAt: '2026-05-05 12:00:00',
   }
+
+  /** Slot for the seeded event. */
+  const theEventSlot: EventSlot = { seasonalYear: 2026, season: 1, position: 1 }
 
   /** Tmp directory created fresh per test; encloses the SQLite file and the output root. */
   let tmpDirPath: string
@@ -41,12 +40,13 @@ describe('sync', () => {
   let messageStream: PassThrough
 
   /**
-   * Inserts an event row carrying every field `findEventById` hydrates, leaving
-   * `rendered_at` at its column default of `null` so the row qualifies for rendering.
+   * Inserts an event row by combining body fields with a slot, leaving `rendered_at` at its
+   * column default of `null` so the row qualifies for rendering.
    *
-   * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
+   * @param body - Heavy authored fields for the row.
+   * @param slot - Identifying slot for the row.
    */
-  const insertEventRow = (event: EventRow): void => {
+  const insertEventRow = (body: EventBody, slot: EventSlot): void => {
     db.prepare(`
       INSERT INTO events (
         title, description, illustration_hash,
@@ -54,14 +54,14 @@ describe('sync', () => {
         seasonal_year, season, position
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      event.title,
-      event.description,
-      event.illustrationHash,
-      event.startDate,
-      event.endDate,
-      event.seasonalYear,
-      event.season,
-      event.position,
+      body.title,
+      body.description,
+      body.illustrationHash,
+      body.startDate,
+      body.endDate,
+      slot.seasonalYear,
+      slot.season,
+      slot.position,
     )
   }
 
@@ -81,7 +81,7 @@ describe('sync', () => {
     const blobDirPath = `${dbPath}.blobs`
     mkdirSync(blobDirPath, { recursive: true })
     writeFileSync(
-      join(blobDirPath, `${theEvent.seasonalYear}-${theEvent.season}-${theEvent.position}-the-event.png`),
+      join(blobDirPath, `${theEventSlot.seasonalYear}-${theEventSlot.season}-${theEventSlot.position}-the-event.png`),
       'illustration-bytes',
     )
 
@@ -91,7 +91,7 @@ describe('sync', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    insertEventRow(theEvent)
+    insertEventRow(theEventBody, theEventSlot)
 
     /** Orphan event bundle seeded under `outputDirPath` so the real prune has something to remove. */
     mkdirSync(join(outputDirPath, '2024', '0-winter', '99-orphan-leftover'), { recursive: true })

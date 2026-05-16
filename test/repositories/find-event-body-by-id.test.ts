@@ -3,11 +3,11 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
-import findEventById from '../../src/repositories/find-event-by-id.js'
+import findEventBodyById from '../../src/repositories/find-event-body-by-id.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-describe('findEventById', () => {
+describe('findEventBodyById', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
   let tmpDirPath: string
 
@@ -29,7 +29,7 @@ describe('findEventById', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('hydrates the row at the given id into an EventToRender, mapping snake_case columns to camelCase', () => {
+  it('hydrates the body fields of the row at the given id, mapping snake_case columns to camelCase', () => {
     db.prepare(`
       INSERT INTO events (
         title, description, illustration_hash,
@@ -47,18 +47,13 @@ describe('findEventById', () => {
       1,
     )
 
-    /** Event hydrated by the SUT. */
-    const event = findEventById(db, 1)
+    /** Body fields hydrated by the SUT. */
+    const body = findEventBodyById(db, 1)
 
-    assert.strictEqual(event.id, 1)
-    assert.strictEqual(event.title, 'Battle of Hastings')
-    assert.strictEqual(event.description, '\nbody\n')
-    assert.strictEqual(event.illustrationHash, 'hash-1')
-    assert.strictEqual(event.startDate, '1066-10-14')
-    assert.strictEqual(event.endDate, '1066-10-14')
-    assert.strictEqual(event.seasonalYear, 1066)
-    assert.strictEqual(event.season, 3)
-    assert.strictEqual(event.position, 1)
-    assert.match(event.updatedAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    assert.strictEqual(body.title, 'Battle of Hastings')
+    assert.strictEqual(body.description, '\nbody\n')
+    assert.strictEqual(body.illustrationHash, 'hash-1')
+    assert.strictEqual(body.startDate, '1066-10-14')
+    assert.strictEqual(body.endDate, '1066-10-14')
   })
 })

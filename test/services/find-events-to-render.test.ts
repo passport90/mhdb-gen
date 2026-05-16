@@ -3,11 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import type EventHeader from '../../src/types/event-header.js'
 import SEASON_PATH_SEGMENTS from '../../src/constants/season-path-segments.js'
 import assert from 'node:assert/strict'
-import findEventIdsToRender from '../../src/services/find-event-ids-to-render.js'
+import findEventsToRender from '../../src/services/find-events-to-render.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-describe('findEventIdsToRender', () => {
+describe('findEventsToRender', () => {
   /** Tmp directory created fresh per test; holds the simulated output tree. */
   let tmpDirPath: string
 
@@ -44,12 +44,10 @@ describe('findEventIdsToRender', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('returns ids of headers that are db-stale or whose output dir is missing, in input order', () => {
+  it('returns the subset of headers that are db-stale or whose output dir is missing, in input order', () => {
     /**
-     * Four headers cover every cell of the (isDbStale, dirExists) grid; only the two
-     * with at least one "yes" should land in the output ids. Slugs are pre-derived by
-     * the controller upstream of the SUT, so the test fixtures hand-author them; the
-     * end-to-end slugify path is exercised by `sync.test.ts`.
+     * Four headers cover every cell of the (isDbStale, dirExists) grid; only the three
+     * with at least one "yes" should land in the returned subset.
      */
     const headers: EventHeader[] = [
       {
@@ -93,9 +91,9 @@ describe('findEventIdsToRender', () => {
     seedOutputDir(2026, 0, 1, 'stale-with-dir')
     seedOutputDir(2026, 2, 1, 'fresh-with-dir')
 
-    /** Ids returned by the SUT. */
-    const ids = findEventIdsToRender(headers, outputDirPath)
+    /** Headers of events the SUT selected for rendering. */
+    const eventsToRender = findEventsToRender(headers, outputDirPath)
 
-    assert.deepStrictEqual(ids, [1, 2, 4])
+    assert.deepStrictEqual(eventsToRender, [headers[0], headers[1], headers[3]])
   })
 })

@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventRow from '../../src/types/event-row.js'
+import type EventBody from '../../src/types/event-body.js'
+import type EventHeader from '../../src/types/event-header.js'
+import type EventSlot from '../../src/types/event-slot.js'
 import { PassThrough } from 'node:stream'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -11,47 +13,72 @@ import renderEvents from '../../src/services/render-events.js'
 import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
-  /** First seeded event; expected to land at id 1 via autoincrement. */
-  const firstEvent: EventRow = {
-    id: 1,
+  /** Body fields for the first seeded event; expected to land at id 1 via autoincrement. */
+  const firstEventBody: EventBody = {
     title: 'First Event',
     description: '\nbody-1\n',
     illustrationHash: null,
     startDate: '2026-04-15',
     endDate: '2026-04-22',
-    seasonalYear: 2026,
-    season: 1,
-    position: 1,
-    updatedAt: '2026-05-05 12:00:00',
   }
 
-  /** Second seeded event; same slot as `firstEvent`, different position — exercises slot-dedup. */
-  const firstEventSibling: EventRow = {
-    id: 2,
+  /** Slot for the first seeded event. */
+  const firstEventSlot: EventSlot = { seasonalYear: 2026, season: 1, position: 1 }
+
+  /** Body fields for the same-slot sibling; exercises slot-dedup in the SUT. */
+  const firstEventSiblingBody: EventBody = {
     title: 'First Event Sibling',
     description: '\nbody-1b\n',
     illustrationHash: null,
     startDate: '2026-04-23',
     endDate: '2026-04-30',
-    seasonalYear: 2026,
-    season: 1,
-    position: 2,
-    updatedAt: '2026-05-05 12:00:00',
   }
 
-  /** Third seeded event; different slot — produces a second `SeasonalSlot` entry. */
-  const secondEvent: EventRow = {
-    id: 3,
+  /** Slot for the same-slot sibling — same year and season, different position. */
+  const firstEventSiblingSlot: EventSlot = { seasonalYear: 2026, season: 1, position: 2 }
+
+  /** Body fields for the second seeded event; different slot — produces a second `SeasonalSlot` entry. */
+  const secondEventBody: EventBody = {
     title: 'Second Event',
     description: '\nbody-2\n',
     illustrationHash: null,
     startDate: '2026-05-05',
     endDate: '2026-05-12',
-    seasonalYear: 2026,
-    season: 2,
-    position: 4,
-    updatedAt: '2026-05-05 12:00:00',
   }
+
+  /** Slot for the second seeded event. */
+  const secondEventSlot: EventSlot = { seasonalYear: 2026, season: 2, position: 4 }
+
+  /** Headers threaded into the SUT, paired with the seeded rows by id and carrying the pre-derived slug. */
+  const headers: EventHeader[] = [
+    {
+      id: 1,
+      seasonalYear: 2026,
+      season: 1,
+      position: 1,
+      slug: 'first-event',
+      renderedAt: null,
+      updatedAt: '2026-05-05 12:00:00',
+    },
+    {
+      id: 2,
+      seasonalYear: 2026,
+      season: 1,
+      position: 2,
+      slug: 'first-event-sibling',
+      renderedAt: null,
+      updatedAt: '2026-05-05 12:00:00',
+    },
+    {
+      id: 3,
+      seasonalYear: 2026,
+      season: 2,
+      position: 4,
+      slug: 'second-event',
+      renderedAt: null,
+      updatedAt: '2026-05-05 12:00:00',
+    },
+  ]
 
   /** Tmp directory created fresh per test; holds the test SQLite file and the output tree. */
   let tmpDirPath: string
@@ -69,11 +96,13 @@ describe('renderEvents', () => {
   let messageStream: PassThrough
 
   /**
-   * Inserts an event row carrying every field `findEventById` hydrates.
+   * Inserts an event row by combining body fields with a slot. The surrogate id is set by
+   * autoincrement; the `updated_at` column defaults at INSERT time.
    *
-   * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
+   * @param body - Heavy authored fields for the row.
+   * @param slot - Identifying slot for the row.
    */
-  const insertEventRow = (event: EventRow): void => {
+  const insertEventRow = (body: EventBody, slot: EventSlot): void => {
     db.prepare(`
       INSERT INTO events (
         title, description, illustration_hash,
@@ -81,14 +110,14 @@ describe('renderEvents', () => {
         seasonal_year, season, position
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      event.title,
-      event.description,
-      event.illustrationHash,
-      event.startDate,
-      event.endDate,
-      event.seasonalYear,
-      event.season,
-      event.position,
+      body.title,
+      body.description,
+      body.illustrationHash,
+      body.startDate,
+      body.endDate,
+      slot.seasonalYear,
+      slot.season,
+      slot.position,
     )
   }
 
@@ -101,9 +130,9 @@ describe('renderEvents', () => {
     applyMigrations(dbPath)
     db = new DatabaseSync(dbPath)
 
-    insertEventRow(firstEvent)
-    insertEventRow(firstEventSibling)
-    insertEventRow(secondEvent)
+    insertEventRow(firstEventBody, firstEventSlot)
+    insertEventRow(firstEventSiblingBody, firstEventSiblingSlot)
+    insertEventRow(secondEventBody, secondEventSlot)
   })
 
   afterEach(() => {
@@ -111,9 +140,9 @@ describe('renderEvents', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('renders each event in id order, dedupes seasons across same-slot events, returns distinct slots', () => {
+  it('renders each event in header order, dedupes seasons across same-slot events, returns distinct slots', () => {
     /** Distinct slots returned by the SUT. */
-    const slotsWithRenderedEvents = renderEvents(db, [1, 2, 3], outputDirPath, messageStream)
+    const slotsWithRenderedEvents = renderEvents(db, headers, outputDirPath, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
@@ -159,7 +188,7 @@ describe('renderEvents', () => {
     assert.deepStrictEqual(slotsWithRenderedEvents, expectedSlotsWithRenderedEvents)
   })
 
-  describe('when the id list is empty', () => {
+  describe('when the header list is empty', () => {
     it('returns an empty slot list, writes nothing, and leaves every rendered_at null', () => {
       /** Distinct slots returned by the SUT. */
       const slotsWithRenderedEvents = renderEvents(db, [], outputDirPath, messageStream)
