@@ -1,60 +1,84 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
-import applyMigrations from '../support/apply-migrations.js'
+import type EventListing from '../../src/types/event-listing.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import renderYearIndex from '../../src/services/render-year-index.js'
 import { tmpdir } from 'node:os'
 
 describe('renderYearIndex', () => {
-  /** Tmp directory holding the test SQLite file and output tree. */
+  /** Tmp directory holding the output tree. */
   let tmpDirPath: string
-
-  /** Database handle threaded into the SUT; on-disk SQLite so the real chain can query it. */
-  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
 
-  /**
-   * Inserts an event row carrying just the columns this query path touches.
-   *
-   * @param year - Seasonal year of the row.
-   * @param season - Season-within-year of the row.
-   * @param position - Position-within-season of the row.
-   */
-  const insertEventRow = (year: number, season: number, position: number): void => {
-    db.prepare(`
-      INSERT INTO events (
-        title, description, illustration_hash,
-        start_date, end_date,
-        seasonal_year, season, position
-      ) VALUES ('t', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(year, season, position)
-  }
-
   beforeEach(() => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    /** Path to the test SQLite file. */
-    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
-    applyMigrations(dbPath)
-    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
-    db.close()
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('writes the year index page to <outputDirPath>/<year>/index.html with seasons + nav reflecting DB state', () => {
-    insertEventRow(1065, 1, 1)
-    insertEventRow(1066, 1, 1)
-    insertEventRow(1066, 3, 1)
-    insertEventRow(1067, 1, 1)
+  it('writes the year index page to <outputDirPath>/<year>/index.html with seasons + nav from the listings', () => {
+    /**
+     * Listings cover years 1065, 1066 (two seasons), and 1067 — the SUT renders 1066 with
+     * seasons 1 and 3 populated, 0 and 2 empty, and prev/next links to 1065 and 1067.
+     */
+    const listings: EventListing[] = [
+      {
+        id: 1,
+        title: 'Earlier Year',
+        slug: 'earlier-year',
+        startDate: '1065-04-01',
+        endDate: '1065-04-08',
+        seasonalYear: 1065,
+        season: 1,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1065-04-01 00:00:00',
+      },
+      {
+        id: 2,
+        title: 'Target Spring',
+        slug: 'target-spring',
+        startDate: '1066-04-01',
+        endDate: '1066-04-08',
+        seasonalYear: 1066,
+        season: 1,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1066-04-01 00:00:00',
+      },
+      {
+        id: 3,
+        title: 'Target Fall',
+        slug: 'target-fall',
+        startDate: '1066-10-14',
+        endDate: '1066-10-14',
+        seasonalYear: 1066,
+        season: 3,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1066-10-01 00:00:00',
+      },
+      {
+        id: 4,
+        title: 'Later Year',
+        slug: 'later-year',
+        startDate: '1067-04-01',
+        endDate: '1067-04-08',
+        seasonalYear: 1067,
+        season: 1,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1067-04-01 00:00:00',
+      },
+    ]
 
-    renderYearIndex(db, outputDirPath, 1066)
+    renderYearIndex(outputDirPath, 1066, listings)
 
     /** Rendered year index on disk. */
     const indexHtml = readFileSync(join(outputDirPath, '1066', 'index.html'), 'utf8')
@@ -67,9 +91,9 @@ describe('renderYearIndex', () => {
     assert.ok(indexHtml.includes('<a class="season-nav-link" href="1067/index.html">1067 →</a>'))
   })
 
-  describe('when the year has no events in the DB', () => {
+  describe('when the year has no events in the listings', () => {
     it('writes nothing — leaves the output tree as the upstream prune left it', () => {
-      renderYearIndex(db, outputDirPath, 1066)
+      renderYearIndex(outputDirPath, 1066, [])
 
       assert.ok(!existsSync(outputDirPath))
     })

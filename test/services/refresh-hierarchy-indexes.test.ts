@@ -1,63 +1,32 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
 import type EventListing from '../../src/types/event-listing.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
-import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import refreshHierarchyIndexes from '../../src/services/refresh-hierarchy-indexes.js'
 import { tmpdir } from 'node:os'
 
 describe('refreshHierarchyIndexes', () => {
-  /** Tmp directory holding the test SQLite file and output tree. */
+  /** Tmp directory holding the output tree. */
   let tmpDirPath: string
-
-  /** Database handle threaded into the SUT; on-disk SQLite so the real chain can query it. */
-  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
 
-  /**
-   * Inserts an event row carrying just the columns the index queries touch.
-   *
-   * @param year - Seasonal year of the row.
-   * @param season - Season-within-year of the row.
-   * @param position - Position-within-season of the row.
-   */
-  const insertEventRow = (year: number, season: number, position: number): void => {
-    db.prepare(`
-      INSERT INTO events (
-        title, description, illustration_hash,
-        start_date, end_date,
-        seasonal_year, season, position
-      ) VALUES ('t', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(year, season, position)
-  }
-
   beforeEach(() => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    /** Path to the test SQLite file. */
-    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
-    applyMigrations(dbPath)
-    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
-    db.close()
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
   it('renders the root index plus every touched year and slot index, deduping years across slots', () => {
-    insertEventRow(1066, 3, 1)
-    insertEventRow(2026, 1, 1)
-    insertEventRow(2026, 2, 1)
-
     /**
-     * Listings the SUT threads into `renderSeasonIndex`; matches the seeded rows by slot so
-     * the season-index renderer projects a non-empty timeline for each touched slot.
+     * Listings the SUT threads into every child renderer; covers the three touched slots so
+     * each season-index renderer projects a non-empty timeline.
      */
     const listings: EventListing[] = [
       {
@@ -109,7 +78,7 @@ describe('refreshHierarchyIndexes', () => {
       { seasonalYear: 1066, season: 3 },
     ]
 
-    refreshHierarchyIndexes(db, outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
+    refreshHierarchyIndexes(outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
 
     assert.ok(existsSync(join(outputDirPath, 'index.html')))
     assert.ok(existsSync(join(outputDirPath, '1066', 'index.html')))
@@ -121,7 +90,7 @@ describe('refreshHierarchyIndexes', () => {
 
   describe('when no seasons were rendered or pruned', () => {
     it('writes nothing — every child renderer is skipped', () => {
-      refreshHierarchyIndexes(db, outputDirPath, [], [], [])
+      refreshHierarchyIndexes(outputDirPath, [], [], [])
 
       assert.ok(!existsSync(outputDirPath))
     })

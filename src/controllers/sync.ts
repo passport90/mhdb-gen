@@ -40,7 +40,7 @@ const sync: Controller = (_args, messageStream) => {
     /** Distinct slots containing at least one event whose orphan output was pruned this run. */
     const slotsWithPrunedEvents = pruneOrphanOutput(listings, outputDirPath)
 
-    refreshHierarchyIndexes(db, outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
+    refreshHierarchyIndexes(outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
   })
 
   copyDirectory(assetsDirPath, outputDirPath)

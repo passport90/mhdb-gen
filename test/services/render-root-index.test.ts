@@ -1,58 +1,60 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { DatabaseSync } from 'node:sqlite'
-import applyMigrations from '../support/apply-migrations.js'
+import type EventListing from '../../src/types/event-listing.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import renderRootIndex from '../../src/services/render-root-index.js'
 import { tmpdir } from 'node:os'
 
 describe('renderRootIndex', () => {
-  /** Tmp directory holding the test SQLite file and output tree. */
+  /** Tmp directory holding the output tree. */
   let tmpDirPath: string
-
-  /** Database handle threaded into the SUT; on-disk SQLite so the real chain can query it. */
-  let db: DatabaseSync
 
   /** Output root threaded into the SUT. */
   let outputDirPath: string
 
-  /**
-   * Inserts an event row carrying just the columns the root-index query path touches.
-   *
-   * @param year - Seasonal year of the row.
-   * @param season - Season-within-year of the row.
-   * @param position - Position-within-season of the row.
-   */
-  const insertEventRow = (year: number, season: number, position: number): void => {
-    db.prepare(`
-      INSERT INTO events (
-        title, description, illustration_hash,
-        start_date, end_date,
-        seasonal_year, season, position
-      ) VALUES ('t', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(year, season, position)
-  }
-
   beforeEach(() => {
     tmpDirPath = mkdtempSync(join(tmpdir(), 'mhdb-test-'))
-    /** Path to the test SQLite file. */
-    const dbPath = join(tmpDirPath, 'test.sqlite')
     outputDirPath = join(tmpDirPath, 'output')
-    applyMigrations(dbPath)
-    db = new DatabaseSync(dbPath)
   })
 
   afterEach(() => {
-    db.close()
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('writes the root index to <outputDirPath>/index.html, with year cells reflecting DB state', () => {
-    insertEventRow(1066, 3, 1)
-    insertEventRow(2026, 1, 1)
+  it('writes the root index to <outputDirPath>/index.html, with year cells reflecting the listings', () => {
+    /**
+     * Two listings in years 1066 and 2026 — the SUT should derive decade rows for the 1060s
+     * and 2020s and place cells at those years.
+     */
+    const listings: EventListing[] = [
+      {
+        id: 1,
+        title: 'Hastings',
+        slug: 'hastings',
+        startDate: '1066-10-14',
+        endDate: '1066-10-14',
+        seasonalYear: 1066,
+        season: 3,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1066-10-01 00:00:00',
+      },
+      {
+        id: 2,
+        title: 'Future Event',
+        slug: 'future-event',
+        startDate: '2026-04-01',
+        endDate: '2026-04-08',
+        seasonalYear: 2026,
+        season: 1,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '2026-04-01 00:00:00',
+      },
+    ]
 
-    renderRootIndex(db, outputDirPath)
+    renderRootIndex(outputDirPath, listings)
 
     /** Rendered root index on disk. */
     const indexHtml = readFileSync(join(outputDirPath, 'index.html'), 'utf8')

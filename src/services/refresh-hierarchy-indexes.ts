@@ -1,4 +1,3 @@
-import type { DatabaseSync } from 'node:sqlite'
 import type EventListing from '../types/event-listing.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import renderRootIndex from './render-root-index.js'
@@ -10,15 +9,13 @@ import renderYearIndex from './render-year-index.js'
  * either by an event re-rendered or an orphan output pruned. Skipped entirely when no subtree
  * changed.
  *
- * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param outputDirPath - Output root.
- * @param listings - Snapshot of every event listing, threaded into the season-index renderer
- *   as its data source so it doesn't re-query (or re-slugify) per slot.
+ * @param listings - Snapshot of every event listing, threaded into every index renderer as
+ *   its data source so they don't re-query (or re-slugify) per call.
  * @param slotsWithRenderedEvents - Slots containing at least one event re-rendered this run.
  * @param slotsWithPrunedEvents - Slots containing at least one event whose orphan output was pruned this run.
  */
 const refreshHierarchyIndexes = (
-  db: DatabaseSync,
   outputDirPath: string,
   listings: EventListing[],
   slotsWithRenderedEvents: SeasonalSlot[],
@@ -26,18 +23,18 @@ const refreshHierarchyIndexes = (
 ): void => {
   if (slotsWithRenderedEvents.length === 0 && slotsWithPrunedEvents.length === 0) return
 
-  renderRootIndex(db, outputDirPath)
+  renderRootIndex(outputDirPath, listings)
 
   /** Distinct years across both inputs; year index refreshed once per. */
   const touchedYearSet = collectTouchedYearSet(slotsWithRenderedEvents, slotsWithPrunedEvents)
   for (const year of touchedYearSet) {
-    renderYearIndex(db, outputDirPath, year)
+    renderYearIndex(outputDirPath, year, listings)
   }
 
   /** Distinct (year, season) slots across both inputs; season index refreshed once per. */
   const touchedSlots = collectTouchedSlots(slotsWithRenderedEvents, slotsWithPrunedEvents)
   for (const slot of touchedSlots) {
-    renderSeasonIndex(db, outputDirPath, slot, listings)
+    renderSeasonIndex(outputDirPath, slot, listings)
   }
 }
 
