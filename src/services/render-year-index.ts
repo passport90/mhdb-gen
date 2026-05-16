@@ -2,8 +2,21 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import type EventListing from '../types/event-listing.js'
 import buildYearIndexPage from '../presenters/build-year-index-page.js'
 import buildYearIndexViewModel from '../presenters/build-year-index-view-model.js'
-import collectYearsWithEvents from './collect-years-with-events.js'
 import { join } from 'node:path'
+
+/**
+ * Single-pass derivation result for the year-index render — the seasons in the target year
+ * plus its prev/next year neighbors. Private to this module since only `renderYearIndex`
+ * consumes it.
+ */
+interface YearNeighborhood {
+  /** Season numbers (0–3) in the target year with at least one event, ascending. */
+  seasonsInYear: number[]
+  /** Closest earlier year with events, or `null` when the target is the earliest. */
+  prevYear: number | null
+  /** Closest later year with events, or `null` when the target is the latest. */
+  nextYear: number | null
+}
 
 /**
  * Renders the year's index page at `<outputDirPath>/<year>/index.html` when the year has events.
@@ -13,27 +26,19 @@ import { join } from 'node:path'
  * @param outputDirPath - Output root.
  * @param year - Seasonal year whose index page is being rendered.
  * @param listings - Snapshot of every event listing; the season set and prev/next year links
- *   are derived from it in memory.
+ *   are derived from it in a single pass.
  */
 const renderYearIndex = (
   outputDirPath: string,
   year: number,
   listings: EventListing[],
 ): void => {
-  /** Season numbers in `year` that have at least one event, ascending. */
-  const seasonsWithEvents = collectSeasonsInYear(listings, year)
-  if (seasonsWithEvents.length === 0) return
+  /** Three-piece data needed to render the year-index page; derived in one pass over listings. */
+  const { seasonsInYear, prevYear, nextYear } = findYearNeighborhood(listings, year)
+  if (seasonsInYear.length === 0) return
 
-  /** Distinct years with events, ascending; reference list for the adjacency lookup. */
-  const yearsWithEvents = collectYearsWithEvents(listings)
-  /** Position of `year` within `yearsWithEvents`. */
-  const yearIndex = yearsWithEvents.indexOf(year)
-  /** Closest earlier year with events, or `null` when `year` is the earliest. */
-  const prevYear = yearIndex > 0 ? yearsWithEvents[yearIndex - 1] : null
-  /** Closest later year with events, or `null` when `year` is the latest. */
-  const nextYear = yearIndex < yearsWithEvents.length - 1 ? yearsWithEvents[yearIndex + 1] : null
   /** View model assembled from the derived data. */
-  const viewModel = buildYearIndexViewModel(year, seasonsWithEvents, prevYear, nextYear)
+  const viewModel = buildYearIndexViewModel(year, seasonsInYear, prevYear, nextYear)
   /** Rendered HTML for the year index page. */
   const html = buildYearIndexPage(viewModel)
 
@@ -45,29 +50,48 @@ const renderYearIndex = (
 }
 
 /**
- * Collects the distinct season numbers within `year` present in `listings`, ascending. Relies
- * on `listings` being sorted by `(seasonal_year, season, position)` so a single dedup pass
- * yields the right order.
+ * Walks `listings` once and harvests every piece of data the year-index render needs:
+ * the seasons in `year` (deduped by consecutive same-season runs) and the closest earlier
+ * and later years with events. Relies on `listings` being sorted by
+ * `(seasonal_year, season, position)`; the pass terminates as soon as the first
+ * post-target listing is seen.
  *
- * @param listings - Snapshot of every event listing.
- * @param year - Seasonal year being inspected.
- * @returns Season numbers (0–3) in ascending order; empty when the year has no events.
+ * @param listings - Snapshot of every event listing, ordered as above.
+ * @param year - Target year whose neighborhood is being derived.
+ * @returns Seasons in the target year plus prev/next year neighbors.
  */
-const collectSeasonsInYear = (listings: EventListing[], year: number): number[] => {
-  /** Seasons accumulated so far, in encounter (and therefore ascending) order. */
-  const seasons: number[] = []
+const findYearNeighborhood = (listings: EventListing[], year: number): YearNeighborhood => {
+  /** Latest year strictly below `year` seen so far; the final value is the prev-year answer. */
+  let prevYear: number | null = null
 
-  /** Last season appended; tracks the dedup boundary across the pass. */
-  let lastSeason: number | null = null
+  /** Distinct seasons in `year` accumulated so far, in ascending encounter order. */
+  const seasonsInYear: number[] = []
+
+  /** Last season pushed into `seasonsInYear`; tracks the dedup boundary. */
+  let lastSeasonInYear: number | null = null
+
+  /** First year strictly greater than `year`; once set the pass stops. */
+  let nextYear: number | null = null
 
   for (const listing of listings) {
-    if (listing.seasonalYear !== year) continue
-    if (listing.season === lastSeason) continue
-    seasons.push(listing.season)
-    lastSeason = listing.season
+    if (listing.seasonalYear < year) {
+      prevYear = listing.seasonalYear
+      continue
+    }
+
+    if (listing.seasonalYear === year) {
+      if (listing.season === lastSeasonInYear) continue
+
+      seasonsInYear.push(listing.season)
+      lastSeasonInYear = listing.season
+      continue
+    }
+
+    nextYear = listing.seasonalYear
+    break
   }
 
-  return seasons
+  return { seasonsInYear, prevYear, nextYear }
 }
 
 export default renderYearIndex
