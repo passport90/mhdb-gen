@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import type EventListing from '../types/event-listing.js'
 import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
+import type SeasonIndexSource from '../types/season-index-source.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import buildSeasonIndexPage from '../presenters/build-season-index-page.js'
 import buildSeasonIndexViewModel from '../presenters/build-season-index-view-model.js'
@@ -22,20 +23,14 @@ const renderSeasonIndex = (
   slot: SeasonalSlot,
   listings: EventListing[],
 ): void => {
-  /** Listings filtered to events in this slot, preserving the input's position order. */
-  const eventsInSlot = listings.filter(listing => isSameSlot(listing, slot))
-  if (eventsInSlot.length === 0) return
+  /** Season-index source data derived from listings in one cursor pass. */
+  const source = deriveSeasonIndexSource(listings, slot)
 
-  /** Distinct slots with events, in `(year, season)` ascending order. */
-  const distinctSlots = collectDistinctSlots(listings)
-  /** Position of `slot` within `distinctSlots`. */
-  const slotIndex = distinctSlots.findIndex(candidateSlot => isSameSlot(candidateSlot, slot))
-  /** Closest earlier slot with events, or `null` when `slot` is the earliest. */
-  const prevSlot = slotIndex > 0 ? distinctSlots[slotIndex - 1] : null
-  /** Closest later slot with events, or `null` when `slot` is the latest. */
-  const nextSlot = slotIndex < distinctSlots.length - 1 ? distinctSlots[slotIndex + 1] : null
-  /** View model assembled from the derived data. */
-  const viewModel = buildSeasonIndexViewModel(slot, eventsInSlot, prevSlot, nextSlot)
+  if (source.eventsInSlot.length === 0) return
+
+  /** View model assembled from the source. */
+  const viewModel = buildSeasonIndexViewModel(source)
+
   /** Rendered HTML for the season index page. */
   const html = buildSeasonIndexPage(viewModel)
 
@@ -47,41 +42,63 @@ const renderSeasonIndex = (
 }
 
 /**
- * Collects the distinct `(year, season)` slots present in `listings`, in `(year, season)`
- * ascending order. Relies on `listings` being sorted by `(seasonal_year, season, position)` so
- * a single dedup pass yields the right order.
- *
- * @param listings - Snapshot of every event listing.
- * @returns Distinct slots ascending; empty when `listings` is empty.
- */
-const collectDistinctSlots = (listings: EventListing[]): SeasonalSlot[] => {
-  /** Slots accumulated so far, in encounter (and therefore ascending) order. */
-  const slots: SeasonalSlot[] = []
-
-  /** Last slot appended; tracks the dedup boundary across the pass. */
-  let lastSlot: SeasonalSlot | null = null
-
-  for (const listing of listings) {
-    /** Slot extracted from this listing for accumulation. */
-    const slot: SeasonalSlot = { seasonalYear: listing.seasonalYear, season: listing.season }
-    if (lastSlot !== null && isSameSlot(lastSlot, slot)) continue
-
-    slots.push(slot)
-    lastSlot = slot
-  }
-
-  return slots
-}
-
-/**
- * Reports whether two seasonal slots refer to the same `(year, season)` pair. Any object
- * carrying `seasonalYear` and `season` qualifies — `EventListing` and `SeasonalSlot` both fit.
+ * Compares two slots in `(year, season)` lex order. Returns only the sign — never the
+ * arithmetic difference — so the result cannot be mistaken for a year delta or a season
+ * delta depending on which dimension differentiated the inputs.
  *
  * @param a - First slot.
  * @param b - Second slot.
- * @returns `true` when both share the same `seasonalYear` and `season`.
+ * @returns `-1` when `a` precedes `b`, `0` when equal, `1` when `a` follows.
  */
-const isSameSlot = (a: SeasonalSlot, b: SeasonalSlot): boolean =>
-  a.seasonalYear === b.seasonalYear && a.season === b.season
+const compareSlots = (a: SeasonalSlot, b: SeasonalSlot): -1 | 0 | 1 => {
+  if (a.seasonalYear !== b.seasonalYear) return a.seasonalYear < b.seasonalYear ? -1 : 1
+  if (a.season !== b.season) return a.season < b.season ? -1 : 1
+
+  return 0
+}
+
+/**
+ * Walks `listings` once and harvests every piece of data the season-index render needs:
+ * events in `slot` (in position order) and the closest earlier and later slots with events.
+ * Relies on `listings` being sorted by `(seasonal_year, season, position)`; the pass
+ * terminates as soon as the first post-target listing is seen.
+ *
+ * @param listings - Snapshot of every event listing, ordered as above.
+ * @param slot - Target slot whose source is being derived.
+ * @returns Season-index source — the slot, events in it, and prev/next slot neighbors.
+ */
+const deriveSeasonIndexSource = (
+  listings: EventListing[],
+  slot: SeasonalSlot,
+): SeasonIndexSource => {
+  /** Closest earlier slot with events, or `null` when no listing precedes the target. */
+  let prevSlot: SeasonalSlot | null = null
+
+  /** Events in the target slot, in position order. */
+  const eventsInSlot: EventListing[] = []
+
+  /** Cursor into `listings`; advanced through the pre-target and target phases. */
+  let index = 0
+
+  while (index < listings.length && compareSlots(listings[index], slot) < 0) {
+    prevSlot = { seasonalYear: listings[index].seasonalYear, season: listings[index].season }
+    index++
+  }
+
+  while (index < listings.length && compareSlots(listings[index], slot) === 0) {
+    eventsInSlot.push(listings[index])
+    index++
+  }
+
+  /** First listing strictly after the target slot, or `undefined` past the listings end. */
+  const nextListing = listings[index]
+
+  /** Slot of `nextListing`, or `null` when there is no listing past the target. */
+  const nextSlot: SeasonalSlot | null = nextListing
+    ? { seasonalYear: nextListing.seasonalYear, season: nextListing.season }
+    : null
+
+  return { slot, eventsInSlot, prevSlot, nextSlot }
+}
 
 export default renderSeasonIndex

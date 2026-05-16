@@ -1,5 +1,6 @@
 import type EventListing from '../types/event-listing.js'
 import type SeasonIndexPageViewModel from '../types/season-index-page-view-model.js'
+import type SeasonIndexSource from '../types/season-index-source.js'
 import type SeasonLink from '../types/season-link.js'
 import type SeasonTimelineEntry from '../types/season-timeline-entry.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
@@ -10,28 +11,20 @@ import buildSeasonLabel from './build-season-label.js'
 import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 
 /**
- * Projects a slot, its events, and adjacent slots into the season-index view model the eta template
- * consumes — resolves the season label, year breadcrumb, timeline entries, and prev/next season
+ * Projects the season-index source into the view model the eta template consumes —
+ * resolves the season label, year breadcrumb, timeline entries, and prev/next season
  * links.
  *
- * @param slot - Seasonal slot of the page.
- * @param events - Events in the slot, in position order.
- * @param prevSlot - Previous slot with events, or `null` when none.
- * @param nextSlot - Next slot with events, or `null` when none.
+ * @param source - Season-index source: target slot, events in it, prev/next slot neighbors.
  * @returns View model ready for `buildSeasonIndexPage`.
  */
-const buildSeasonIndexViewModel = (
-  slot: SeasonalSlot,
-  events: EventListing[],
-  prevSlot: SeasonalSlot | null,
-  nextSlot: SeasonalSlot | null,
-): SeasonIndexPageViewModel => ({
-  seasonLabel: buildSeasonLabel(slot.seasonalYear, slot.season),
-  yearLabel: String(slot.seasonalYear),
-  yearIndexPagePath: `${slot.seasonalYear}/index.html`,
-  timelineEntries: events.map((event) => buildTimelineEntry(slot, event)),
-  prevSeasonLink: buildSeasonLink(prevSlot),
-  nextSeasonLink: buildSeasonLink(nextSlot),
+const buildSeasonIndexViewModel = (source: SeasonIndexSource): SeasonIndexPageViewModel => ({
+  seasonLabel: buildSeasonLabel(source.slot.seasonalYear, source.slot.season),
+  yearLabel: String(source.slot.seasonalYear),
+  yearIndexPagePath: `${source.slot.seasonalYear}/index.html`,
+  timelineEntries: source.eventsInSlot.map((event) => buildTimelineEntry(source.slot, event)),
+  prevSeasonLink: buildSeasonLink(source.prevSlot),
+  nextSeasonLink: buildSeasonLink(source.nextSlot),
 })
 
 /**

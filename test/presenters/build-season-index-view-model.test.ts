@@ -38,12 +38,12 @@ describe('buildSeasonIndexViewModel', () => {
 
   it('projects every field — season label, breadcrumb year + path, timeline entries, prev/next links', () => {
     /** View model produced by the SUT. */
-    const viewModel = buildSeasonIndexViewModel(
+    const viewModel = buildSeasonIndexViewModel({
       slot,
-      events,
-      { seasonalYear: 1066, season: 0 },
-      { seasonalYear: 1066, season: 2 },
-    )
+      eventsInSlot: events,
+      prevSlot: { seasonalYear: 1066, season: 0 },
+      nextSlot: { seasonalYear: 1066, season: 2 },
+    })
 
     assert.strictEqual(viewModel.seasonLabel, 'Spring 1066')
     assert.strictEqual(viewModel.yearLabel, '1066')
@@ -73,7 +73,12 @@ describe('buildSeasonIndexViewModel', () => {
   describe('when there is no previous slot', () => {
     it('sets prevSeasonLink to null', () => {
       /** View model with `prevSlot` null. */
-      const viewModel = buildSeasonIndexViewModel(slot, events, null, { seasonalYear: 1066, season: 2 })
+      const viewModel = buildSeasonIndexViewModel({
+        slot,
+        eventsInSlot: events,
+        prevSlot: null,
+        nextSlot: { seasonalYear: 1066, season: 2 },
+      })
 
       assert.strictEqual(viewModel.prevSeasonLink, null)
     })
@@ -82,7 +87,12 @@ describe('buildSeasonIndexViewModel', () => {
   describe('when there is no next slot', () => {
     it('sets nextSeasonLink to null', () => {
       /** View model with `nextSlot` null. */
-      const viewModel = buildSeasonIndexViewModel(slot, events, { seasonalYear: 1066, season: 0 }, null)
+      const viewModel = buildSeasonIndexViewModel({
+        slot,
+        eventsInSlot: events,
+        prevSlot: { seasonalYear: 1066, season: 0 },
+        nextSlot: null,
+      })
 
       assert.strictEqual(viewModel.nextSeasonLink, null)
     })
