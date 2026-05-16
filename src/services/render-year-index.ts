@@ -70,26 +70,28 @@ const findYearNeighborhood = (listings: EventListing[], year: number): YearNeigh
   /** Last season pushed into `seasonsInYear`; tracks the dedup boundary. */
   let lastSeasonInYear: number | null = null
 
-  /** First year strictly greater than `year`; once set the pass stops. */
-  let nextYear: number | null = null
+  /** Cursor into `listings`; advanced through the pre-target and target-year phases. */
+  let index = 0
 
-  for (const listing of listings) {
-    if (listing.seasonalYear < year) {
-      prevYear = listing.seasonalYear
-      continue
-    }
-
-    if (listing.seasonalYear === year) {
-      if (listing.season === lastSeasonInYear) continue
-
-      seasonsInYear.push(listing.season)
-      lastSeasonInYear = listing.season
-      continue
-    }
-
-    nextYear = listing.seasonalYear
-    break
+  while (index < listings.length && listings[index].seasonalYear < year) {
+    prevYear = listings[index].seasonalYear
+    index++
   }
+
+  while (index < listings.length && listings[index].seasonalYear === year) {
+    /** Season number for the current listing. */
+    const season = listings[index].season
+
+    if (season !== lastSeasonInYear) {
+      seasonsInYear.push(season)
+      lastSeasonInYear = season
+    }
+
+    index++
+  }
+
+  /** First year strictly greater than `year`; `null` when the target is the last year in `listings`. */
+  const nextYear = listings[index]?.seasonalYear ?? null
 
   return { seasonsInYear, prevYear, nextYear }
 }
