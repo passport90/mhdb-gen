@@ -1,13 +1,13 @@
 import type EventSlot from './event-slot.js'
 
 /**
- * Event-header projection used by sync decision-side services
- * (`findEventIdsToRender`, `pruneOrphanOutput`) — identifiers, slot coordinates, the
+ * Event-listing projection used by sync decision-side services
+ * (`findEventsToRender`, `pruneOrphanOutput`) — identifiers, slot coordinates, the
  * pre-derived URL slug, and sync-state timestamps. The slug is computed once in the sync
- * controller from the title on the underlying `EventHeaderRow`, so downstream consumers
+ * controller from the title on the underlying `EventListingRow`, so downstream consumers
  * never need to know about slugify.
  */
-interface EventHeader extends EventSlot {
+interface EventListing extends EventSlot {
   /** Surrogate primary key from the `events` table. */
   id: number
   /** URL slug derived from the underlying row's title via `slugify`; pre-computed by the controller. */
@@ -18,4 +18,4 @@ interface EventHeader extends EventSlot {
   updatedAt: string
 }
 
-export default EventHeader
+export default EventListing

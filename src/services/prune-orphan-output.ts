@@ -1,5 +1,5 @@
 import { type Dirent, readdirSync, rmSync } from 'node:fs'
-import type EventHeader from '../types/event-header.js'
+import type EventListing from '../types/event-listing.js'
 import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import { join } from 'node:path'
@@ -13,7 +13,7 @@ const SEASON_INDEX_FILE_NAME = 'index.html'
 /**
  * Removes every entry under `outputDirPath/<year>/<season-int>-<season-name>/` that is not the season-index
  * `index.html` or a canonical `<position>-<slug>` directory whose
- * `(seasonalYear, season, position, slug)` quadruple is in `headers` — orphan event bundles,
+ * `(seasonalYear, season, position, slug)` quadruple is in `listings` — orphan event bundles,
  * junk files, and stray non-canonical subdirectories all go. Empty season directories left after
  * that pass (no canonical bundles survive) are removed entirely, sweeping the stale season-index
  * along with them. Year directories left with no remaining season subdirectories are removed for
@@ -21,17 +21,17 @@ const SEASON_INDEX_FILE_NAME = 'index.html'
  * only when their name matches the DB's CHECK constraints (4-digit CE year, season 0-3), so
  * non-event entries co-located with the event tree at higher levels are preserved.
  *
- * @param headers - Snapshot of every event row; each `(seasonalYear, season, position, slug)` is
+ * @param listings - Snapshot of every event row; each `(seasonalYear, season, position, slug)` is
  *   the canonical disk location for that event's output directory.
  * @param outputDirPath - Output root walked for orphan directories.
  * @returns Distinct slots containing at least one entry pruned this run.
  */
-const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): SeasonalSlot[] => {
+const pruneOrphanOutput = (listings: EventListing[], outputDirPath: string): SeasonalSlot[] => {
   /**
    * Set of `(year, season, position-slug)` keys currently in the DB; encoded as `/`-joined
    * strings for membership lookup.
    */
-  const validKeySet = new Set(headers.map(buildHeaderKey))
+  const validKeySet = new Set(listings.map(buildListingKey))
 
   /** Slots accumulated for return — one entry per season that lost at least one entry this run. */
   const touchedSlots: SeasonalSlot[] = []
@@ -69,15 +69,15 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
 }
 
 /**
- * Builds the membership key for one event header — `<year>/<season-segment>/<position>-<slug>`,
+ * Builds the membership key for one event listing — `<year>/<season-segment>/<position>-<slug>`,
  * matching the on-disk path of the rendered bundle directory under the season directory.
- * Slug is read directly from the header, pre-derived by the controller.
+ * Slug is read directly from the listing, pre-derived by the controller.
  *
- * @param header - Event header whose key is being built.
+ * @param listing - Event listing whose key is being built.
  * @returns Slash-joined key for `validKeySet`.
  */
-const buildHeaderKey = (header: EventHeader): string =>
-  `${header.seasonalYear}/${SEASON_PATH_SEGMENTS[header.season]}/${header.position}-${header.slug}`
+const buildListingKey = (listing: EventListing): string =>
+  `${listing.seasonalYear}/${SEASON_PATH_SEGMENTS[listing.season]}/${listing.position}-${listing.slug}`
 
 /**
  * Parses `entry` as a season-index directory — accepts only directories whose name is the

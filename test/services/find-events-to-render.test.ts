@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
-import type EventHeader from '../../src/types/event-header.js'
+import type EventListing from '../../src/types/event-listing.js'
 import SEASON_PATH_SEGMENTS from '../../src/constants/season-path-segments.js'
 import assert from 'node:assert/strict'
 import findEventsToRender from '../../src/services/find-events-to-render.js'
@@ -44,12 +44,12 @@ describe('findEventsToRender', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('returns the subset of headers that are db-stale or whose output dir is missing, in input order', () => {
+  it('returns the subset of listings that are db-stale or whose output dir is missing, in input order', () => {
     /**
-     * Four headers cover every cell of the (isDbStale, dirExists) grid; only the three
+     * Four listings cover every cell of the (isDbStale, dirExists) grid; only the three
      * with at least one "yes" should land in the returned subset.
      */
-    const headers: EventHeader[] = [
+    const listings: EventListing[] = [
       {
         id: 1,
         slug: 'stale-with-dir',
@@ -91,9 +91,9 @@ describe('findEventsToRender', () => {
     seedOutputDir(2026, 0, 1, 'stale-with-dir')
     seedOutputDir(2026, 2, 1, 'fresh-with-dir')
 
-    /** Headers of events the SUT selected for rendering. */
-    const eventsToRender = findEventsToRender(headers, outputDirPath)
+    /** Listings of events the SUT selected for rendering. */
+    const eventsToRender = findEventsToRender(listings, outputDirPath)
 
-    assert.deepStrictEqual(eventsToRender, [headers[0], headers[1], headers[3]])
+    assert.deepStrictEqual(eventsToRender, [listings[0], listings[1], listings[3]])
   })
 })

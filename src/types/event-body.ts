@@ -1,7 +1,7 @@
 /**
  * Body fields of an event row — the heavy authored content plus dates, exclusive of the
- * identifying tuple already carried by `EventHeader`. Returned by `findEventBodyById`;
- * combined with a header in the render service to produce an `EventToRender`.
+ * identifying tuple already carried by `EventListing`. Returned by `findEventBodyById`;
+ * combined with a listing in the render service to produce an `EventToRender`.
  */
 interface EventBody {
   /** Display title, lifted from the markdown H1. */

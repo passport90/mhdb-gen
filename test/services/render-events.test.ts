@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import type EventBody from '../../src/types/event-body.js'
-import type EventHeader from '../../src/types/event-header.js'
+import type EventListing from '../../src/types/event-listing.js'
 import type EventSlot from '../../src/types/event-slot.js'
 import { PassThrough } from 'node:stream'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
@@ -49,8 +49,8 @@ describe('renderEvents', () => {
   /** Slot for the second seeded event. */
   const secondEventSlot: EventSlot = { seasonalYear: 2026, season: 2, position: 4 }
 
-  /** Headers threaded into the SUT, paired with the seeded rows by id and carrying the pre-derived slug. */
-  const headers: EventHeader[] = [
+  /** Listings threaded into the SUT, paired with the seeded rows by id and carrying the pre-derived slug. */
+  const listings: EventListing[] = [
     {
       id: 1,
       seasonalYear: 2026,
@@ -140,9 +140,9 @@ describe('renderEvents', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('renders each event in header order, dedupes seasons across same-slot events, returns distinct slots', () => {
+  it('renders each event in listing order, dedupes seasons across same-slot events, returns distinct slots', () => {
     /** Distinct slots returned by the SUT. */
-    const slotsWithRenderedEvents = renderEvents(db, headers, outputDirPath, messageStream)
+    const slotsWithRenderedEvents = renderEvents(db, listings, outputDirPath, messageStream)
 
     assert.strictEqual(
       messageStream.read()?.toString(),
@@ -188,7 +188,7 @@ describe('renderEvents', () => {
     assert.deepStrictEqual(slotsWithRenderedEvents, expectedSlotsWithRenderedEvents)
   })
 
-  describe('when the header list is empty', () => {
+  describe('when the listing list is empty', () => {
     it('returns an empty slot list, writes nothing, and leaves every rendered_at null', () => {
       /** Distinct slots returned by the SUT. */
       const slotsWithRenderedEvents = renderEvents(db, [], outputDirPath, messageStream)

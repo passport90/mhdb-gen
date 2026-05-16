@@ -4,7 +4,7 @@ import type EventBody from '../types/event-body.js'
 /**
  * Hydrates the heavy body fields of a single event row — title, description,
  * illustration hash, and the date range. The caller already holds the identifying tuple
- * (id, slot, slug, updatedAt) via the upstream `EventHeader`, so those columns are
+ * (id, slot, slug, updatedAt) via the upstream `EventListing`, so those columns are
  * deliberately not re-selected; combining the two produces an `EventToRender`.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.

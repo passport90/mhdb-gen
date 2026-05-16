@@ -4,11 +4,11 @@ import { DatabaseSync } from 'node:sqlite'
 import type EventSlot from '../../src/types/event-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
-import findAllEventHeaders from '../../src/repositories/find-all-event-headers.js'
+import findAllEventListings from '../../src/repositories/find-all-event-listings.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-describe('findAllEventHeaders', () => {
+describe('findAllEventListings', () => {
   /** Tmp directory created fresh per test; holds the test SQLite file. */
   let tmpDirPath: string
 
@@ -20,7 +20,7 @@ describe('findAllEventHeaders', () => {
 
   /**
    * Inserts a row into `events` at the given slot with controlled timestamp columns,
-   * bypassing the `updated_at` trigger so the headers' raw timestamps land
+   * bypassing the `updated_at` trigger so the listings' raw timestamps land
    * deterministically.
    *
    * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
@@ -67,7 +67,7 @@ describe('findAllEventHeaders', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('returns each event header with raw timestamps, ordered by (seasonal_year, season, position)', () => {
+  it('returns each event listing with raw timestamps, ordered by (seasonal_year, season, position)', () => {
     insertEventRow(
       { seasonalYear: 2026, season: 2, position: 1 },
       'Next Summer',
@@ -93,33 +93,33 @@ describe('findAllEventHeaders', () => {
       '2026-04-01 00:00:00',
     )
 
-    /** Headers returned by the SUT. */
-    const headers = findAllEventHeaders(db)
+    /** Listings returned by the SUT. */
+    const listings = findAllEventListings(db)
 
-    assert.strictEqual(headers.length, 4)
+    assert.strictEqual(listings.length, 4)
 
-    assert.strictEqual(headers[0]?.id, 2)
-    assert.strictEqual(headers[0]?.title, 'Last Spring')
-    assert.strictEqual(headers[0]?.seasonalYear, 2025)
-    assert.strictEqual(headers[0]?.season, 1)
-    assert.strictEqual(headers[0]?.position, 1)
-    assert.strictEqual(headers[0]?.renderedAt, null)
-    assert.strictEqual(headers[0]?.updatedAt, '2025-04-01 00:00:00')
+    assert.strictEqual(listings[0]?.id, 2)
+    assert.strictEqual(listings[0]?.title, 'Last Spring')
+    assert.strictEqual(listings[0]?.seasonalYear, 2025)
+    assert.strictEqual(listings[0]?.season, 1)
+    assert.strictEqual(listings[0]?.position, 1)
+    assert.strictEqual(listings[0]?.renderedAt, null)
+    assert.strictEqual(listings[0]?.updatedAt, '2025-04-01 00:00:00')
 
-    assert.strictEqual(headers[1]?.id, 4)
-    assert.strictEqual(headers[1]?.title, 'Next Spring First')
-    assert.strictEqual(headers[1]?.seasonalYear, 2026)
-    assert.strictEqual(headers[1]?.season, 1)
-    assert.strictEqual(headers[1]?.position, 1)
-    assert.strictEqual(headers[1]?.renderedAt, '2026-04-15 00:00:00')
-    assert.strictEqual(headers[1]?.updatedAt, '2026-04-01 00:00:00')
+    assert.strictEqual(listings[1]?.id, 4)
+    assert.strictEqual(listings[1]?.title, 'Next Spring First')
+    assert.strictEqual(listings[1]?.seasonalYear, 2026)
+    assert.strictEqual(listings[1]?.season, 1)
+    assert.strictEqual(listings[1]?.position, 1)
+    assert.strictEqual(listings[1]?.renderedAt, '2026-04-15 00:00:00')
+    assert.strictEqual(listings[1]?.updatedAt, '2026-04-01 00:00:00')
 
-    assert.strictEqual(headers[2]?.id, 3)
-    assert.strictEqual(headers[2]?.title, 'Next Spring Second')
-    assert.strictEqual(headers[2]?.position, 2)
+    assert.strictEqual(listings[2]?.id, 3)
+    assert.strictEqual(listings[2]?.title, 'Next Spring Second')
+    assert.strictEqual(listings[2]?.position, 2)
 
-    assert.strictEqual(headers[3]?.id, 1)
-    assert.strictEqual(headers[3]?.title, 'Next Summer')
-    assert.strictEqual(headers[3]?.position, 1)
+    assert.strictEqual(listings[3]?.id, 1)
+    assert.strictEqual(listings[3]?.title, 'Next Summer')
+    assert.strictEqual(listings[3]?.position, 1)
   })
 })

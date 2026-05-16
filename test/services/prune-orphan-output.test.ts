@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import type EventHeader from '../../src/types/event-header.js'
+import type EventListing from '../../src/types/event-listing.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
@@ -60,11 +60,11 @@ describe('pruneOrphanOutput', () => {
 
   it('removes orphan entries plus season-level junk, sweeps empty parents, reports touched seasons', () => {
     /**
-     * Two headers establish the valid set: `kept-spring` lives at (2026, 1) and `moved`
+     * Two listings establish the valid set: `kept-spring` lives at (2026, 1) and `moved`
      * at (2026, 2). On disk, `moved` was previously rendered at (2025, 3) — that prior
      * location is orphan since the canonical key now points elsewhere.
      */
-    const headers: EventHeader[] = [
+    const listings: EventListing[] = [
       {
         id: 1,
         slug: 'kept-spring',
@@ -96,7 +96,7 @@ describe('pruneOrphanOutput', () => {
     seedFile('static-asset.css')
 
     /** Touched slots returned by the SUT. */
-    const touchedSlots = pruneOrphanOutput(headers, outputDirPath)
+    const touchedSlots = pruneOrphanOutput(listings, outputDirPath)
 
     assert.ok(existsSync(join(outputDirPath, '2026/1-spring/1-kept-spring')))
     assert.ok(!existsSync(join(outputDirPath, '2026/1-spring/9-orphan-spring')))

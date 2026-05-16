@@ -1,16 +1,16 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type EventHeaderRow from '../types/event-header-row.js'
+import type EventListingRow from '../types/event-listing-row.js'
 
 /**
  * Returns the skinny per-event identifying tuple plus the title (raw, for the caller to
  * derive the slug from) and the raw timestamps the controller uses to decide staleness.
- * The staleness predicate itself lives in `findEventIdsToRender`; this repo is column
+ * The staleness predicate itself lives in `findEventsToRender`; this repo is column
  * shipping only.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @returns Every event's row, ordered by `(seasonal_year, season, position)` ascending.
  */
-const findAllEventHeaders = (db: DatabaseSync): EventHeaderRow[] => {
+const findAllEventListings = (db: DatabaseSync): EventListingRow[] => {
   /** Raw rows; SQL aliases match the type's camelCase keys. */
   const rows = db.prepare(`
     SELECT
@@ -33,7 +33,7 @@ const findAllEventHeaders = (db: DatabaseSync): EventHeaderRow[] => {
     position: row?.position,
     renderedAt: row?.renderedAt,
     updatedAt: row?.updatedAt,
-  })) as EventHeaderRow[]
+  })) as EventListingRow[]
 }
 
-export default findAllEventHeaders
+export default findAllEventListings

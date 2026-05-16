@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type EventBody from '../types/event-body.js'
-import type EventHeader from '../types/event-header.js'
+import type EventListing from '../types/event-listing.js'
 import type EventToRender from '../types/event-to-render.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import type { Writable } from 'node:stream'
@@ -9,14 +9,14 @@ import markRendered from '../repositories/mark-rendered.js'
 import renderEvent from './render-event.js'
 
 /**
- * Renders each event identified by `headers` and stamps `rendered_at` on success.
+ * Renders each event identified by `listings` and stamps `rendered_at` on success.
  * Writes one `[i/n] <position>-<slug>` progress line per event. Returns the distinct
  * `(seasonal_year, season)` slots that contain at least one rendered event.
- * `headers` must be ordered by `(seasonal_year, season, position)`; the returned
+ * `listings` must be ordered by `(seasonal_year, season, position)`; the returned
  * slot list relies on same-slot events being consecutive.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
- * @param headers - Headers of events to render, ordered as above; each carries the
+ * @param listings - Listings of events to render, ordered as above; each carries the
  *   pre-derived slug, so the renderer never re-slugifies.
  * @param outputDirPath - Output root passed through to the renderer.
  * @param messageStream - Receives one progress line per event rendered.
@@ -24,7 +24,7 @@ import renderEvent from './render-event.js'
  */
 const renderEvents = (
   db: DatabaseSync,
-  headers: EventHeader[],
+  listings: EventListing[],
   outputDirPath: string,
   messageStream: Writable,
 ): SeasonalSlot[] => {
@@ -34,18 +34,18 @@ const renderEvents = (
   /** Slot of the previously appended entry; `null` before the first append. */
   let lastSlot: SeasonalSlot | null = null
 
-  if (headers.length === 0) return slotsWithRenderedEvents
+  if (listings.length === 0) return slotsWithRenderedEvents
 
   /** Previous iteration's event; carries forward to become `prevEvent` for the next iteration when same-slot. */
   let prevEvent: EventToRender | null = null
 
   /** Event being rendered this iteration; hydrated up-front so the loop can peek ahead one row. */
-  let currentEvent: EventToRender = hydrateEvent(headers[0], findEventBodyById(db, headers[0].id))
+  let currentEvent: EventToRender = hydrateEvent(listings[0], findEventBodyById(db, listings[0].id))
 
-  for (let index = 0; index < headers.length; index++) {
-    /** Peek-ahead hydration of the next event; `null` past the last header. */
-    const nextEvent = index + 1 < headers.length
-      ? hydrateEvent(headers[index + 1], findEventBodyById(db, headers[index + 1].id))
+  for (let index = 0; index < listings.length; index++) {
+    /** Peek-ahead hydration of the next event; `null` past the last listing. */
+    const nextEvent = index + 1 < listings.length
+      ? hydrateEvent(listings[index + 1], findEventBodyById(db, listings[index + 1].id))
       : null
 
     /** Previous event gated to same-slot; `null` when from a different slot or absent. */
@@ -60,7 +60,7 @@ const renderEvents = (
     }
 
     /** Progress line written for this iteration; `<position>-<slug>` mirrors the on-disk bundle name. */
-    const progressLine = `[${index + 1}/${headers.length}] ${currentEvent.position}-${currentEvent.slug}\n`
+    const progressLine = `[${index + 1}/${listings.length}] ${currentEvent.position}-${currentEvent.slug}\n`
 
     messageStream.write(progressLine)
 
@@ -85,22 +85,22 @@ const areSeasonalSlotsEqual = (a: SeasonalSlot, b: SeasonalSlot): boolean =>
   a.seasonalYear === b.seasonalYear && a.season === b.season
 
 /**
- * Combines a header (identifying tuple, pre-derived slug, last-modified timestamp) with the
+ * Combines a listing (identifying tuple, pre-derived slug, last-modified timestamp) with the
  * body fetched from the database into an `EventToRender`. Lets the renderer consume the
  * full event shape without the service re-slugifying or the repo redundantly re-selecting
- * header columns.
+ * listing columns.
  *
- * @param header - Header for the event, carrying id, slot, slug, and updatedAt.
+ * @param listing - Listing for the event, carrying id, slot, slug, and updatedAt.
  * @param body - Body fields from `findEventBodyById` — title, description, illustration hash, dates.
- * @returns Render-ready event combining header and body.
+ * @returns Render-ready event combining listing and body.
  */
-const hydrateEvent = (header: EventHeader, body: EventBody): EventToRender => ({
-  id: header.id,
-  seasonalYear: header.seasonalYear,
-  season: header.season,
-  position: header.position,
-  slug: header.slug,
-  updatedAt: header.updatedAt,
+const hydrateEvent = (listing: EventListing, body: EventBody): EventToRender => ({
+  id: listing.id,
+  seasonalYear: listing.seasonalYear,
+  season: listing.season,
+  position: listing.position,
+  slug: listing.slug,
+  updatedAt: listing.updatedAt,
   ...body,
 })
 

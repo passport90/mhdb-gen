@@ -1,9 +1,9 @@
 import type Controller from '../types/controller.js'
-import type EventHeader from '../types/event-header.js'
-import type EventHeaderRow from '../types/event-header-row.js'
+import type EventListing from '../types/event-listing.js'
+import type EventListingRow from '../types/event-listing-row.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import { cpSync } from 'node:fs'
-import findAllEventHeaders from '../repositories/find-all-event-headers.js'
+import findAllEventListings from '../repositories/find-all-event-listings.js'
 import findEventsToRender from '../services/find-events-to-render.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
@@ -29,16 +29,16 @@ const sync: Controller = (_args, messageStream) => {
 
   runWithDatabase(db => {
     /** Snapshot of every event row, threaded through the decision-side services with pre-derived slug. */
-    const headers = findAllEventHeaders(db).map(hydrateHeader)
+    const listings = findAllEventListings(db).map(hydrateListing)
 
-    /** Headers of the events that need rendering this run; carry the slug forward to the renderer. */
-    const eventsToRender = findEventsToRender(headers, outputDirPath)
+    /** Listings of the events that need rendering this run; carry the slug forward to the renderer. */
+    const eventsToRender = findEventsToRender(listings, outputDirPath)
 
     /** Distinct slots containing at least one event re-rendered this run. */
     const slotsWithRenderedEvents = renderEvents(db, eventsToRender, outputDirPath, messageStream)
 
     /** Distinct slots containing at least one event whose orphan output was pruned this run. */
-    const slotsWithPrunedEvents = pruneOrphanOutput(headers, outputDirPath)
+    const slotsWithPrunedEvents = pruneOrphanOutput(listings, outputDirPath)
 
     refreshHierarchyIndexes(db, outputDirPath, slotsWithRenderedEvents, slotsWithPrunedEvents)
   })
@@ -60,14 +60,14 @@ const copyDirectory = (srcDirPath: string, destDirPath: string): void => {
 }
 
 /**
- * Wraps a raw `EventHeaderRow` into an `EventHeader` by deriving the URL slug from the title.
+ * Wraps a raw `EventListingRow` into an `EventListing` by deriving the URL slug from the title.
  * Keeps the slug-derivation seam at the controller so the repo stays SQL-only and the
- * downstream sync services consume `header.slug` directly.
+ * downstream sync services consume `listing.slug` directly.
  *
- * @param row - Raw header row from `findAllEventHeaders`.
- * @returns Header with the pre-derived slug field, ready for sync decision-side services.
+ * @param row - Raw listing row from `findAllEventListings`.
+ * @returns Listing with the pre-derived slug field, ready for sync decision-side services.
  */
-const hydrateHeader = (row: EventHeaderRow): EventHeader => ({
+const hydrateListing = (row: EventListingRow): EventListing => ({
   id: row.id,
   seasonalYear: row.seasonalYear,
   season: row.season,
