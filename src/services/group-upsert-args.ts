@@ -23,22 +23,26 @@ const groupUpsertArgs = (args: string[]): EventSource[] => {
   /** Illustration paths in argv order. */
   const illustrationFilePaths = args.filter(path => path.endsWith('.png'))
 
-  /** Illustration paths keyed by `<dirname>/<basename-without-extension>`. */
+  /** Markdown paths keyed by `<dirname>/<basename-without-extension>`; insertion order tracks argv. */
+  const entryFilePathByPairKey = new Map(entryFilePaths.map(path => [toPairKey(path), path]))
+
+  /** Illustration paths keyed by `<dirname>/<basename-without-extension>`; insertion order tracks argv. */
   const illustrationFilePathByPairKey = new Map(illustrationFilePaths.map(path => [toPairKey(path), path]))
 
-  /** Pair keys for every markdown path in argv. */
-  const entryPairKeySet = new Set(entryFilePaths.map(toPairKey))
-
-  /** Illustration paths whose pair has no matching markdown. */
-  const orphanIllustrationFilePaths = illustrationFilePaths.filter(path => !entryPairKeySet.has(toPairKey(path)))
+  /** Illustrations whose pair key has no matching markdown, in argv-encounter order. */
+  const orphanIllustrationFilePaths: string[] = []
+  for (const [pairKey, illustrationFilePath] of illustrationFilePathByPairKey) {
+    if (entryFilePathByPairKey.has(pairKey)) continue
+    orphanIllustrationFilePaths.push(illustrationFilePath)
+  }
 
   if (orphanIllustrationFilePaths.length > 0) {
     throw new UsageError(`illustrations without matching markdown: ${orphanIllustrationFilePaths.join(', ')}`)
   }
 
-  return entryFilePaths.map(entryFilePath => ({
+  return Array.from(entryFilePathByPairKey, ([pairKey, entryFilePath]) => ({
     entryFilePath,
-    illustrationFilePath: illustrationFilePathByPairKey.get(toPairKey(entryFilePath)) ?? null,
+    illustrationFilePath: illustrationFilePathByPairKey.get(pairKey) ?? null,
   }))
 }
 
