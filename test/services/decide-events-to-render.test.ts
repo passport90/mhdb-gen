@@ -3,11 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import type EventListing from '../../src/types/event-listing.js'
 import SEASON_PATH_SEGMENTS from '../../src/constants/season-path-segments.js'
 import assert from 'node:assert/strict'
-import findEventsToRender from '../../src/services/find-events-to-render.js'
+import decideEventsToRender from '../../src/services/decide-events-to-render.js'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-describe('findEventsToRender', () => {
+describe('decideEventsToRender', () => {
   /** Tmp directory created fresh per test; holds the simulated output tree. */
   let tmpDirPath: string
 
@@ -104,7 +104,7 @@ describe('findEventsToRender', () => {
     seedOutputDir(2026, 2, 1, 'fresh-with-dir')
 
     /** Listings of events the SUT selected for rendering. */
-    const eventsToRender = findEventsToRender(listings, outputDirPath)
+    const eventsToRender = decideEventsToRender(listings, outputDirPath)
 
     assert.deepStrictEqual(eventsToRender, [listings[0], listings[1], listings[3]])
   })

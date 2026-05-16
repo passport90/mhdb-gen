@@ -3,8 +3,8 @@ import type EventListing from '../types/event-listing.js'
 import type EventListingRow from '../types/event-listing-row.js'
 import { SUCCESS_EXIT_CODE } from '../constants/exit-codes.js'
 import { cpSync } from 'node:fs'
+import decideEventsToRender from '../services/decide-events-to-render.js'
 import findAllEventListings from '../repositories/find-all-event-listings.js'
-import findEventsToRender from '../services/find-events-to-render.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
 import renderEvents from '../services/render-events.js'
@@ -32,7 +32,7 @@ const sync: Controller = (_args, messageStream) => {
     const listings = findAllEventListings(db).map(hydrateListing)
 
     /** Listings of the events that need rendering this run; carry the slug forward to the renderer. */
-    const eventsToRender = findEventsToRender(listings, outputDirPath)
+    const eventsToRender = decideEventsToRender(listings, outputDirPath)
 
     /** Distinct slots containing at least one event re-rendered this run. */
     const slotsWithRenderedEvents = renderEvents(db, eventsToRender, outputDirPath, messageStream)

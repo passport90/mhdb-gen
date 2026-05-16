@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * Returns the events that need rendering this run — those whose `renderedAt` is null or
+ * Decides which events need rendering this run — those whose `renderedAt` is null or
  * older than `updatedAt`, plus those whose
  * `<outputDirPath>/<seasonalYear>/<season-int>-<season-name>/<position>-<slug>/` directory
  * does not exist. The result is the input subset; listings are passed through so the
@@ -14,7 +14,7 @@ import { join } from 'node:path'
  * @param outputDirPath - Output root used to check directory presence.
  * @returns Listings of events to render this run, preserving input order.
  */
-const findEventsToRender = (listings: EventListing[], outputDirPath: string): EventListing[] =>
+const decideEventsToRender = (listings: EventListing[], outputDirPath: string): EventListing[] =>
   listings.filter(listing => isRenderStale(listing) || isOutputDirMissing(listing, outputDirPath))
 
 /**
@@ -42,4 +42,4 @@ const isOutputDirMissing = (listing: EventListing, outputDirPath: string): boole
 const isRenderStale = (listing: EventListing): boolean =>
   listing.renderedAt === null || listing.renderedAt < listing.updatedAt
 
-export default findEventsToRender
+export default decideEventsToRender

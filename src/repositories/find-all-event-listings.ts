@@ -4,7 +4,7 @@ import type EventListingRow from '../types/event-listing-row.js'
 /**
  * Returns every event's listing-shaped row — identifiers, slot coordinates, title,
  * date range, and the raw timestamps the controller uses to decide staleness. The
- * staleness predicate itself lives in `findEventsToRender`; this repo is column
+ * staleness predicate itself lives in `decideEventsToRender`; this repo is column
  * shipping only.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
