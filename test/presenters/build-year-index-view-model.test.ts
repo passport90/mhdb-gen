@@ -10,9 +10,9 @@ describe('buildYearIndexViewModel', () => {
     assert.strictEqual(viewModel.yearLabel, '1066')
     assert.deepStrictEqual(viewModel.seasonCards, [
       { number: 0, label: 'Winter', indexPagePath: null },
-      { number: 1, label: 'Spring', indexPagePath: '1066/1/index.html' },
+      { number: 1, label: 'Spring', indexPagePath: '1066/1-spring/index.html' },
       { number: 2, label: 'Summer', indexPagePath: null },
-      { number: 3, label: 'Fall', indexPagePath: '1066/3/index.html' },
+      { number: 3, label: 'Fall', indexPagePath: '1066/3-fall/index.html' },
     ])
     assert.deepStrictEqual(viewModel.prevYearLink, {
       label: '1065',

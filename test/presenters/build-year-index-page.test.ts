@@ -9,9 +9,9 @@ describe('buildYearIndexPage', () => {
     yearLabel: '1066',
     seasonCards: [
       { number: 0, label: 'Winter', indexPagePath: null },
-      { number: 1, label: 'Spring', indexPagePath: '1066/1/index.html' },
+      { number: 1, label: 'Spring', indexPagePath: '1066/1-spring/index.html' },
       { number: 2, label: 'Summer', indexPagePath: null },
-      { number: 3, label: 'Fall', indexPagePath: '1066/3/index.html' },
+      { number: 3, label: 'Fall', indexPagePath: '1066/3-fall/index.html' },
     ],
     prevYearLink: { label: '1065', indexPagePath: '1065/index.html' },
     nextYearLink: { label: '1067', indexPagePath: '1067/index.html' },
@@ -52,13 +52,13 @@ describe('buildYearIndexPage', () => {
         <span class="season-card season-card-empty" data-season="0">
           <span class="season-card-label">Winter</span>
         </span>
-        <a class="season-card" data-season="1" href="1066/1/index.html">
+        <a class="season-card" data-season="1" href="1066/1-spring/index.html">
           <span class="season-card-label">Spring</span>
         </a>
         <span class="season-card season-card-empty" data-season="2">
           <span class="season-card-label">Summer</span>
         </span>
-        <a class="season-card" data-season="3" href="1066/3/index.html">
+        <a class="season-card" data-season="3" href="1066/3-fall/index.html">
           <span class="season-card-label">Fall</span>
         </a>
       </div>

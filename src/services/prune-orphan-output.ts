@@ -1,13 +1,17 @@
 import { type Dirent, readdirSync, rmSync } from 'node:fs'
 import type EventHeader from '../types/event-header.js'
+import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import { join } from 'node:path'
+
+/** Season number indexed by canonical path segment; reverse of `SEASON_PATH_SEGMENTS`. */
+const SEASON_BY_PATH_SEGMENT = new Map(SEASON_PATH_SEGMENTS.map((segment, season) => [segment, season]))
 
 /** Canonical file name of the season-index page, owned by the events hierarchy orchestrator. */
 const SEASON_INDEX_FILE_NAME = 'index.html'
 
 /**
- * Removes every entry under `outputDirPath/<year>/<season>/` that is not the season-index
+ * Removes every entry under `outputDirPath/<year>/<season-int>-<season-name>/` that is not the season-index
  * `index.html` or a canonical `<position>-<slug>` directory whose
  * `(seasonalYear, season, position, slug)` quadruple is in `headers` — orphan event bundles,
  * junk files, and stray non-canonical subdirectories all go. Empty season directories left after
@@ -27,7 +31,7 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
    * Set of `(year, season, position-slug)` keys currently in the DB; encoded as `/`-joined
    * strings for membership lookup.
    */
-  const validKeySet = new Set(headers.map(h => `${h.seasonalYear}/${h.season}/${h.position}-${h.slug}`))
+  const validKeySet = new Set(headers.map(buildHeaderKey))
 
   /** Slots accumulated for return — one entry per season that lost at least one entry this run. */
   const touchedSlots: SeasonalSlot[] = []
@@ -65,6 +69,27 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
 }
 
 /**
+ * Builds the membership key for one event header — `<year>/<season-segment>/<position>-<slug>`,
+ * matching the on-disk path of the rendered bundle directory under the season directory.
+ *
+ * @param header - Event header whose key is being built.
+ * @returns Slash-joined key for `validKeySet`.
+ */
+const buildHeaderKey = (header: EventHeader): string =>
+  `${header.seasonalYear}/${SEASON_PATH_SEGMENTS[header.season]}/${header.position}-${header.slug}`
+
+/**
+ * Parses `entry` as a season-index directory — accepts only directories whose name is the
+ * canonical season segment (`0-winter`, `1-spring`, `2-summer`, `3-fall`) for one of the seasons
+ * in the `season` CHECK constraint on the `events` table.
+ *
+ * @param entry - Filesystem entry from `readdirSync(..., { withFileTypes: true })`.
+ * @returns The season integer when `entry` qualifies; `null` otherwise.
+ */
+const parseSeason = (entry: Dirent): number | null =>
+  entry.isDirectory() ? SEASON_BY_PATH_SEGMENT.get(entry.name) ?? null : null
+
+/**
  * Parses `entry` as a 4-digit CE year directory — accepts only directories whose name is a
  * canonical decimal in 1000-9999, mirroring the `seasonal_year` CHECK constraint on the
  * `events` table.
@@ -74,16 +99,6 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
  */
 const parseSeasonalYear = (entry: Dirent): number | null =>
   entry.isDirectory() && /^[1-9]\d{3}$/.test(entry.name) ? Number(entry.name) : null
-
-/**
- * Parses `entry` as a season-index directory — accepts only directories whose name is `0`
- * through `3`, mirroring the `season` CHECK constraint on the `events` table.
- *
- * @param entry - Filesystem entry from `readdirSync(..., { withFileTypes: true })`.
- * @returns The season integer when `entry` qualifies; `null` otherwise.
- */
-const parseSeason = (entry: Dirent): number | null =>
-  entry.isDirectory() && /^[0-3]$/.test(entry.name) ? Number(entry.name) : null
 
 /**
  * Removes every entry under `seasonDirPath` that is neither the season-index `index.html` nor a
@@ -149,7 +164,7 @@ const shouldEntryBePreserved = (
   if (entry.isFile() && entry.name === SEASON_INDEX_FILE_NAME) return true
   if (!entry.isDirectory()) return false
 
-  return validKeySet.has(`${slot.seasonalYear}/${slot.season}/${entry.name}`)
+  return validKeySet.has(`${slot.seasonalYear}/${SEASON_PATH_SEGMENTS[slot.season]}/${entry.name}`)
 }
 
 export default pruneOrphanOutput

@@ -1,12 +1,14 @@
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import type EventToRender from '../types/event-to-render.js'
+import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import buildEventPage from '../presenters/build-event-page.js'
 import buildEventViewModel from '../presenters/build-event-view-model.js'
 import { join } from 'node:path'
 
 /**
- * Writes the event's HTML page to `<outputDirPath>/<year>/<season>/<position>-<slug>/index.html`,
- * copying the illustration alongside it when the event has one.
+ * Writes the event's HTML page to
+ * `<outputDirPath>/<year>/<season-int>-<season-name>/<position>-<slug>/index.html`, copying the
+ * illustration alongside it when the event has one.
  *
  * @param event - Event to render.
  * @param prevEvent - Previous event in the same season, or `null` at the start of the season.
@@ -23,7 +25,7 @@ const renderEvent = (
   const eventDirPath = join(
     outputDirPath,
     String(event.seasonalYear),
-    String(event.season),
+    SEASON_PATH_SEGMENTS[event.season],
     `${event.position}-${event.slug}`,
   )
 

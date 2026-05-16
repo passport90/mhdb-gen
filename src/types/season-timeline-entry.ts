@@ -4,7 +4,7 @@ interface SeasonTimelineEntry {
   dateRangeLabel: string
   /** Event title rendered as inline HTML — markdown processed, no wrapping `<p>` tag. */
   titleInlineHtml: string
-  /** Root-relative URL to the event's page, e.g. `1066/3/battle-of-hastings/index.html`. */
+  /** Root-relative URL to the event's page, e.g. `1066/3-fall/battle-of-hastings/index.html`. */
   eventPagePath: string
 }
 

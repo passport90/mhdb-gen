@@ -1,7 +1,10 @@
 import type EventLink from '../types/event-link.js'
 import type EventPageViewModel from '../types/event-page-view-model.js'
 import type EventToRender from '../types/event-to-render.js'
+import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import buildDateRangeLabel from './build-date-range-label.js'
+import buildEventPagePath from './build-event-page-path.js'
+import buildSeasonIndexPagePath from './build-season-index-page-path.js'
 import buildSeasonLabel from './build-season-label.js'
 import buildUpdatedAtLabel from './build-updated-at-label.js'
 import { marked } from 'marked'
@@ -51,22 +54,8 @@ const buildEventViewModel = (
 })
 
 /**
- * Root-relative URL of an event's page, e.g. `1066/3/1-battle-of-hastings/index.html`. The
- * `<position>-<slug>` bundle name keeps URLs sortable in chronological order within a slot and
- * matches the source markdown filename convention.
- *
- * @param year - Event's seasonal year.
- * @param season - Event's season number.
- * @param position - Event's position within its season; the prefix in the bundle name.
- * @param slug - Event's slug.
- * @returns Event page URL.
- */
-const buildEventPagePath = (year: number, season: number, position: number, slug: string): string =>
-  `${year}/${season}/${position}-${slug}/index.html`
-
-/**
  * Root-relative URL of an event's bundled illustration, e.g.
- * `1066/3/1-battle-of-hastings/illustration.png`.
+ * `1066/3-fall/1-battle-of-hastings/illustration.png`.
  *
  * @param year - Event's seasonal year.
  * @param season - Event's season number.
@@ -75,16 +64,7 @@ const buildEventPagePath = (year: number, season: number, position: number, slug
  * @returns Illustration URL.
  */
 const buildIllustrationPath = (year: number, season: number, position: number, slug: string): string =>
-  `${year}/${season}/${position}-${slug}/${ILLUSTRATION_FILE_NAME}`
-
-/**
- * Root-relative URL of a season's index page.
- *
- * @param year - Seasonal year.
- * @param season - Season number.
- * @returns Season index page URL.
- */
-const buildSeasonIndexPagePath = (year: number, season: number): string => `${year}/${season}/index.html`
+  `${year}/${SEASON_PATH_SEGMENTS[season]}/${position}-${slug}/${ILLUSTRATION_FILE_NAME}`
 
 /**
  * Builds an `EventLink` for an in-season neighbor — the path to its bundle plus its inline-rendered title.

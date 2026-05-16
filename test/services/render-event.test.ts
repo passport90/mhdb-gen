@@ -81,23 +81,23 @@ describe('renderEvent', () => {
 
     /** Rendered page on disk. */
     const pageHtml = readFileSync(
-      join(outputDirPath, '1066', '3', '2-battle-of-hastings', 'index.html'),
+      join(outputDirPath, '1066', '3-fall', '2-battle-of-hastings', 'index.html'),
       'utf8',
     )
 
     /** Expected anchor for the previous-event link in the entry nav. */
     const expectedPrevAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3/1-norman-prologue/index.html">← Norman Prologue</a>'
+      + 'href="1066/3-fall/1-norman-prologue/index.html">← Norman Prologue</a>'
 
     /** Expected anchor for the next-event link in the entry nav. */
     const expectedNextAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3/3-aftermath/index.html">Aftermath →</a>'
+      + 'href="1066/3-fall/3-aftermath/index.html">Aftermath →</a>'
 
     assert.ok(pageHtml.includes('<title>Battle of Hastings - MHDB</title>'))
     assert.ok(pageHtml.includes(expectedPrevAnchor))
     assert.ok(pageHtml.includes(expectedNextAnchor))
     assert.strictEqual(
-      readFileSync(join(outputDirPath, '1066', '3', '2-battle-of-hastings', 'illustration.png'), 'utf8'),
+      readFileSync(join(outputDirPath, '1066', '3-fall', '2-battle-of-hastings', 'illustration.png'), 'utf8'),
       'illustration-bytes',
     )
   })
@@ -121,9 +121,9 @@ describe('renderEvent', () => {
 
       renderEvent(event, null, null, outputDirPath)
 
-      assert.ok(existsSync(join(outputDirPath, '2026', '1', '1-fall-of-rome', 'index.html')))
+      assert.ok(existsSync(join(outputDirPath, '2026', '1-spring', '1-fall-of-rome', 'index.html')))
       assert.strictEqual(
-        existsSync(join(outputDirPath, '2026', '1', '1-fall-of-rome', 'illustration.png')),
+        existsSync(join(outputDirPath, '2026', '1-spring', '1-fall-of-rome', 'illustration.png')),
         false,
       )
     })

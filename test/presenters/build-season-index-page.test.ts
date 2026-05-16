@@ -13,16 +13,16 @@ describe('buildSeasonIndexPage', () => {
       {
         dateRangeLabel: 'April 15–22, 1066',
         titleInlineHtml: 'First <em>Event</em>',
-        eventPagePath: '1066/1/1-first/index.html',
+        eventPagePath: '1066/1-spring/1-first/index.html',
       },
       {
         dateRangeLabel: 'May 1, 1066',
         titleInlineHtml: 'Second Event',
-        eventPagePath: '1066/1/2-second/index.html',
+        eventPagePath: '1066/1-spring/2-second/index.html',
       },
     ],
-    prevSeasonLink: { label: 'Winter 1066', indexPagePath: '1066/0/index.html' },
-    nextSeasonLink: { label: 'Summer 1066', indexPagePath: '1066/2/index.html' },
+    prevSeasonLink: { label: 'Winter 1066', indexPagePath: '1066/0-winter/index.html' },
+    nextSeasonLink: { label: 'Summer 1066', indexPagePath: '1066/2-summer/index.html' },
   }
 
   it('renders the full season index page with timeline list and prev+next season nav', () => {
@@ -60,19 +60,19 @@ describe('buildSeasonIndexPage', () => {
       <ol class="season-timeline">
         <li>
           <span class="event-date">April 15–22, 1066</span>
-          <a class="event-title" href="1066/1/1-first/index.html">First <em>Event</em></a>
+          <a class="event-title" href="1066/1-spring/1-first/index.html">First <em>Event</em></a>
         </li>
         <li>
           <span class="event-date">May 1, 1066</span>
-          <a class="event-title" href="1066/1/2-second/index.html">Second Event</a>
+          <a class="event-title" href="1066/1-spring/2-second/index.html">Second Event</a>
         </li>
       </ol>
       <div class="season-nav" aria-label="Season navigation">
         <div class="season-nav-slot">
-          <a class="season-nav-link" href="1066/0/index.html">← Winter 1066</a>
+          <a class="season-nav-link" href="1066/0-winter/index.html">← Winter 1066</a>
         </div>
         <div class="season-nav-slot">
-          <a class="season-nav-link" href="1066/2/index.html">Summer 1066 →</a>
+          <a class="season-nav-link" href="1066/2-summer/index.html">Summer 1066 →</a>
         </div>
       </div>
     </main>

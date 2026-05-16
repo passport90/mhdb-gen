@@ -2,6 +2,7 @@ import SEASON_NAMES from '../constants/season-names.js'
 import type SeasonCard from '../types/season-card.js'
 import type YearIndexPageViewModel from '../types/year-index-page-view-model.js'
 import type YearLink from '../types/year-link.js'
+import buildSeasonIndexPagePath from './build-season-index-page-path.js'
 
 /** All four season numbers, in order. */
 const SEASON_NUMBERS = [0, 1, 2, 3]
@@ -42,7 +43,7 @@ const buildSeasonCards = (year: number, seasonsWithEvents: number[]): SeasonCard
   return SEASON_NUMBERS.map((number) => ({
     number,
     label: SEASON_NAMES[number],
-    indexPagePath: seasonsWithEventsSet.has(number) ? `${year}/${number}/index.html` : null,
+    indexPagePath: seasonsWithEventsSet.has(number) ? buildSeasonIndexPagePath(year, number) : null,
   }))
 }
 

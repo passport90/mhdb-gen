@@ -73,12 +73,14 @@ describe('renderSeasonIndex', () => {
     renderSeasonIndex(db, outputDirPath, slot)
 
     /** Rendered season index on disk. */
-    const indexHtml = readFileSync(join(outputDirPath, '1066', '1', 'index.html'), 'utf8')
+    const indexHtml = readFileSync(join(outputDirPath, '1066', '1-spring', 'index.html'), 'utf8')
     assert.ok(indexHtml.includes('<title>Spring 1066 - MHDB</title>'))
-    assert.ok(indexHtml.includes('<a class="event-title" href="1066/1/1-first-event/index.html">First Event</a>'))
-    assert.ok(indexHtml.includes('<a class="event-title" href="1066/1/2-second-event/index.html">Second Event</a>'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/0/index.html">← Winter 1066</a>'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/2/index.html">Summer 1066 →</a>'))
+    assert.ok(indexHtml.includes('<a class="event-title" href="1066/1-spring/1-first-event/index.html">'
+      + 'First Event</a>'))
+    assert.ok(indexHtml.includes('<a class="event-title" href="1066/1-spring/2-second-event/index.html">'
+      + 'Second Event</a>'))
+    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/0-winter/index.html">← Winter 1066</a>'))
+    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/2-summer/index.html">Summer 1066 →</a>'))
   })
 
   describe('when the slot has no events in the DB', () => {

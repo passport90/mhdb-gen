@@ -4,6 +4,8 @@ import type SeasonTimelineEntry from '../types/season-timeline-entry.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import type TimelineEvent from '../types/timeline-event.js'
 import buildDateRangeLabel from './build-date-range-label.js'
+import buildEventPagePath from './build-event-page-path.js'
+import buildSeasonIndexPagePath from './build-season-index-page-path.js'
 import buildSeasonLabel from './build-season-label.js'
 import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 
@@ -43,7 +45,7 @@ const buildSeasonLink = (slot: SeasonalSlot | null): SeasonLink | null => {
 
   return {
     label: buildSeasonLabel(slot.seasonalYear, slot.season),
-    indexPagePath: `${slot.seasonalYear}/${slot.season}/index.html`,
+    indexPagePath: buildSeasonIndexPagePath(slot.seasonalYear, slot.season),
   }
 }
 
@@ -57,7 +59,7 @@ const buildSeasonLink = (slot: SeasonalSlot | null): SeasonLink | null => {
 const buildTimelineEntry = (slot: SeasonalSlot, event: TimelineEvent): SeasonTimelineEntry => ({
   dateRangeLabel: buildDateRangeLabel(event.startDate, event.endDate),
   titleInlineHtml: renderInlineMarkdown(event.title),
-  eventPagePath: `${slot.seasonalYear}/${slot.season}/${event.position}-${event.slug}/index.html`,
+  eventPagePath: buildEventPagePath(slot.seasonalYear, slot.season, event.position, event.slug),
 })
 
 export default buildSeasonIndexViewModel

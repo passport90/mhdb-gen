@@ -1,11 +1,13 @@
 import type EventHeader from '../types/event-header.js'
+import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
  * Returns the ids of events whose output is stale or missing on disk — those whose
  * `renderedAt` is null or older than `updatedAt`, plus those whose
- * `<outputDirPath>/<seasonalYear>/<season>/<position>-<slug>/` directory does not exist.
+ * `<outputDirPath>/<seasonalYear>/<season-int>-<season-name>/<position>-<slug>/` directory
+ * does not exist.
  *
  * @param headers - Snapshot of every event row, ordered by `(seasonal_year, season, position)`.
  * @param outputDirPath - Output root used to check directory presence.
@@ -20,7 +22,7 @@ const findEventIdsToRender = (headers: EventHeader[], outputDirPath: string): nu
     const dirPath = join(
       outputDirPath,
       String(header.seasonalYear),
-      String(header.season),
+      SEASON_PATH_SEGMENTS[header.season],
       `${header.position}-${header.slug}`,
     )
 

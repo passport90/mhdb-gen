@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import type EventHeader from '../../src/types/event-header.js'
+import SEASON_PATH_SEGMENTS from '../../src/constants/season-path-segments.js'
 import assert from 'node:assert/strict'
 import findEventIdsToRender from '../../src/services/find-event-ids-to-render.js'
 import { join } from 'node:path'
@@ -29,7 +30,7 @@ describe('findEventIdsToRender', () => {
     slug: string,
   ): void => {
     mkdirSync(
-      join(outputDirPath, String(seasonalYear), String(season), `${position}-${slug}`),
+      join(outputDirPath, String(seasonalYear), SEASON_PATH_SEGMENTS[season], `${position}-${slug}`),
       { recursive: true },
     )
   }

@@ -58,16 +58,16 @@ describe('buildEventViewModel', () => {
     assert.strictEqual(viewModel.breadcrumb.year.label, '1066')
     assert.strictEqual(viewModel.breadcrumb.year.indexPagePath, '1066/index.html')
     assert.strictEqual(viewModel.breadcrumb.season.label, 'Fall 1066')
-    assert.strictEqual(viewModel.breadcrumb.season.indexPagePath, '1066/3/index.html')
-    assert.strictEqual(viewModel.illustrationPath, '1066/3/2-battle-of-hastings/illustration.png')
+    assert.strictEqual(viewModel.breadcrumb.season.indexPagePath, '1066/3-fall/index.html')
+    assert.strictEqual(viewModel.illustrationPath, '1066/3-fall/2-battle-of-hastings/illustration.png')
     assert.strictEqual(viewModel.dateRangeLabel, 'October 14, 1066')
     assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>')
     assert.deepStrictEqual(viewModel.siblingNavigation.prevLink, {
-      path: '1066/3/1-norman-prologue/index.html',
+      path: '1066/3-fall/1-norman-prologue/index.html',
       titleInlineHtml: 'Norman <em>Prologue</em>',
     })
     assert.deepStrictEqual(viewModel.siblingNavigation.nextLink, {
-      path: '1066/3/3-aftermath/index.html',
+      path: '1066/3-fall/3-aftermath/index.html',
       titleInlineHtml: 'Aftermath',
     })
     assert.strictEqual(viewModel.updatedAtLabel, 'May 5, 2026 12:00:00')

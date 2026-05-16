@@ -12,18 +12,18 @@ describe('buildEventPage', () => {
     },
     breadcrumb: {
       year: { label: '1066', indexPagePath: '1066/index.html' },
-      season: { label: 'Fall 1066', indexPagePath: '1066/3/index.html' },
+      season: { label: 'Fall 1066', indexPagePath: '1066/3-fall/index.html' },
     },
     dateRangeLabel: 'October 14, 1066',
-    illustrationPath: '1066/3/2-battle-of-hastings/illustration.png',
+    illustrationPath: '1066/3-fall/2-battle-of-hastings/illustration.png',
     descriptionHtml: '<p>A <em>decisive</em> victory.</p>',
     siblingNavigation: {
       prevLink: {
-        path: '1066/3/1-norman-prologue/index.html',
+        path: '1066/3-fall/1-norman-prologue/index.html',
         titleInlineHtml: 'Norman Prologue',
       },
       nextLink: {
-        path: '1066/3/3-aftermath/index.html',
+        path: '1066/3-fall/3-aftermath/index.html',
         titleInlineHtml: 'Aftermath',
       },
     },
@@ -54,7 +54,7 @@ describe('buildEventPage', () => {
           <nav aria-label="breadcrumb">
             <a href="index.html">Home</a>
             <a href="1066/index.html">1066</a>
-            <a href="1066/3/index.html">Fall 1066</a>
+            <a href="1066/3-fall/index.html">Fall 1066</a>
             <span class="current">Battle of <em>Hastings</em></span>
           </nav>
         </div>
@@ -63,7 +63,7 @@ describe('buildEventPage', () => {
     </div>
     <main>
       <figure class="event-illustration">
-        <img src="1066/3/2-battle-of-hastings/illustration.png" alt="">
+        <img src="1066/3-fall/2-battle-of-hastings/illustration.png" alt="">
         <figcaption class="event-illustration-title">
           <h1 class="title-with-subtitle event-title">Battle of <em>Hastings</em></h1>
         </figcaption>
@@ -73,7 +73,7 @@ describe('buildEventPage', () => {
           <dl class="detail-meta">
             <div class="detail-meta-item">
               <dt>Season</dt>
-              <dd><a href="1066/3/index.html">Fall 1066</a></dd>
+              <dd><a href="1066/3-fall/index.html">Fall 1066</a></dd>
             </div>
             <div class="detail-meta-item">
               <dt>Date</dt>
@@ -87,10 +87,10 @@ describe('buildEventPage', () => {
       </div>
       <div class="entry-nav" aria-label="Season entry navigation">
         <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3/1-norman-prologue/index.html">← Norman Prologue</a>
+          <a class="entry-nav-link" href="1066/3-fall/1-norman-prologue/index.html">← Norman Prologue</a>
         </div>
         <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3/3-aftermath/index.html">Aftermath →</a>
+          <a class="entry-nav-link" href="1066/3-fall/3-aftermath/index.html">Aftermath →</a>
         </div>
       </div>
       <div class="paper-stamp">
@@ -129,7 +129,7 @@ describe('buildEventPage', () => {
       }
 
       /** Expected anchor in the prev slot when there is no previous event. */
-      const expectedAnchor = '<a class="entry-nav-link" href="1066/3/index.html">Start of season</a>'
+      const expectedAnchor = '<a class="entry-nav-link" href="1066/3-fall/index.html">Start of season</a>'
 
       /** Rendered HTML produced by the SUT. */
       const renderedHtml = buildEventPage(viewModel)
@@ -148,7 +148,7 @@ describe('buildEventPage', () => {
       }
 
       /** Expected anchor in the next slot when there is no next event. */
-      const expectedAnchor = '<a class="entry-nav-link" href="1066/3/index.html">End of season</a>'
+      const expectedAnchor = '<a class="entry-nav-link" href="1066/3-fall/index.html">End of season</a>'
 
       /** Rendered HTML produced by the SUT. */
       const renderedHtml = buildEventPage(viewModel)

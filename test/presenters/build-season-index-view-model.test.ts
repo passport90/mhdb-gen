@@ -30,21 +30,21 @@ describe('buildSeasonIndexViewModel', () => {
       {
         dateRangeLabel: 'April 15–22, 1066',
         titleInlineHtml: 'First <em>Event</em>',
-        eventPagePath: '1066/1/1-first/index.html',
+        eventPagePath: '1066/1-spring/1-first/index.html',
       },
       {
         dateRangeLabel: 'May 1, 1066',
         titleInlineHtml: 'Second Event',
-        eventPagePath: '1066/1/2-second/index.html',
+        eventPagePath: '1066/1-spring/2-second/index.html',
       },
     ])
     assert.deepStrictEqual(viewModel.prevSeasonLink, {
       label: 'Winter 1066',
-      indexPagePath: '1066/0/index.html',
+      indexPagePath: '1066/0-winter/index.html',
     })
     assert.deepStrictEqual(viewModel.nextSeasonLink, {
       label: 'Summer 1066',
-      indexPagePath: '1066/2/index.html',
+      indexPagePath: '1066/2-summer/index.html',
     })
   })
 

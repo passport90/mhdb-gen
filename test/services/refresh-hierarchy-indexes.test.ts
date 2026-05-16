@@ -71,9 +71,9 @@ describe('refreshHierarchyIndexes', () => {
     assert.ok(existsSync(join(outputDirPath, 'index.html')))
     assert.ok(existsSync(join(outputDirPath, '1066', 'index.html')))
     assert.ok(existsSync(join(outputDirPath, '2026', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '1066', '3', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '2026', '1', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '2026', '2', 'index.html')))
+    assert.ok(existsSync(join(outputDirPath, '1066', '3-fall', 'index.html')))
+    assert.ok(existsSync(join(outputDirPath, '2026', '1-spring', 'index.html')))
+    assert.ok(existsSync(join(outputDirPath, '2026', '2-summer', 'index.html')))
   })
 
   describe('when no seasons were rendered or pruned', () => {

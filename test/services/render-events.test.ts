@@ -126,23 +126,23 @@ describe('renderEvents', () => {
 
     /** Rendered page for `firstEvent`; inspected for title and threaded next link. */
     const firstEventHtml = readFileSync(
-      join(outputDirPath, '2026', '1', '1-first-event', 'index.html'),
+      join(outputDirPath, '2026', '1-spring', '1-first-event', 'index.html'),
       'utf8',
     )
     assert.ok(firstEventHtml.includes('<title>First Event - MHDB</title>'))
-    assert.ok(firstEventHtml.includes('href="2026/1/2-first-event-sibling/index.html"'))
+    assert.ok(firstEventHtml.includes('href="2026/1-spring/2-first-event-sibling/index.html"'))
 
     /** Rendered page for `firstEventSibling`; inspected for title and threaded prev link. */
     const firstEventSiblingHtml = readFileSync(
-      join(outputDirPath, '2026', '1', '2-first-event-sibling', 'index.html'),
+      join(outputDirPath, '2026', '1-spring', '2-first-event-sibling', 'index.html'),
       'utf8',
     )
     assert.ok(firstEventSiblingHtml.includes('<title>First Event Sibling - MHDB</title>'))
-    assert.ok(firstEventSiblingHtml.includes('href="2026/1/1-first-event/index.html"'))
+    assert.ok(firstEventSiblingHtml.includes('href="2026/1-spring/1-first-event/index.html"'))
 
     /** Rendered page for `secondEvent`; inspected for title — different slot, no siblings threaded. */
     const secondEventHtml = readFileSync(
-      join(outputDirPath, '2026', '2', '4-second-event', 'index.html'),
+      join(outputDirPath, '2026', '2-summer', '4-second-event', 'index.html'),
       'utf8',
     )
     assert.ok(secondEventHtml.includes('<title>Second Event - MHDB</title>'))

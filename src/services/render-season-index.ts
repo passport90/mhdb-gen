@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
+import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import buildSeasonIndexPage from '../presenters/build-season-index-page.js'
 import buildSeasonIndexViewModel from '../presenters/build-season-index-view-model.js'
@@ -9,9 +10,10 @@ import findPrevSeasonWithEvents from '../repositories/find-prev-season-with-even
 import { join } from 'node:path'
 
 /**
- * Renders the slot's index page at `<outputDirPath>/<year>/<season>/index.html` when the slot
- * has events. No-ops when the slot is empty in the DB — `pruneOrphanOutput` has already removed
- * the directory and its stale index, and the renderer declines to recreate it.
+ * Renders the slot's index page at
+ * `<outputDirPath>/<year>/<season-int>-<season-name>/index.html` when the slot has events.
+ * No-ops when the slot is empty in the DB — `pruneOrphanOutput` has already removed the directory
+ * and its stale index, and the renderer declines to recreate it.
  *
  * @param db - Database handle.
  * @param outputDirPath - Output root.
@@ -36,7 +38,7 @@ const renderSeasonIndex = (
   const html = buildSeasonIndexPage(viewModel)
 
   /** Season directory under the output root. */
-  const seasonDirPath = join(outputDirPath, String(slot.seasonalYear), String(slot.season))
+  const seasonDirPath = join(outputDirPath, String(slot.seasonalYear), SEASON_PATH_SEGMENTS[slot.season])
 
   mkdirSync(seasonDirPath, { recursive: true })
   writeFileSync(join(seasonDirPath, 'index.html'), html)
