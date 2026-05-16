@@ -5,7 +5,11 @@ import buildYearIndexViewModel from '../../src/presenters/build-year-index-view-
 describe('buildYearIndexViewModel', () => {
   it('projects every field — year label, four season cards (link / empty), and prev/next year links', () => {
     /** View model produced by the SUT for year 1066 with seasons 1 and 3 having events. */
-    const viewModel = buildYearIndexViewModel(1066, [1, 3], 1065, 1067)
+    const viewModel = buildYearIndexViewModel(1066, {
+      seasonsInYear: [1, 3],
+      prevYear: 1065,
+      nextYear: 1067,
+    })
 
     assert.strictEqual(viewModel.yearLabel, '1066')
     assert.deepStrictEqual(viewModel.seasonCards, [
@@ -27,7 +31,11 @@ describe('buildYearIndexViewModel', () => {
   describe('when there is no previous year', () => {
     it('sets prevYearLink to null', () => {
       /** View model with `prevYear` null. */
-      const viewModel = buildYearIndexViewModel(1066, [1], null, 1067)
+      const viewModel = buildYearIndexViewModel(1066, {
+        seasonsInYear: [1],
+        prevYear: null,
+        nextYear: 1067,
+      })
 
       assert.strictEqual(viewModel.prevYearLink, null)
     })
@@ -36,7 +44,11 @@ describe('buildYearIndexViewModel', () => {
   describe('when there is no next year', () => {
     it('sets nextYearLink to null', () => {
       /** View model with `nextYear` null. */
-      const viewModel = buildYearIndexViewModel(1066, [1], 1065, null)
+      const viewModel = buildYearIndexViewModel(1066, {
+        seasonsInYear: [1],
+        prevYear: 1065,
+        nextYear: null,
+      })
 
       assert.strictEqual(viewModel.nextYearLink, null)
     })
