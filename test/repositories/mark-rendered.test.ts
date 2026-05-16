@@ -32,12 +32,11 @@ describe('markRendered', () => {
   it('stamps rendered_at on the row at the given id, leaving updated_at untouched', () => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, start_date, end_date,
+        title, description, start_date, end_date,
         seasonal_year, season, position,
         updated_at, rendered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      'the-event',
       'Title',
       'body',
       '2026-01-01',

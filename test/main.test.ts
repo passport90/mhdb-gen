@@ -41,7 +41,7 @@ body
 
     /** Event rows ordered by position. */
     const events = db.prepare(`
-      SELECT slug, title, description, start_date, end_date,
+      SELECT title, description, start_date, end_date,
         seasonal_year, season, position
       FROM events
       ORDER BY position ASC
@@ -78,7 +78,6 @@ body
     const events = readEvents()
 
     assert.strictEqual(events.length, 1)
-    assert.strictEqual(events[0].slug, 'event')
     assert.strictEqual(events[0].title, 'Event')
     assert.strictEqual(events[0].description, '\nbody\n')
     assert.strictEqual(events[0].start_date, '2026-04-15')

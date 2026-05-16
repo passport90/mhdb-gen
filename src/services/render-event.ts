@@ -41,7 +41,7 @@ const renderEvent = (
   const blobDirPath = `${process.env.MHDB_DB_PATH as string}.blobs`
 
   copyFileSync(
-    join(blobDirPath, `${event.slug}.png`),
+    join(blobDirPath, `${event.seasonalYear}-${event.season}-${event.position}-${event.slug}.png`),
     join(eventDirPath, 'illustration.png'),
   )
 }

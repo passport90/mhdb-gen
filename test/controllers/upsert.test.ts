@@ -51,7 +51,7 @@ body
 
     /** Event rows ordered by position. */
     const events = db.prepare(`
-      SELECT slug, title, description, illustration_hash,
+      SELECT title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
       FROM events
@@ -102,7 +102,6 @@ body
 
     assert.strictEqual(events.length, 3)
 
-    assert.strictEqual(events[0].slug, 'event-1')
     assert.strictEqual(events[0].title, 'Event 1')
     assert.strictEqual(events[0].description, '\nbody\n')
     assert.strictEqual(events[0].illustration_hash, '410f1533ea6a277deec4dcb22851bf4cf451e2db90d9e94514742aaa53fdcdd1')
@@ -112,7 +111,6 @@ body
     assert.strictEqual(events[0].season, 1)
     assert.strictEqual(events[0].position, 1)
 
-    assert.strictEqual(events[1].slug, 'event-2')
     assert.strictEqual(events[1].title, 'Event 2')
     assert.strictEqual(events[1].description, '\nbody\n')
     assert.strictEqual(events[1].illustration_hash, '5e1cff0e796f7b8b3a765ff4774598d1298497a9c22740051660e0995a135634')
@@ -122,7 +120,6 @@ body
     assert.strictEqual(events[1].season, 1)
     assert.strictEqual(events[1].position, 2)
 
-    assert.strictEqual(events[2].slug, 'event-3')
     assert.strictEqual(events[2].title, 'Event 3')
     assert.strictEqual(events[2].description, '\nbody\n')
     assert.strictEqual(events[2].illustration_hash, '519704da57d5ac2f8fadf0b0a2ed258fdc5cd9f800db3eb44351c0f9e959f476')
@@ -132,9 +129,9 @@ body
     assert.strictEqual(events[2].season, 1)
     assert.strictEqual(events[2].position, 3)
 
-    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-1.png`, 'utf8'), 'illustration-1')
-    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-2.png`, 'utf8'), 'illustration-2')
-    assert.strictEqual(readFileSync(`${dbPath}.blobs/event-3.png`, 'utf8'), 'illustration-3')
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/2026-1-1-event-1.png`, 'utf8'), 'illustration-1')
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/2026-1-2-event-2.png`, 'utf8'), 'illustration-2')
+    assert.strictEqual(readFileSync(`${dbPath}.blobs/2026-1-3-event-3.png`, 'utf8'), 'illustration-3')
 
     assert.strictEqual(code, SUCCESS_EXIT_CODE)
   })

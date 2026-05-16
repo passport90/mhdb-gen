@@ -71,6 +71,7 @@ const pruneOrphanOutput = (headers: EventHeader[], outputDirPath: string): Seaso
 /**
  * Builds the membership key for one event header — `<year>/<season-segment>/<position>-<slug>`,
  * matching the on-disk path of the rendered bundle directory under the season directory.
+ * Slug is read directly from the header, pre-derived by the controller.
  *
  * @param header - Event header whose key is being built.
  * @returns Slash-joined key for `validKeySet`.

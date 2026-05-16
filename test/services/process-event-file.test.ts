@@ -68,7 +68,6 @@ description body
     /** Sole row written by the pipeline. */
     const row = rows[0] as Record<string, unknown>
 
-    assert.strictEqual(row.slug, 'my-event')
     assert.strictEqual(row.title, 'My Event')
     assert.strictEqual(row.description, '\ndescription body\n')
     assert.strictEqual(
@@ -81,7 +80,7 @@ description body
     assert.strictEqual(row.season, 1)
     assert.strictEqual(row.position, 3)
     assert.strictEqual(
-      readFileSync(`${dbPath}.blobs/my-event.png`, 'utf8'),
+      readFileSync(`${dbPath}.blobs/2026-1-3-my-event.png`, 'utf8'),
       'hello world',
     )
   })
@@ -99,7 +98,7 @@ description body
       const row = db.prepare('SELECT * FROM events').get() as Record<string, unknown>
 
       assert.strictEqual(row.illustration_hash, null)
-      assert.strictEqual(existsSync(`${dbPath}.blobs/my-event.png`), false)
+      assert.strictEqual(existsSync(`${dbPath}.blobs/2026-1-3-my-event.png`), false)
     })
   })
 

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventToRender from '../../src/types/event-to-render.js'
+import type EventRow from '../../src/types/event-row.js'
 import { PassThrough } from 'node:stream'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -12,9 +12,8 @@ import { tmpdir } from 'node:os'
 
 describe('renderEvents', () => {
   /** First seeded event; expected to land at id 1 via autoincrement. */
-  const firstEvent: EventToRender = {
+  const firstEvent: EventRow = {
     id: 1,
-    slug: 'first-event',
     title: 'First Event',
     description: '\nbody-1\n',
     illustrationHash: null,
@@ -27,9 +26,8 @@ describe('renderEvents', () => {
   }
 
   /** Second seeded event; same slot as `firstEvent`, different position — exercises slot-dedup. */
-  const firstEventSibling: EventToRender = {
+  const firstEventSibling: EventRow = {
     id: 2,
-    slug: 'first-event-sibling',
     title: 'First Event Sibling',
     description: '\nbody-1b\n',
     illustrationHash: null,
@@ -42,9 +40,8 @@ describe('renderEvents', () => {
   }
 
   /** Third seeded event; different slot — produces a second `SeasonalSlot` entry. */
-  const secondEvent: EventToRender = {
+  const secondEvent: EventRow = {
     id: 3,
-    slug: 'second-event',
     title: 'Second Event',
     description: '\nbody-2\n',
     illustrationHash: null,
@@ -76,15 +73,14 @@ describe('renderEvents', () => {
    *
    * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
    */
-  const insertEventRow = (event: EventToRender): void => {
+  const insertEventRow = (event: EventRow): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      event.slug,
       event.title,
       event.description,
       event.illustrationHash,
@@ -121,7 +117,7 @@ describe('renderEvents', () => {
 
     assert.strictEqual(
       messageStream.read()?.toString(),
-      '[1/3] first-event\n[2/3] first-event-sibling\n[3/3] second-event\n',
+      '[1/3] 1-first-event\n[2/3] 2-first-event-sibling\n[3/3] 4-second-event\n',
     )
 
     /** Rendered page for `firstEvent`; inspected for title and threaded next link. */

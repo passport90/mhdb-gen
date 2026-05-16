@@ -20,16 +20,15 @@ describe('findSeasonsWithEventsInYear', () => {
    * @param year - Seasonal year of the row.
    * @param season - Season-within-year of the row.
    * @param position - Position-within-season of the row.
-   * @param slug - Unique slug for the row.
    */
-  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+  const insertEventRow = (year: number, season: number, position: number): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(slug, year, season, position)
+      ) VALUES ('t', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
+    `).run(year, season, position)
   }
 
   beforeEach(() => {
@@ -46,10 +45,10 @@ describe('findSeasonsWithEventsInYear', () => {
   })
 
   it('returns the distinct seasons within the year ascending, ignoring events from other years', () => {
-    insertEventRow(1066, 1, 1, 'a')
-    insertEventRow(1066, 3, 1, 'b')
-    insertEventRow(1066, 1, 2, 'c')
-    insertEventRow(1500, 2, 1, 'other-year')
+    insertEventRow(1066, 1, 1)
+    insertEventRow(1066, 3, 1)
+    insertEventRow(1066, 1, 2)
+    insertEventRow(1500, 2, 1)
 
     /** Seasons returned by the SUT for year 1066. */
     const seasons = findSeasonsWithEventsInYear(db, 1066)

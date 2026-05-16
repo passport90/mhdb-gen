@@ -23,16 +23,15 @@ describe('renderRootIndex', () => {
    * @param year - Seasonal year of the row.
    * @param season - Season-within-year of the row.
    * @param position - Position-within-season of the row.
-   * @param slug - Unique slug for the row.
    */
-  const insertEventRow = (year: number, season: number, position: number, slug: string): void => {
+  const insertEventRow = (year: number, season: number, position: number): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, 't', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
-    `).run(slug, year, season, position)
+      ) VALUES ('t', 'd', NULL, '2026-01-01', '2026-01-01', ?, ?, ?)
+    `).run(year, season, position)
   }
 
   beforeEach(() => {
@@ -50,8 +49,8 @@ describe('renderRootIndex', () => {
   })
 
   it('writes the root index to <outputDirPath>/index.html, with year cells reflecting DB state', () => {
-    insertEventRow(1066, 3, 1, 'a')
-    insertEventRow(2026, 1, 1, 'b')
+    insertEventRow(1066, 3, 1)
+    insertEventRow(2026, 1, 1)
 
     renderRootIndex(db, outputDirPath)
 

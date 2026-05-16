@@ -54,9 +54,9 @@ describe('runWithDatabase', () => {
       capturedDb = db
 
       db.prepare(`
-        INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run('autocommitted', 'Title', 'body', '2026-01-01', '2026-12-31', 2026, 1, 1)
+        INSERT INTO events (title, description, start_date, end_date, seasonal_year, season, position)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run('Title', 'body', '2026-01-01', '2026-12-31', 2026, 1, 1)
 
       return 'forwarded'
     })

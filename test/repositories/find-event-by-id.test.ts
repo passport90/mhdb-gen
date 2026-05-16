@@ -32,12 +32,11 @@ describe('findEventById', () => {
   it('hydrates the row at the given id into an EventToRender, mapping snake_case columns to camelCase', () => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      'battle-of-hastings',
       'Battle of Hastings',
       '\nbody\n',
       'hash-1',
@@ -52,7 +51,6 @@ describe('findEventById', () => {
     const event = findEventById(db, 1)
 
     assert.strictEqual(event.id, 1)
-    assert.strictEqual(event.slug, 'battle-of-hastings')
     assert.strictEqual(event.title, 'Battle of Hastings')
     assert.strictEqual(event.description, '\nbody\n')
     assert.strictEqual(event.illustrationHash, 'hash-1')

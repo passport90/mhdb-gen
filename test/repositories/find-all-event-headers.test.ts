@@ -24,25 +24,24 @@ describe('findAllEventHeaders', () => {
    * deterministically.
    *
    * @param slot - Slot stored in the row's `(seasonal_year, season, position)` columns.
-   * @param slug - Slug stored in the row.
+   * @param title - Title stored in the row.
    * @param renderedAt - Value for `rendered_at`; `null` is the never-rendered arm.
    * @param updatedAt - Value for `updated_at`.
    */
   const insertEventRow = (
     slot: EventSlot,
-    slug: string,
+    title: string,
     renderedAt: string | null,
     updatedAt: string,
   ): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, start_date, end_date,
+        title, description, start_date, end_date,
         seasonal_year, season, position,
         updated_at, rendered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      slug,
-      'Title',
+      title,
       'body',
       '2026-01-01',
       '2026-12-31',
@@ -71,25 +70,25 @@ describe('findAllEventHeaders', () => {
   it('returns each event header with raw timestamps, ordered by (seasonal_year, season, position)', () => {
     insertEventRow(
       { seasonalYear: 2026, season: 2, position: 1 },
-      'next-summer',
+      'Next Summer',
       '2026-06-01 00:00:00',
       '2026-05-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2025, season: 1, position: 1 },
-      'last-spring',
+      'Last Spring',
       null,
       '2025-04-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2026, season: 1, position: 2 },
-      'next-spring-second',
+      'Next Spring Second',
       '2026-04-15 00:00:00',
       '2026-04-01 00:00:00',
     )
     insertEventRow(
       { seasonalYear: 2026, season: 1, position: 1 },
-      'next-spring-first',
+      'Next Spring First',
       '2026-04-15 00:00:00',
       '2026-04-01 00:00:00',
     )
@@ -100,7 +99,7 @@ describe('findAllEventHeaders', () => {
     assert.strictEqual(headers.length, 4)
 
     assert.strictEqual(headers[0]?.id, 2)
-    assert.strictEqual(headers[0]?.slug, 'last-spring')
+    assert.strictEqual(headers[0]?.title, 'Last Spring')
     assert.strictEqual(headers[0]?.seasonalYear, 2025)
     assert.strictEqual(headers[0]?.season, 1)
     assert.strictEqual(headers[0]?.position, 1)
@@ -108,7 +107,7 @@ describe('findAllEventHeaders', () => {
     assert.strictEqual(headers[0]?.updatedAt, '2025-04-01 00:00:00')
 
     assert.strictEqual(headers[1]?.id, 4)
-    assert.strictEqual(headers[1]?.slug, 'next-spring-first')
+    assert.strictEqual(headers[1]?.title, 'Next Spring First')
     assert.strictEqual(headers[1]?.seasonalYear, 2026)
     assert.strictEqual(headers[1]?.season, 1)
     assert.strictEqual(headers[1]?.position, 1)
@@ -116,11 +115,11 @@ describe('findAllEventHeaders', () => {
     assert.strictEqual(headers[1]?.updatedAt, '2026-04-01 00:00:00')
 
     assert.strictEqual(headers[2]?.id, 3)
-    assert.strictEqual(headers[2]?.slug, 'next-spring-second')
+    assert.strictEqual(headers[2]?.title, 'Next Spring Second')
     assert.strictEqual(headers[2]?.position, 2)
 
     assert.strictEqual(headers[3]?.id, 1)
-    assert.strictEqual(headers[3]?.slug, 'next-summer')
+    assert.strictEqual(headers[3]?.title, 'Next Summer')
     assert.strictEqual(headers[3]?.position, 1)
   })
 })

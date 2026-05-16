@@ -9,12 +9,19 @@ import {
   utimesSync,
   writeFileSync,
 } from 'node:fs'
+import type EventSlot from '../../src/types/event-slot.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import syncIllustrationBlob from '../../src/services/sync-illustration-blob.js'
 import { tmpdir } from 'node:os'
 
 describe('syncIllustrationBlob', () => {
+  /** Slot threaded into the SUT; together with `slug` encodes the blob filename `2026-1-3-my-event.png`. */
+  const slot: EventSlot = { seasonalYear: 2026, season: 1, position: 3 }
+
+  /** Slug threaded into the SUT; appended to the slot triple for human readability. */
+  const slug = 'my-event'
+
   /** Tmp directory created fresh per test; holds the source illustration and the blob store. */
   let tmpDirPath: string
 
@@ -36,19 +43,19 @@ describe('syncIllustrationBlob', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('copies the source illustration into the blob store under the slug filename', () => {
+  it('copies the source illustration into the blob store under the slot-triple filename', () => {
     /** Path to the source illustration written for this test. */
     const sourcePath = join(tmpDirPath, 'event.png')
 
     writeFileSync(sourcePath, 'illustration-bytes')
 
-    syncIllustrationBlob('my-event', {
+    syncIllustrationBlob(slot, slug, {
       filePath: sourcePath,
       hash: 'c826837811070b89df1d628d916068090ef79542c249b7f6137e8152dee6eea2',
     })
 
     /** Path the service is expected to have written. */
-    const blobPath = join(blobDirPath, 'my-event.png')
+    const blobPath = join(blobDirPath, '2026-1-3-my-event.png')
 
     assert.strictEqual(readFileSync(blobPath, 'utf8'), 'illustration-bytes')
   })
@@ -59,7 +66,7 @@ describe('syncIllustrationBlob', () => {
       const sourcePath = join(tmpDirPath, 'event.png')
 
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDirPath, 'my-event.png')
+      const blobPath = join(blobDirPath, '2026-1-3-my-event.png')
 
       mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'illustration-bytes')
@@ -70,7 +77,7 @@ describe('syncIllustrationBlob', () => {
 
       utimesSync(blobPath, sentinelMtime, sentinelMtime)
 
-      syncIllustrationBlob('my-event', {
+      syncIllustrationBlob(slot, slug, {
         filePath: sourcePath,
         hash: 'c826837811070b89df1d628d916068090ef79542c249b7f6137e8152dee6eea2',
       })
@@ -85,13 +92,13 @@ describe('syncIllustrationBlob', () => {
       const sourcePath = join(tmpDirPath, 'event.png')
 
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDirPath, 'my-event.png')
+      const blobPath = join(blobDirPath, '2026-1-3-my-event.png')
 
       mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'stale-bytes')
       writeFileSync(sourcePath, 'fresh-bytes')
 
-      syncIllustrationBlob('my-event', {
+      syncIllustrationBlob(slot, slug, {
         filePath: sourcePath,
         hash: '1f52aac46a1dd87dbc4d7cc5099e4671ca74922aacc089cdbd3154cf44272418',
       })
@@ -101,21 +108,21 @@ describe('syncIllustrationBlob', () => {
   })
 
   describe('when the illustration source is null', () => {
-    it('deletes any existing blob for that slug', () => {
+    it('deletes any existing blob for that slot', () => {
       /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDirPath, 'my-event.png')
+      const blobPath = join(blobDirPath, '2026-1-3-my-event.png')
 
       mkdirSync(blobDirPath, { recursive: true })
       writeFileSync(blobPath, 'stale-bytes')
 
-      syncIllustrationBlob('my-event', null)
+      syncIllustrationBlob(slot, slug, null)
 
       assert.strictEqual(existsSync(blobPath), false)
     })
 
-    describe('when no blob exists for that slug', () => {
+    describe('when no blob exists for that slot', () => {
       it('returns without error', () => {
-        assert.doesNotThrow(() => syncIllustrationBlob('my-event', null))
+        assert.doesNotThrow(() => syncIllustrationBlob(slot, slug, null))
       })
     })
   })

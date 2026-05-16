@@ -20,7 +20,6 @@ describe('findEventsInSeason', () => {
    * @param year - Seasonal year of the row.
    * @param season - Season-within-year of the row.
    * @param position - Position-within-season of the row.
-   * @param slug - Unique slug for the row.
    * @param title - Event title (markdown).
    * @param startDate - Start date in `YYYY-MM-DD`.
    * @param endDate - End date in `YYYY-MM-DD`.
@@ -29,18 +28,17 @@ describe('findEventsInSeason', () => {
     year: number,
     season: number,
     position: number,
-    slug: string,
     title: string,
     startDate: string,
     endDate: string,
   ): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, 'd', NULL, ?, ?, ?, ?, ?)
-    `).run(slug, title, startDate, endDate, year, season, position)
+      ) VALUES (?, 'd', NULL, ?, ?, ?, ?, ?)
+    `).run(title, startDate, endDate, year, season, position)
   }
 
   beforeEach(() => {
@@ -56,17 +54,17 @@ describe('findEventsInSeason', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('returns the events in the slot, position-ordered, skinny shape (position/slug/title/startDate/endDate)', () => {
-    insertEventRow(1066, 1, 2, 'second', 'Second Event', '1066-04-15', '1066-04-22')
-    insertEventRow(1066, 1, 1, 'first', 'First Event', '1066-04-01', '1066-04-05')
-    insertEventRow(1066, 3, 1, 'other-slot', 'Wrong Slot', '1066-10-14', '1066-10-14')
+  it('returns the events in the slot, position-ordered, skinny shape (position/title/startDate/endDate)', () => {
+    insertEventRow(1066, 1, 2, 'Second Event', '1066-04-15', '1066-04-22')
+    insertEventRow(1066, 1, 1, 'First Event', '1066-04-01', '1066-04-05')
+    insertEventRow(1066, 3, 1, 'Wrong Slot', '1066-10-14', '1066-10-14')
 
     /** Events returned by the SUT for slot (1066, 1). */
     const events = findEventsInSeason(db, 1066, 1)
 
     assert.deepStrictEqual(events, [
-      { position: 1, slug: 'first', title: 'First Event', startDate: '1066-04-01', endDate: '1066-04-05' },
-      { position: 2, slug: 'second', title: 'Second Event', startDate: '1066-04-15', endDate: '1066-04-22' },
+      { position: 1, title: 'First Event', startDate: '1066-04-01', endDate: '1066-04-05' },
+      { position: 2, title: 'Second Event', startDate: '1066-04-15', endDate: '1066-04-22' },
     ])
   })
 })

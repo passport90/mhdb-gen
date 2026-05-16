@@ -1,20 +1,18 @@
 -- Historical events: the primary entity. Each row is a single
--- event with a stable slug, a title, a markdown description, a
--- date range, and a seasonal placement slot — the slot is what
--- determines where the event renders on the site. Dates are
--- stored as TEXT in ISO 8601 because SQLite has no native DATE
--- type; the format is enforced via the CHECK constraint below.
+-- event with a title, a markdown description, a date range, and
+-- a seasonal placement slot — the slot is what determines where
+-- the event renders on the site. Dates are stored as TEXT in
+-- ISO 8601 because SQLite has no native DATE type; the format is
+-- enforced via the CHECK constraint below.
 CREATE TABLE events (
     -- Surrogate primary key.
     id                INTEGER  PRIMARY KEY AUTOINCREMENT,
-    -- URL-safe identifier derived from the title via slugify
-    -- (NFKD → ASCII → lowercase → non-word stripped → runs
-    -- collapsed to `-`). On collision a numeric suffix is
-    -- appended (`-2`, `-3`, …); the dedup excludes self by id
-    -- so re-upserting an unchanged title is idempotent.
-    slug              TEXT     NOT NULL UNIQUE,
     -- Display title for the event page. Authored as the H1 in
     -- the source markdown; the parser lifts it into this column.
+    -- The URL slug is derived from this via slugify at render
+    -- time and is not stored — the URL is disambiguated by the
+    -- position prefix within the slot, so slug uniqueness is not
+    -- required.
     title             TEXT     NOT NULL,
     -- Full event body in markdown, with the H1 line stripped —
     -- the renderer re-emits the title from `title` on its own.
@@ -87,7 +85,7 @@ CREATE TABLE events (
 -- updated_at, otherwise sync would self-trigger every render.
 CREATE TRIGGER events_update_timestamp
 AFTER UPDATE OF
-    slug, title, description, illustration_hash,
+    title, description, illustration_hash,
     start_date, end_date,
     seasonal_year, season, position
 ON events

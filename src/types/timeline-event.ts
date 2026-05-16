@@ -1,15 +1,13 @@
-/** Skinny event row used to render an event in a season-index timeline. */
-interface TimelineEvent {
-  /** Position of the event within its season; used as the disambiguating prefix in the URL. */
-  position: number
-  /** Slug for the event; used as the URL suffix after the position prefix. */
+import type TimelineEventRow from './timeline-event-row.js'
+
+/**
+ * Skinny event row used to render an event in a season-index timeline, with the pre-derived
+ * URL slug. The service layer wraps a `TimelineEventRow` into this shape via
+ * `{ ...row, slug: slugify(row.title) }`.
+ */
+interface TimelineEvent extends TimelineEventRow {
+  /** URL slug derived from `title` via `slugify`; pre-computed by the service wrapper. */
   slug: string
-  /** Event title in markdown form; rendered to inline HTML by the view-model builder. */
-  title: string
-  /** Start date in `YYYY-MM-DD` format. */
-  startDate: string
-  /** End date in `YYYY-MM-DD` format; equal to `startDate` for single-day events. */
-  endDate: string
 }
 
 export default TimelineEvent

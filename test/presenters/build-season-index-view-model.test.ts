@@ -10,8 +10,20 @@ describe('buildSeasonIndexViewModel', () => {
 
   /** Two events in the slot, in position order. */
   const events: TimelineEvent[] = [
-    { position: 1, slug: 'first', title: 'First *Event*', startDate: '1066-04-15', endDate: '1066-04-22' },
-    { position: 2, slug: 'second', title: 'Second Event', startDate: '1066-05-01', endDate: '1066-05-01' },
+    {
+      position: 1,
+      title: 'First *Event*',
+      slug: 'first-event',
+      startDate: '1066-04-15',
+      endDate: '1066-04-22',
+    },
+    {
+      position: 2,
+      title: 'Second Event',
+      slug: 'second-event',
+      startDate: '1066-05-01',
+      endDate: '1066-05-01',
+    },
   ]
 
   it('projects every field — season label, breadcrumb year + path, timeline entries, prev/next links', () => {
@@ -30,12 +42,12 @@ describe('buildSeasonIndexViewModel', () => {
       {
         dateRangeLabel: 'April 15–22, 1066',
         titleInlineHtml: 'First <em>Event</em>',
-        eventPagePath: '1066/1-spring/1-first/index.html',
+        eventPagePath: '1066/1-spring/1-first-event/index.html',
       },
       {
         dateRangeLabel: 'May 1, 1066',
         titleInlineHtml: 'Second Event',
-        eventPagePath: '1066/1-spring/2-second/index.html',
+        eventPagePath: '1066/1-spring/2-second-event/index.html',
       },
     ])
     assert.deepStrictEqual(viewModel.prevSeasonLink, {

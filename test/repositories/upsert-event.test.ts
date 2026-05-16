@@ -21,9 +21,6 @@ describe('upsertEvent', () => {
     description: '\nbody\n',
   }
 
-  /** Slug paired with `subjectEvent` for the upsert call under test. */
-  const subjectSlug = 'hello-world'
-
   /** Illustration hash paired with `subjectEvent` for the upsert call under test; SHA-256-shaped placeholder. */
   const subjectIllustrationHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
@@ -40,16 +37,15 @@ describe('upsertEvent', () => {
    * Inserts a row directly into `events` at the given slot, bypassing the SUT.
    * Used to seed a slot before exercising `upsertEvent`'s update branch.
    *
-   * @param slug - Slug stored in the seeded row.
    * @param slot - Slot stored in the seeded row's `(seasonal_year, season, position)` columns.
    * @returns Surrogate id of the seeded row.
    */
-  const seedEventRow = (slug: string, slot: EventSlot): number => {
+  const seedEventRow = (slot: EventSlot): number => {
     /** Result of the INSERT, exposing the autoincremented `lastInsertRowid`. */
     const result = db.prepare(`
-      INSERT INTO events (slug, title, description, start_date, end_date, seasonal_year, season, position)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(slug, 'Title', 'body', '2026-01-01', '2026-12-31', slot.seasonalYear, slot.season, slot.position)
+      INSERT INTO events (title, description, start_date, end_date, seasonal_year, season, position)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run('Title', 'body', '2026-01-01', '2026-12-31', slot.seasonalYear, slot.season, slot.position)
 
     return Number(result.lastInsertRowid)
   }
@@ -85,13 +81,12 @@ describe('upsertEvent', () => {
   })
 
   it('inserts a new row when the slot is unoccupied', () => {
-    upsertEvent(db, subjectEvent, subjectSlug, subjectIllustrationHash)
+    upsertEvent(db, subjectEvent, subjectIllustrationHash)
 
     /** Row written by the upsert call. */
     const row = readEventRow()
 
     assert.ok(row !== null)
-    assert.strictEqual(row.slug, 'hello-world')
     assert.strictEqual(row.title, 'Hello World')
     assert.strictEqual(row.description, '\nbody\n')
     assert.strictEqual(row.illustration_hash, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')
@@ -105,16 +100,15 @@ describe('upsertEvent', () => {
   describe('when a row already occupies the slot', () => {
     it('updates the existing row in place, preserving the surrogate id', () => {
       /** Surrogate id of the row seeded into the subject slot. */
-      const idBeforeUpdate = seedEventRow('placeholder-slug', { seasonalYear: 2026, season: 1, position: 3 })
+      const idBeforeUpdate = seedEventRow({ seasonalYear: 2026, season: 1, position: 3 })
 
-      upsertEvent(db, subjectEvent, subjectSlug, subjectIllustrationHash)
+      upsertEvent(db, subjectEvent, subjectIllustrationHash)
 
       /** Row state after the upsert. */
       const row = readEventRow()
 
       assert.ok(row !== null)
       assert.strictEqual(row.id, idBeforeUpdate)
-      assert.strictEqual(row.slug, 'hello-world')
       assert.strictEqual(row.title, 'Hello World')
       assert.strictEqual(row.description, '\nbody\n')
       assert.strictEqual(row.illustration_hash, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef')

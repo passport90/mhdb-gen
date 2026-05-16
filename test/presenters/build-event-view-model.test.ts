@@ -7,8 +7,8 @@ describe('buildEventViewModel', () => {
   /** Base event fixture; per-test overrides via spread. */
   const baseEvent: EventToRender = {
     id: 7,
-    slug: 'battle-of-hastings',
     title: 'Battle of *Hastings*',
+    slug: 'battle-of-hastings',
     description: 'A *decisive* victory.',
     illustrationHash: 'a1b2c3',
     startDate: '1066-10-14',
@@ -22,8 +22,8 @@ describe('buildEventViewModel', () => {
   /** Fixture for the previous in-season event; populates `prevLink` in the happy-path test. */
   const prevEventFixture: EventToRender = {
     id: 6,
-    slug: 'norman-prologue',
     title: 'Norman *Prologue*',
+    slug: 'norman-prologue',
     description: '',
     illustrationHash: null,
     startDate: '1066-09-28',
@@ -37,8 +37,8 @@ describe('buildEventViewModel', () => {
   /** Fixture for the next in-season event; populates `nextLink` in the happy-path test. */
   const nextEventFixture: EventToRender = {
     id: 8,
-    slug: 'aftermath',
     title: 'Aftermath',
+    slug: 'aftermath',
     description: '',
     illustrationHash: null,
     startDate: '1066-12-25',

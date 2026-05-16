@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import type EventToRender from '../../src/types/event-to-render.js'
+import type EventRow from '../../src/types/event-row.js'
 import { PassThrough } from 'node:stream'
 import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import applyMigrations from '../support/apply-migrations.js'
@@ -12,9 +12,8 @@ import { tmpdir } from 'node:os'
 
 describe('sync', () => {
   /** Seeded event; expected to flow through the full real chain into a written page on disk. */
-  const theEvent: EventToRender = {
+  const theEvent: EventRow = {
     id: 1,
-    slug: 'the-event',
     title: 'The Event',
     description: '\nbody\n',
     illustrationHash: 'hash-1',
@@ -47,15 +46,14 @@ describe('sync', () => {
    *
    * @param event - Event whose fields populate the row; the surrogate id is set by autoincrement.
    */
-  const insertEventRow = (event: EventToRender): void => {
+  const insertEventRow = (event: EventRow): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      event.slug,
       event.title,
       event.description,
       event.illustrationHash,
@@ -82,7 +80,10 @@ describe('sync', () => {
     /** Blob store sibling to the SQLite file; seeded with the event's illustration source bytes. */
     const blobDirPath = `${dbPath}.blobs`
     mkdirSync(blobDirPath, { recursive: true })
-    writeFileSync(join(blobDirPath, `${theEvent.slug}.png`), 'illustration-bytes')
+    writeFileSync(
+      join(blobDirPath, `${theEvent.seasonalYear}-${theEvent.season}-${theEvent.position}-the-event.png`),
+      'illustration-bytes',
+    )
 
     process.env.MHDB_DB_PATH = dbPath
     process.env.MHDB_OUTPUT_DIR_PATH = outputDirPath
@@ -108,7 +109,7 @@ describe('sync', () => {
     /** Exit code returned by `sync`. */
     const code = sync([], messageStream)
 
-    assert.strictEqual(messageStream.read()?.toString(), '[1/1] the-event\n')
+    assert.strictEqual(messageStream.read()?.toString(), '[1/1] 1-the-event\n')
 
     /** Rendered event page on disk. */
     const eventPageHtml = readFileSync(

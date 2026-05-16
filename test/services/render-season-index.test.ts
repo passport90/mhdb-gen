@@ -24,8 +24,7 @@ describe('renderSeasonIndex', () => {
    * @param year - Seasonal year of the row.
    * @param season - Season-within-year of the row.
    * @param position - Position-within-season of the row.
-   * @param slug - Unique slug for the row.
-   * @param title - Event title.
+   * @param title - Event title; the URL slug is derived from this via slugify at render time.
    * @param startDate - Start date in `YYYY-MM-DD`.
    * @param endDate - End date in `YYYY-MM-DD`.
    */
@@ -33,18 +32,17 @@ describe('renderSeasonIndex', () => {
     year: number,
     season: number,
     position: number,
-    slug: string,
     title: string,
     startDate: string,
     endDate: string,
   ): void => {
     db.prepare(`
       INSERT INTO events (
-        slug, title, description, illustration_hash,
+        title, description, illustration_hash,
         start_date, end_date,
         seasonal_year, season, position
-      ) VALUES (?, ?, 'd', NULL, ?, ?, ?, ?, ?)
-    `).run(slug, title, startDate, endDate, year, season, position)
+      ) VALUES (?, 'd', NULL, ?, ?, ?, ?, ?)
+    `).run(title, startDate, endDate, year, season, position)
   }
 
   beforeEach(() => {
@@ -62,10 +60,10 @@ describe('renderSeasonIndex', () => {
   })
 
   it('writes the season index to the slot folder, with timeline and adjacencies reflecting DB state', () => {
-    insertEventRow(1066, 0, 1, 'earlier-slot', 'Earlier', '1066-01-01', '1066-01-02')
-    insertEventRow(1066, 1, 1, 'first-event', 'First Event', '1066-04-15', '1066-04-22')
-    insertEventRow(1066, 1, 2, 'second-event', 'Second Event', '1066-04-23', '1066-04-30')
-    insertEventRow(1066, 2, 1, 'later-slot', 'Later', '1066-07-01', '1066-07-02')
+    insertEventRow(1066, 0, 1, 'Earlier', '1066-01-01', '1066-01-02')
+    insertEventRow(1066, 1, 1, 'First Event', '1066-04-15', '1066-04-22')
+    insertEventRow(1066, 1, 2, 'Second Event', '1066-04-23', '1066-04-30')
+    insertEventRow(1066, 2, 1, 'Later', '1066-07-01', '1066-07-02')
 
     /** Slot being rendered. */
     const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }

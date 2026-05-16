@@ -47,7 +47,9 @@ describe('findEventIdsToRender', () => {
   it('returns ids of headers that are db-stale or whose output dir is missing, in input order', () => {
     /**
      * Four headers cover every cell of the (isDbStale, dirExists) grid; only the two
-     * with at least one "yes" should land in the output ids.
+     * with at least one "yes" should land in the output ids. Slugs are pre-derived by
+     * the controller upstream of the SUT, so the test fixtures hand-author them; the
+     * end-to-end slugify path is exercised by `sync.test.ts`.
      */
     const headers: EventHeader[] = [
       {

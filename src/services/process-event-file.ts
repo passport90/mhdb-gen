@@ -1,10 +1,10 @@
 import type { DatabaseSync } from 'node:sqlite'
 import EventFileError from '../errors/event-file-error.js'
 import type IllustrationSource from '../types/illustration-source.js'
-import deriveSlug from './derive-slug.js'
 import hashFile from '../helpers/hash-file.js'
 import parseEventFileContent from './parse-event-file-content.js'
 import { readFileSync } from 'node:fs'
+import slugify from '../helpers/slugify.js'
 import syncIllustrationBlob from './sync-illustration-blob.js'
 import upsertEvent from '../repositories/upsert-event.js'
 
@@ -28,14 +28,11 @@ const processEventFile = (
     /** Parsed event extracted from the markdown. */
     const parsedEvent = parseEventFileContent(content)
 
-    /** Slug unique within the events table. */
-    const slug = deriveSlug(db, parsedEvent)
-
     /** Illustration source paired with its content hash, or `null` when the event has no illustration. */
     const illustrationSource = deriveIllustrationSource(illustrationFilePath)
 
-    upsertEvent(db, parsedEvent, slug, illustrationSource?.hash ?? null)
-    syncIllustrationBlob(slug, illustrationSource)
+    upsertEvent(db, parsedEvent, illustrationSource?.hash ?? null)
+    syncIllustrationBlob(parsedEvent, slugify(parsedEvent.title), illustrationSource)
   } catch (cause) {
     throw new EventFileError(entryFilePath, cause)
   }

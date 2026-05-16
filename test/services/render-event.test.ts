@@ -37,8 +37,8 @@ describe('renderEvent', () => {
     /** Blob store sibling to the SQLite file. */
     const blobDirPath = `${dbPath}.blobs`
 
-    /** Source blob seeded for this test. */
-    const sourceBlobPath = join(blobDirPath, 'battle-of-hastings.png')
+    /** Source blob seeded for this test; filename is `<year>-<season>-<position>-<slug>.png`. */
+    const sourceBlobPath = join(blobDirPath, '1066-3-2-battle-of-hastings.png')
 
     mkdirSync(blobDirPath, { recursive: true })
     writeFileSync(sourceBlobPath, 'illustration-bytes')
@@ -47,8 +47,8 @@ describe('renderEvent', () => {
     /** Event with an illustration; exercises the copy branch. */
     const event: EventToRender = {
       id: 7,
-      slug: 'battle-of-hastings',
       title: 'Battle of Hastings',
+      slug: 'battle-of-hastings',
       description: 'body',
       illustrationHash: 'a1b2c3',
       startDate: '1066-10-14',
@@ -63,8 +63,8 @@ describe('renderEvent', () => {
     const prevEvent: EventToRender = {
       ...event,
       id: 6,
-      slug: 'norman-prologue',
       title: 'Norman Prologue',
+      slug: 'norman-prologue',
       position: 1,
     }
 
@@ -72,8 +72,8 @@ describe('renderEvent', () => {
     const nextEvent: EventToRender = {
       ...event,
       id: 8,
-      slug: 'aftermath',
       title: 'Aftermath',
+      slug: 'aftermath',
       position: 3,
     }
 
@@ -107,8 +107,8 @@ describe('renderEvent', () => {
       /** Event without an illustration; exercises the skip branch. */
       const event: EventToRender = {
         id: 1,
-        slug: 'fall-of-rome',
         title: 'Fall of Rome',
+        slug: 'fall-of-rome',
         description: 'body',
         illustrationHash: null,
         startDate: '2026-04-15',

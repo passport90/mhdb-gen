@@ -1,20 +1,21 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type EventHeader from '../types/event-header.js'
+import type EventHeaderRow from '../types/event-header-row.js'
 
 /**
- * Returns the skinny per-event identifying tuple plus the raw timestamps the controller
- * uses to decide staleness. The staleness predicate itself lives in
- * `findEventIdsToRender`; this repo is column shipping only.
+ * Returns the skinny per-event identifying tuple plus the title (raw, for the caller to
+ * derive the slug from) and the raw timestamps the controller uses to decide staleness.
+ * The staleness predicate itself lives in `findEventIdsToRender`; this repo is column
+ * shipping only.
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
- * @returns Every event's header, ordered by `(seasonal_year, season, position)` ascending.
+ * @returns Every event's row, ordered by `(seasonal_year, season, position)` ascending.
  */
-const findAllEventHeaders = (db: DatabaseSync): EventHeader[] => {
+const findAllEventHeaders = (db: DatabaseSync): EventHeaderRow[] => {
   /** Raw rows; SQL aliases match the type's camelCase keys. */
   const rows = db.prepare(`
     SELECT
       id,
-      slug,
+      title,
       seasonal_year AS seasonalYear,
       season,
       position,
@@ -26,13 +27,13 @@ const findAllEventHeaders = (db: DatabaseSync): EventHeader[] => {
 
   return rows.map(row => ({
     id: row?.id,
-    slug: row?.slug,
+    title: row?.title,
     seasonalYear: row?.seasonalYear,
     season: row?.season,
     position: row?.position,
     renderedAt: row?.renderedAt,
     updatedAt: row?.updatedAt,
-  })) as EventHeader[]
+  })) as EventHeaderRow[]
 }
 
 export default findAllEventHeaders

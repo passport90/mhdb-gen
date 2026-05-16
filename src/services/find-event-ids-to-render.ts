@@ -7,9 +7,9 @@ import { join } from 'node:path'
  * Returns the ids of events whose output is stale or missing on disk — those whose
  * `renderedAt` is null or older than `updatedAt`, plus those whose
  * `<outputDirPath>/<seasonalYear>/<season-int>-<season-name>/<position>-<slug>/` directory
- * does not exist.
+ * does not exist. Slug is read directly from each header, pre-derived by the controller.
  *
- * @param headers - Snapshot of every event row, ordered by `(seasonal_year, season, position)`.
+ * @param headers - Snapshot of every event header, ordered by `(seasonal_year, season, position)`.
  * @param outputDirPath - Output root used to check directory presence.
  * @returns Surrogate ids in input order.
  */
