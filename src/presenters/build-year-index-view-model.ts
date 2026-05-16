@@ -1,30 +1,26 @@
 import SEASON_NAMES from '../constants/season-names.js'
 import type SeasonCard from '../types/season-card.js'
 import type YearIndexPageViewModel from '../types/year-index-page-view-model.js'
+import type YearIndexSource from '../types/year-index-source.js'
 import type YearLink from '../types/year-link.js'
-import type YearNeighborhood from '../types/year-neighborhood.js'
 import buildSeasonIndexPagePath from './build-season-index-page-path.js'
 
 /** All four season numbers, in order. */
 const SEASON_NUMBERS = [0, 1, 2, 3]
 
 /**
- * Projects a year and its neighborhood (seasons-with-events plus adjacent years) into the
- * year-index view model the eta template consumes — resolves the year label, season cards,
- * and prev/next year links.
+ * Projects the year-index source into the view model the eta template consumes — resolves
+ * the year label, season cards, and prev/next year links.
  *
- * @param year - Seasonal year of the page.
- * @param yearNeighborhood - Seasons in `year` plus closest prev/next years with events.
+ * @param source - Year-index source: target year, its seasons-with-events, and prev/next
+ *   year neighbors.
  * @returns View model ready for `buildYearIndexPage`.
  */
-const buildYearIndexViewModel = (
-  year: number,
-  yearNeighborhood: YearNeighborhood,
-): YearIndexPageViewModel => ({
-  yearLabel: String(year),
-  seasonCards: buildSeasonCards(year, yearNeighborhood.seasonsInYear),
-  prevYearLink: buildYearLink(yearNeighborhood.prevYear),
-  nextYearLink: buildYearLink(yearNeighborhood.nextYear),
+const buildYearIndexViewModel = (source: YearIndexSource): YearIndexPageViewModel => ({
+  yearLabel: String(source.year),
+  seasonCards: buildSeasonCards(source.year, source.seasonsInYear),
+  prevYearLink: buildYearLink(source.prevYear),
+  nextYearLink: buildYearLink(source.nextYear),
 })
 
 /**

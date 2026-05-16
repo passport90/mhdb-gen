@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import type EventListing from '../types/event-listing.js'
-import type YearNeighborhood from '../types/year-neighborhood.js'
+import type YearIndexSource from '../types/year-index-source.js'
 import buildYearIndexPage from '../presenters/build-year-index-page.js'
 import buildYearIndexViewModel from '../presenters/build-year-index-view-model.js'
 import { join } from 'node:path'
@@ -20,13 +20,13 @@ const renderYearIndex = (
   year: number,
   listings: EventListing[],
 ): void => {
-  /** Pre/target/post-target year data derived from listings in one cursor pass. */
-  const yearNeighborhood = findYearNeighborhood(listings, year)
+  /** Year-index source data derived from listings in one cursor pass. */
+  const source = deriveYearIndexSource(listings, year)
 
-  if (yearNeighborhood.seasonsInYear.length === 0) return
+  if (source.seasonsInYear.length === 0) return
 
-  /** View model assembled from the derived data. */
-  const viewModel = buildYearIndexViewModel(year, yearNeighborhood)
+  /** View model assembled from the source. */
+  const viewModel = buildYearIndexViewModel(source)
   /** Rendered HTML for the year index page. */
   const html = buildYearIndexPage(viewModel)
 
@@ -45,10 +45,10 @@ const renderYearIndex = (
  * post-target listing is seen.
  *
  * @param listings - Snapshot of every event listing, ordered as above.
- * @param year - Target year whose neighborhood is being derived.
- * @returns Seasons in the target year plus prev/next year neighbors.
+ * @param year - Target year whose source is being derived.
+ * @returns Year-index source — the year, its seasons, and prev/next year neighbors.
  */
-const findYearNeighborhood = (listings: EventListing[], year: number): YearNeighborhood => {
+const deriveYearIndexSource = (listings: EventListing[], year: number): YearIndexSource => {
   /** Latest year strictly below `year` seen so far; the final value is the prev-year answer. */
   let prevYear: number | null = null
 
@@ -81,7 +81,7 @@ const findYearNeighborhood = (listings: EventListing[], year: number): YearNeigh
   /** First year strictly greater than `year`; `null` when the target is the last year in `listings`. */
   const nextYear = listings[index]?.seasonalYear ?? null
 
-  return { seasonsInYear, prevYear, nextYear }
+  return { year, seasonsInYear, prevYear, nextYear }
 }
 
 export default renderYearIndex

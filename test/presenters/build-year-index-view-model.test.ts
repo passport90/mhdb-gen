@@ -5,7 +5,8 @@ import buildYearIndexViewModel from '../../src/presenters/build-year-index-view-
 describe('buildYearIndexViewModel', () => {
   it('projects every field — year label, four season cards (link / empty), and prev/next year links', () => {
     /** View model produced by the SUT for year 1066 with seasons 1 and 3 having events. */
-    const viewModel = buildYearIndexViewModel(1066, {
+    const viewModel = buildYearIndexViewModel({
+      year: 1066,
       seasonsInYear: [1, 3],
       prevYear: 1065,
       nextYear: 1067,
@@ -31,7 +32,8 @@ describe('buildYearIndexViewModel', () => {
   describe('when there is no previous year', () => {
     it('sets prevYearLink to null', () => {
       /** View model with `prevYear` null. */
-      const viewModel = buildYearIndexViewModel(1066, {
+      const viewModel = buildYearIndexViewModel({
+        year: 1066,
         seasonsInYear: [1],
         prevYear: null,
         nextYear: 1067,
@@ -44,7 +46,8 @@ describe('buildYearIndexViewModel', () => {
   describe('when there is no next year', () => {
     it('sets nextYearLink to null', () => {
       /** View model with `nextYear` null. */
-      const viewModel = buildYearIndexViewModel(1066, {
+      const viewModel = buildYearIndexViewModel({
+        year: 1066,
         seasonsInYear: [1],
         prevYear: 1065,
         nextYear: null,
