@@ -28,25 +28,25 @@ const renderEvents = (
   outputDirPath: string,
   messageStream: Writable,
 ): SeasonalSlot[] => {
+  /** First event to render; `null` when `listings` is empty — short-circuits the rest of the function. */
+  const firstEvent = hydrateEventAt(db, listings, 0)
+  if (firstEvent === null) return []
+
   /** Distinct slots containing at least one event rendered this call; accumulated across the loop. */
   const slotsWithRenderedEvents: SeasonalSlot[] = []
 
   /** Slot of the previously appended entry; `null` before the first append. */
   let lastSlot: SeasonalSlot | null = null
 
-  if (listings.length === 0) return slotsWithRenderedEvents
-
   /** Previous iteration's event; carries forward to become `prevEvent` for the next iteration when same-slot. */
   let prevEvent: EventToRender | null = null
 
   /** Event being rendered this iteration; hydrated up-front so the loop can peek ahead one row. */
-  let currentEvent: EventToRender = hydrateEvent(listings[0], findEventBodyById(db, listings[0].id))
+  let currentEvent: EventToRender = firstEvent
 
   for (let index = 0; index < listings.length; index++) {
     /** Peek-ahead hydration of the next event; `null` past the last listing. */
-    const nextEvent = index + 1 < listings.length
-      ? hydrateEvent(listings[index + 1], findEventBodyById(db, listings[index + 1].id))
-      : null
+    const nextEvent = hydrateEventAt(db, listings, index + 1)
 
     /** Previous event gated to same-slot; `null` when from a different slot or absent. */
     const prevSiblingEvent = pickSibling(prevEvent, currentEvent)
@@ -103,6 +103,29 @@ const hydrateEvent = (listing: EventListing, body: EventBody): EventToRender => 
   updatedAt: listing.updatedAt,
   ...body,
 })
+
+/**
+ * Hydrates the listing at `index`, fetching its body from the database. Returns `null` when
+ * `index` is past the end — lets the caller peek across the listings boundary without a guard
+ * at every call site.
+ *
+ * @param db - Database handle.
+ * @param listings - Listings the sliding-window renderer is iterating.
+ * @param index - Absolute index into `listings`.
+ * @returns Render-ready event when `index` is in bounds; `null` otherwise.
+ */
+const hydrateEventAt = (
+  db: DatabaseSync,
+  listings: EventListing[],
+  index: number,
+): EventToRender | null => {
+  if (index >= listings.length) return null
+
+  /** Listing at `index`; guaranteed defined by the bounds check above. */
+  const listing = listings[index]
+
+  return hydrateEvent(listing, findEventBodyById(db, listing.id))
+}
 
 /**
  * Picks `candidateEvent` when it shares a season slot with `currentEvent`, otherwise `null` — gates a
