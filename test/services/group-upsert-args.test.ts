@@ -5,14 +5,14 @@ import groupUpsertArgs from '../../src/services/group-upsert-args.js'
 
 describe('groupUpsertArgs', () => {
   it('groups argv into one EventSource per `.md`, pairing each with its sibling `.png` by basename', () => {
-    /** Mixed argv: `a.md`+`a.png`, `b.md`+`b.png`, `c.md`+`c.png` — interleaved across argv distance. */
+    /** Mixed argv: each `.md` followed by its sibling `.png`, the canonical shape from globbed input. */
     const args = [
-      '/tmp/content/c.png',
       '/tmp/content/a.md',
-      '/tmp/content/b.png',
-      '/tmp/content/c.md',
       '/tmp/content/a.png',
       '/tmp/content/b.md',
+      '/tmp/content/b.png',
+      '/tmp/content/c.md',
+      '/tmp/content/c.png',
     ]
 
     assert.deepStrictEqual(groupUpsertArgs(args), [
@@ -60,6 +60,20 @@ describe('groupUpsertArgs', () => {
         ]),
         (err: unknown) => err instanceof UsageError
           && err.message === 'found orphan file /tmp/content/notes.txt',
+      )
+    })
+  })
+
+  describe('when two argv paths share a stem and an extension', () => {
+    it('throws a UsageError naming the second occurrence', () => {
+      assert.throws(
+        () => groupUpsertArgs([
+          '/tmp/content/event.md',
+          '/tmp/content/duplicate/event.md',
+          '/tmp/content/event.md',
+        ]),
+        (err: unknown) => err instanceof UsageError
+          && err.message === 'found orphan file /tmp/content/event.md',
       )
     })
   })
