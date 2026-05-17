@@ -143,8 +143,15 @@ body
 
       writeFileSync(filePaths[1], brokenContent)
 
+      /** Illustration paths pinned to each markdown fixture by basename. */
+      const illustrationPaths = filePaths.map(path => path.replace(/\.md$/, '.png'))
+
+      for (const [index, illustrationPath] of illustrationPaths.entries()) {
+        writeFileSync(illustrationPath, `illustration-${index + 1}`)
+      }
+
       /** Exit code returned by `upsert`. */
-      const code = upsert(filePaths, messageStream)
+      const code = upsert([...filePaths, ...illustrationPaths], messageStream)
 
       /** Output lines written to the message stream during the run. */
       const lines = (messageStream.read()?.toString() ?? '').split('\n')

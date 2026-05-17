@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -107,23 +106,4 @@ describe('syncIllustrationBlob', () => {
     })
   })
 
-  describe('when the illustration source is null', () => {
-    it('deletes any existing blob for that slot', () => {
-      /** Path to the existing blob seeded directly into the blob store. */
-      const blobPath = join(blobDirPath, '2026-1-3-my-event.png')
-
-      mkdirSync(blobDirPath, { recursive: true })
-      writeFileSync(blobPath, 'stale-bytes')
-
-      syncIllustrationBlob(slot, slug, null)
-
-      assert.strictEqual(existsSync(blobPath), false)
-    })
-
-    describe('when no blob exists for that slot', () => {
-      it('returns without error', () => {
-        assert.doesNotThrow(() => syncIllustrationBlob(slot, slug, null))
-      })
-    })
-  })
 })

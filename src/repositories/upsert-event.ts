@@ -9,12 +9,12 @@ import type ParsedEvent from '../types/parsed-event.js'
  *
  * @param db - Database handle; the caller controls the transaction lifecycle.
  * @param event - Parsed event data.
- * @param illustrationHash - Hex digest of the event's illustration PNG, or `null` when the event has no illustration.
+ * @param illustrationHash - Hex digest of the event's illustration PNG.
  */
 const upsertEvent = (
   db: DatabaseSync,
   event: ParsedEvent,
-  illustrationHash: string | null,
+  illustrationHash: string,
 ): void => {
   db.prepare(`
     INSERT INTO events (

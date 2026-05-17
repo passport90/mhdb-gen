@@ -5,9 +5,10 @@ import groupUpsertArgs from '../../src/services/group-upsert-args.js'
 
 describe('groupUpsertArgs', () => {
   it('groups argv into one EventSource per `.md`, pairing each with its sibling `.png` by basename', () => {
-    /** Mixed argv: `a.md` alone, `b.md`+`b.png` paired, `c.md`+`c.png` paired across argv distance. */
+    /** Mixed argv: `a.md`+`a.png`, `b.md`+`b.png`, `c.md`+`c.png` — interleaved across argv distance. */
     const args = [
       '/tmp/content/a.md',
+      '/tmp/content/a.png',
       '/tmp/content/b.md',
       '/tmp/content/b.png',
       '/tmp/content/c.md',
@@ -15,10 +16,26 @@ describe('groupUpsertArgs', () => {
     ]
 
     assert.deepStrictEqual(groupUpsertArgs(args), [
-      { entryFilePath: '/tmp/content/a.md', illustrationFilePath: null },
+      { entryFilePath: '/tmp/content/a.md', illustrationFilePath: '/tmp/content/a.png' },
       { entryFilePath: '/tmp/content/b.md', illustrationFilePath: '/tmp/content/b.png' },
       { entryFilePath: '/tmp/content/c.md', illustrationFilePath: '/tmp/content/c.png' },
     ])
+  })
+
+  describe('when an argv `.md` has no matching `.png`', () => {
+    it('throws a UsageError listing every orphan markdown', () => {
+      assert.throws(
+        () => groupUpsertArgs([
+          '/tmp/content/event.md',
+          '/tmp/content/event.png',
+          '/tmp/content/orphan.md',
+          '/tmp/content/stray.md',
+        ]),
+        (err: unknown) => err instanceof UsageError
+          && err.message.includes('/tmp/content/orphan.md')
+          && err.message.includes('/tmp/content/stray.md'),
+      )
+    })
   })
 
   describe('when an argv path has neither a `.md` nor `.png` extension', () => {
@@ -37,6 +54,7 @@ describe('groupUpsertArgs', () => {
       assert.throws(
         () => groupUpsertArgs([
           '/tmp/content/event.md',
+          '/tmp/content/event.png',
           '/tmp/content/orphan.png',
           '/tmp/content/stray.png',
         ]),

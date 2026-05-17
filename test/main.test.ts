@@ -69,10 +69,14 @@ body
     /** Tmp path the upsert controller is invoked against. */
     const filePath = join(tmpDirPath, 'a.md')
 
+    /** Sibling illustration paired with `a.md`; required for the upsert to pass argv validation. */
+    const illustrationPath = join(tmpDirPath, 'a.png')
+
     writeFileSync(filePath, fixtureContent)
+    writeFileSync(illustrationPath, 'illustration-bytes')
 
     /** Exit code returned by `main`. */
-    const code = main(['upsert', filePath], messageStream)
+    const code = main(['upsert', filePath, illustrationPath], messageStream)
 
     /** Event rows persisted by the upsert run. */
     const events = readEvents()

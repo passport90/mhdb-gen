@@ -6,8 +6,9 @@ import UsageError from '../errors/usage-error.js'
  * Validates the upsert argv and groups it into one `EventSource` per event.
  *
  * @param args - Mixed list of `.md` and `.png` file paths from the upsert CLI invocation.
- * @returns One `EventSource` per `.md` file in `args`, paired with its sibling `.png` when one is also present.
- * @throws `UsageError` when any path has an unsupported extension or any `.png` lacks a sibling `.md`.
+ * @returns One `EventSource` per `.md` file in `args`, paired with its sibling `.png`.
+ * @throws `UsageError` when any path has an unsupported extension, any `.md` lacks a sibling `.png`,
+ *   or any `.png` lacks a sibling `.md`.
  */
 const groupUpsertArgs = (args: string[]): EventSource[] => {
   /** Argv paths with neither `.md` nor `.png` extension. */
@@ -29,6 +30,17 @@ const groupUpsertArgs = (args: string[]): EventSource[] => {
   /** Illustration paths keyed by `<dirname>/<basename-without-extension>`; insertion order tracks argv. */
   const illustrationFilePathByPairKey = new Map(illustrationFilePaths.map(path => [toPairKey(path), path]))
 
+  /** Markdowns whose pair key has no matching illustration, in argv-encounter order. */
+  const orphanEntryFilePaths: string[] = []
+  for (const [pairKey, entryFilePath] of entryFilePathByPairKey) {
+    if (illustrationFilePathByPairKey.has(pairKey)) continue
+    orphanEntryFilePaths.push(entryFilePath)
+  }
+
+  if (orphanEntryFilePaths.length > 0) {
+    throw new UsageError(`markdowns without matching illustration: ${orphanEntryFilePaths.join(', ')}`)
+  }
+
   /** Illustrations whose pair key has no matching markdown, in argv-encounter order. */
   const orphanIllustrationFilePaths: string[] = []
   for (const [pairKey, illustrationFilePath] of illustrationFilePathByPairKey) {
@@ -42,7 +54,7 @@ const groupUpsertArgs = (args: string[]): EventSource[] => {
 
   return Array.from(entryFilePathByPairKey, ([pairKey, entryFilePath]) => ({
     entryFilePath,
-    illustrationFilePath: illustrationFilePathByPairKey.get(pairKey) ?? null,
+    illustrationFilePath: illustrationFilePathByPairKey.get(pairKey) as string,
   }))
 }
 
