@@ -7,12 +7,12 @@ describe('groupUpsertArgs', () => {
   it('groups argv into one EventSource per `.md`, pairing each with its sibling `.png` by basename', () => {
     /** Mixed argv: `a.md`+`a.png`, `b.md`+`b.png`, `c.md`+`c.png` — interleaved across argv distance. */
     const args = [
+      '/tmp/content/c.png',
       '/tmp/content/a.md',
-      '/tmp/content/a.png',
-      '/tmp/content/b.md',
       '/tmp/content/b.png',
       '/tmp/content/c.md',
-      '/tmp/content/c.png',
+      '/tmp/content/a.png',
+      '/tmp/content/b.md',
     ]
 
     assert.deepStrictEqual(groupUpsertArgs(args), [
@@ -23,44 +23,43 @@ describe('groupUpsertArgs', () => {
   })
 
   describe('when an argv `.md` has no matching `.png`', () => {
-    it('throws a UsageError listing every orphan markdown', () => {
+    it('throws a UsageError naming the orphan markdown', () => {
       assert.throws(
         () => groupUpsertArgs([
           '/tmp/content/event.md',
           '/tmp/content/event.png',
           '/tmp/content/orphan.md',
-          '/tmp/content/stray.md',
         ]),
         (err: unknown) => err instanceof UsageError
-          && err.message.includes('/tmp/content/orphan.md')
-          && err.message.includes('/tmp/content/stray.md'),
-      )
-    })
-  })
-
-  describe('when an argv path has neither a `.md` nor `.png` extension', () => {
-    it('throws a UsageError listing every unsupported path', () => {
-      assert.throws(
-        () => groupUpsertArgs(['/tmp/content/event.md', '/tmp/content/notes.txt', '/tmp/content/log.csv']),
-        (err: unknown) => err instanceof UsageError
-          && err.message.includes('/tmp/content/notes.txt')
-          && err.message.includes('/tmp/content/log.csv'),
+          && err.message === 'found orphan file /tmp/content/orphan.md',
       )
     })
   })
 
   describe('when an argv `.png` has no matching `.md`', () => {
-    it('throws a UsageError listing every orphan illustration', () => {
+    it('throws a UsageError naming the orphan illustration', () => {
       assert.throws(
         () => groupUpsertArgs([
           '/tmp/content/event.md',
           '/tmp/content/event.png',
           '/tmp/content/orphan.png',
-          '/tmp/content/stray.png',
         ]),
         (err: unknown) => err instanceof UsageError
-          && err.message.includes('/tmp/content/orphan.png')
-          && err.message.includes('/tmp/content/stray.png'),
+          && err.message === 'found orphan file /tmp/content/orphan.png',
+      )
+    })
+  })
+
+  describe('when an argv path has an unsupported extension', () => {
+    it('throws a UsageError naming the unsupported file', () => {
+      assert.throws(
+        () => groupUpsertArgs([
+          '/tmp/content/event.md',
+          '/tmp/content/event.png',
+          '/tmp/content/notes.txt',
+        ]),
+        (err: unknown) => err instanceof UsageError
+          && err.message === 'found orphan file /tmp/content/notes.txt',
       )
     })
   })

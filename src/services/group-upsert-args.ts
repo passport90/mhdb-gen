@@ -5,66 +5,54 @@ import UsageError from '../errors/usage-error.js'
 /**
  * Validates the upsert argv and groups it into one `EventSource` per event.
  *
+ * Sorts argv lexicographically and walks forward, expecting each event to surface
+ * as a `<stem>.md`/`<stem>.png` pair. The first file at any step that breaks the
+ * pattern — wrong extension, mismatched stem, trailing unpaired file — is the
+ * orphan.
+ *
  * @param args - Mixed list of `.md` and `.png` file paths from the upsert CLI invocation.
  * @returns One `EventSource` per `.md` file in `args`, paired with its sibling `.png`.
- * @throws `UsageError` when any path has an unsupported extension, any `.md` lacks a sibling `.png`,
- *   or any `.png` lacks a sibling `.md`.
+ * @throws `UsageError` on the first orphan or unsupported-extension file encountered.
  */
 const groupUpsertArgs = (args: string[]): EventSource[] => {
-  /** Argv paths with neither `.md` nor `.png` extension. */
-  const unsupportedFilePaths = args.filter(path => !path.endsWith('.md') && !path.endsWith('.png'))
+  /** Argv copy sorted lexicographically; `.md` sorts before `.png` for the same stem (`m` < `p`). */
+  const sortedArgs = [...args].sort()
 
-  if (unsupportedFilePaths.length > 0) {
-    throw new UsageError(`unsupported file extensions: ${unsupportedFilePaths.join(', ')}`)
+  /** Paired sources accumulated by the walk. */
+  const sources: EventSource[] = []
+
+  for (let cursor = 0; cursor < sortedArgs.length; cursor += 2) {
+    /** Candidate markdown at the even slot. */
+    const entryFilePath = sortedArgs[cursor]
+
+    /** Candidate illustration at the odd slot; `undefined` when `entryFilePath` is the unpaired tail. */
+    const illustrationFilePath = sortedArgs[cursor + 1]
+
+    if (!entryFilePath.endsWith('.md')) {
+      throw new UsageError(`found orphan file ${entryFilePath}`)
+    }
+
+    if (illustrationFilePath === undefined) {
+      throw new UsageError(`found orphan file ${entryFilePath}`)
+    }
+
+    if (!illustrationFilePath.endsWith('.png') || toStem(illustrationFilePath) !== toStem(entryFilePath)) {
+      throw new UsageError(`found orphan file ${illustrationFilePath}`)
+    }
+
+    sources.push({ entryFilePath, illustrationFilePath })
   }
 
-  /** Markdown paths in argv order. */
-  const entryFilePaths = args.filter(path => path.endsWith('.md'))
-
-  /** Illustration paths in argv order. */
-  const illustrationFilePaths = args.filter(path => path.endsWith('.png'))
-
-  /** Markdown paths keyed by `<dirname>/<basename-without-extension>`; insertion order tracks argv. */
-  const entryFilePathByPairKey = new Map(entryFilePaths.map(path => [toPairKey(path), path]))
-
-  /** Illustration paths keyed by `<dirname>/<basename-without-extension>`; insertion order tracks argv. */
-  const illustrationFilePathByPairKey = new Map(illustrationFilePaths.map(path => [toPairKey(path), path]))
-
-  /** Markdowns whose pair key has no matching illustration, in argv-encounter order. */
-  const orphanEntryFilePaths: string[] = []
-  for (const [pairKey, entryFilePath] of entryFilePathByPairKey) {
-    if (illustrationFilePathByPairKey.has(pairKey)) continue
-    orphanEntryFilePaths.push(entryFilePath)
-  }
-
-  if (orphanEntryFilePaths.length > 0) {
-    throw new UsageError(`markdowns without matching illustration: ${orphanEntryFilePaths.join(', ')}`)
-  }
-
-  /** Illustrations whose pair key has no matching markdown, in argv-encounter order. */
-  const orphanIllustrationFilePaths: string[] = []
-  for (const [pairKey, illustrationFilePath] of illustrationFilePathByPairKey) {
-    if (entryFilePathByPairKey.has(pairKey)) continue
-    orphanIllustrationFilePaths.push(illustrationFilePath)
-  }
-
-  if (orphanIllustrationFilePaths.length > 0) {
-    throw new UsageError(`illustrations without matching markdown: ${orphanIllustrationFilePaths.join(', ')}`)
-  }
-
-  return Array.from(entryFilePathByPairKey, ([pairKey, entryFilePath]) => ({
-    entryFilePath,
-    illustrationFilePath: illustrationFilePathByPairKey.get(pairKey) as string,
-  }))
+  return sources
 }
 
 /**
- * Computes the pair key for a path: `<dirname>/<basename-without-extension>`.
+ * Strips the extension off a path, leaving `<dirname>/<basename-without-extension>`.
  *
- * @param filePath - File path to key.
- * @returns Key shared by sibling `.md` and `.png` files for the same event.
+ * @param filePath - File path to reduce.
+ * @returns Stem shared by sibling `.md` and `.png` files for the same event.
  */
-const toPairKey = (filePath: string): string => {
+const toStem = (filePath: string): string => {
   /** Parsed components of the file path. */
   const parsedPath = parse(filePath)
 
