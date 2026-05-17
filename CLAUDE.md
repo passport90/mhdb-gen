@@ -437,3 +437,15 @@ Use Conventional Commits for all commit messages. Prefix with one of:
 `feat:`, `fix:`, `build:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, `style:`, `perf:`
 
 Pick by motivation, not by diff shape: `perf:` when the change is motivated by performance (e.g., O(3N) → O(N) via single-pass cursor — even when the diff is structural). `refactor:` for structural changes with no behavior or perf delta. `style:` for binding-shape changes (destructuring → separate consts) that touch neither logic nor structure.
+
+## Architecture
+
+### Root index re-render gating — parity gap vs mrdb-gen
+
+`refreshHierarchyIndexes` short-circuits when both `slotsWithRenderedEvents` and `slotsWithPrunedEvents` are empty, which means `renderRootIndex` is only called when at least one event was rendered or one orphan was pruned this run. Smart optimization for the data-driven case (the root template iterates the decade-index table over `listings`, so same-data + same-template = same-output and skipping the write is free).
+
+**Owed cleanup:** template-only changes don't propagate without a content trigger. The `<base href="">` → `<base href="./">` fix landed in `src/templates/root-index.eta` but `~/mhdb/index.html` stayed stale until either (a) a content change forced a re-render or (b) the served file was directly patched. mrdb-gen lifts `renderRootIndex` to the controller (unconditional, one template execution per sync — noise). Port the same shape here when convenient: drop the early-return gate around `renderRootIndex` (or lift it out of `refreshHierarchyIndexes` into the sync controller), keep the year/season gating since those scale with year/slot count.
+
+### `<base href>` must never be empty
+
+Use `<base href="./">` for depth 0 (the root index); deeper pages use `<base href="../">`, `<base href="../../">`, etc. matching their depth. An empty `<base href="">` trips Safari/WebKit URL resolution and mangles relative links like `1066/index.html` to `/1066` — which then 404s on any non-rewriting static server (`http-server`, `python3 -m http.server`). The dumb static server is the correct serving choice; the templates must produce URLs that survive it.
