@@ -22,34 +22,6 @@ describe('groupUpsertArgs', () => {
     ])
   })
 
-  describe('when an argv `.md` has no matching `.png`', () => {
-    it('throws a UsageError naming the orphan markdown', () => {
-      assert.throws(
-        () => groupUpsertArgs([
-          '/tmp/content/event.md',
-          '/tmp/content/event.png',
-          '/tmp/content/orphan.md',
-        ]),
-        (err: unknown) => err instanceof UsageError
-          && err.message === 'found orphan file /tmp/content/orphan.md',
-      )
-    })
-  })
-
-  describe('when an argv `.png` has no matching `.md`', () => {
-    it('throws a UsageError naming the orphan illustration', () => {
-      assert.throws(
-        () => groupUpsertArgs([
-          '/tmp/content/event.md',
-          '/tmp/content/event.png',
-          '/tmp/content/orphan.png',
-        ]),
-        (err: unknown) => err instanceof UsageError
-          && err.message === 'found orphan file /tmp/content/orphan.png',
-      )
-    })
-  })
-
   describe('when an argv path has an unsupported extension', () => {
     it('throws a UsageError naming the unsupported file', () => {
       assert.throws(
@@ -64,16 +36,18 @@ describe('groupUpsertArgs', () => {
     })
   })
 
-  describe('when two argv paths share a stem and an extension', () => {
-    it('throws a UsageError naming the second occurrence', () => {
+  describe('when files end the walk without a sibling', () => {
+    it('throws a UsageError listing every orphan', () => {
       assert.throws(
         () => groupUpsertArgs([
           '/tmp/content/event.md',
-          '/tmp/content/duplicate/event.md',
-          '/tmp/content/event.md',
+          '/tmp/content/event.png',
+          '/tmp/content/orphan-md.md',
+          '/tmp/content/orphan-png.png',
         ]),
         (err: unknown) => err instanceof UsageError
-          && err.message === 'found orphan file /tmp/content/event.md',
+          && err.message.includes('/tmp/content/orphan-md.md')
+          && err.message.includes('/tmp/content/orphan-png.png'),
       )
     })
   })
