@@ -10,11 +10,12 @@ import renderYearIndex from './render-year-index.js'
  * either by an event re-rendered or an orphan output pruned. Skipped entirely when no
  * subtree changed.
  *
- * Each touched slot also pulls in its closest occupied earlier and later neighbor slot,
- * because those neighbors' `prevSeasonLink` / `nextSeasonLink` may have been reaching
- * across the touched slot — adding the first event to a previously-empty slot, or pruning
- * the last event from a slot, changes the neighbor relationship even when the neighbors
- * themselves had no event activity this run.
+ * Each touched year and slot also pulls in its closest occupied earlier and later
+ * neighbor, because those neighbors' `prevYearLink` / `nextYearLink` and
+ * `prevSeasonLink` / `nextSeasonLink` may have been reaching across the touched
+ * year/slot — adding the first event to a previously-empty year or slot, or pruning the
+ * last event from a year or slot, changes the neighbor relationship even when the
+ * neighbors themselves had no event activity this run.
  *
  * @param outputDirPath - Output root.
  * @param listings - Snapshot of every event listing, threaded into every index renderer as
@@ -32,8 +33,14 @@ const refreshHierarchyIndexes = (
 
   renderRootIndex(outputDirPath, listings)
 
-  /** Distinct years across both inputs; year index refreshed once per. */
-  const touchedYearSet = collectTouchedYearSet(slotsWithRenderedEvents, slotsWithPrunedEvents)
+  /** Distinct years occupied in this run's listings, ascending — neighbor-lookup index. */
+  const occupiedYears = collectOccupiedYears(listings)
+
+  /** Touched years plus their closest occupied earlier and later neighbors; covers cross-year prev/next link drift. */
+  const touchedYearSet = expandWithNeighborYears(
+    collectTouchedYearSet(slotsWithRenderedEvents, slotsWithPrunedEvents),
+    occupiedYears,
+  )
   for (const year of touchedYearSet) {
     renderYearIndex(outputDirPath, year, listings)
   }
@@ -94,6 +101,31 @@ const collectOccupiedSlots = (listings: EventListing[]): SeasonalSlot[] => {
   }
 
   return occupiedSlots
+}
+
+/**
+ * Collects the distinct years occupied in `listings`, ascending. Relies on `listings`
+ * being sorted by `(seasonal_year, season, position)` so a single forward pass with
+ * last-year dedup is enough.
+ *
+ * @param listings - Snapshot of every event listing, ordered as above.
+ * @returns Distinct occupied years, ascending.
+ */
+const collectOccupiedYears = (listings: EventListing[]): number[] => {
+  /** Distinct occupied years accumulated across the pass. */
+  const occupiedYears: number[] = []
+
+  /** Last year pushed; tracks dedup state for the linear pass. */
+  let lastYear: number | null = null
+
+  for (const listing of listings) {
+    if (lastYear === listing.seasonalYear) continue
+
+    lastYear = listing.seasonalYear
+    occupiedYears.push(lastYear)
+  }
+
+  return occupiedYears
 }
 
 /**
@@ -165,6 +197,36 @@ const expandWithNeighborSlots = (
 }
 
 /**
+ * Expands `touchedYearSet` with each touched year's closest occupied earlier and later
+ * neighbor in `occupiedYears`. Required to refresh neighbor year-index pages whose
+ * `prevYearLink` / `nextYearLink` was reaching across a year that became occupied (or
+ * across a year that was pruned to empty) this run.
+ *
+ * @param touchedYearSet - Years already known to need a year-index re-render.
+ * @param occupiedYears - Distinct occupied years in ascending order.
+ * @returns Touched years plus their closest occupied neighbors on either side.
+ */
+const expandWithNeighborYears = (
+  touchedYearSet: Set<number>,
+  occupiedYears: number[],
+): Set<number> => {
+  /** Expanded year set seeded with the inputs; mutated by the loop. */
+  const expandedYearSet = new Set<number>(touchedYearSet)
+
+  for (const year of touchedYearSet) {
+    /** Closest occupied year strictly earlier than `year`, or `null` when none exists. */
+    const prevOccupiedYear = findPrevOccupiedYear(year, occupiedYears)
+    if (prevOccupiedYear !== null) expandedYearSet.add(prevOccupiedYear)
+
+    /** Closest occupied year strictly later than `year`, or `null` when none exists. */
+    const nextOccupiedYear = findNextOccupiedYear(year, occupiedYears)
+    if (nextOccupiedYear !== null) expandedYearSet.add(nextOccupiedYear)
+  }
+
+  return expandedYearSet
+}
+
+/**
  * Finds the closest occupied slot strictly later than `slot` in `occupiedSlots`.
  *
  * @param slot - Reference slot; may or may not itself appear in `occupiedSlots`.
@@ -174,6 +236,21 @@ const expandWithNeighborSlots = (
 const findNextOccupiedSlot = (slot: SeasonalSlot, occupiedSlots: SeasonalSlot[]): SeasonalSlot | null => {
   for (const occupiedSlot of occupiedSlots) {
     if (compareSlots(occupiedSlot, slot) > 0) return occupiedSlot
+  }
+
+  return null
+}
+
+/**
+ * Finds the closest occupied year strictly later than `year` in `occupiedYears`.
+ *
+ * @param year - Reference year; may or may not itself appear in `occupiedYears`.
+ * @param occupiedYears - Distinct occupied years in ascending order.
+ * @returns First occupied year strictly after `year`, or `null` when none exists.
+ */
+const findNextOccupiedYear = (year: number, occupiedYears: number[]): number | null => {
+  for (const occupiedYear of occupiedYears) {
+    if (occupiedYear > year) return occupiedYear
   }
 
   return null
@@ -196,6 +273,25 @@ const findPrevOccupiedSlot = (slot: SeasonalSlot, occupiedSlots: SeasonalSlot[])
   }
 
   return prevOccupiedSlot
+}
+
+/**
+ * Finds the closest occupied year strictly earlier than `year` in `occupiedYears`.
+ *
+ * @param year - Reference year; may or may not itself appear in `occupiedYears`.
+ * @param occupiedYears - Distinct occupied years in ascending order.
+ * @returns Last occupied year strictly before `year`, or `null` when none exists.
+ */
+const findPrevOccupiedYear = (year: number, occupiedYears: number[]): number | null => {
+  /** Best candidate seen so far that precedes `year`; updated as the cursor advances. */
+  let prevOccupiedYear: number | null = null
+
+  for (const occupiedYear of occupiedYears) {
+    if (occupiedYear >= year) break
+    prevOccupiedYear = occupiedYear
+  }
+
+  return prevOccupiedYear
 }
 
 export default refreshHierarchyIndexes
