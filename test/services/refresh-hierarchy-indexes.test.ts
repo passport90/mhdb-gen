@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import type EventListing from '../../src/types/event-listing.js'
 import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import assert from 'node:assert/strict'
-import { join } from 'node:path'
 import refreshHierarchyIndexes from '../../src/services/refresh-hierarchy-indexes.js'
 import { tmpdir } from 'node:os'
 
@@ -23,14 +23,29 @@ describe('refreshHierarchyIndexes', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('renders the root index plus every touched year and slot index, deduping years across slots', () => {
+  it('re-renders root, touched years, touched slots, and the closest occupied neighbors of touched slots', () => {
     /**
-     * Listings the SUT threads into every child renderer; covers the three touched slots so
-     * each season-index renderer projects a non-empty timeline.
+     * Listings cover five slots across two years: 1066 winter (occupied earlier neighbor
+     * of 1066 fall), 1066 fall (touched-pruned), 2026 spring (touched-rendered, with 1066
+     * fall as its cross-year prev neighbor), 2026 summer (touched-rendered), 2026 fall
+     * (occupied later neighbor of 2026 summer). The two non-touched slots — 1066 winter
+     * and 2026 fall — must refresh as closest-occupied neighbors of touched slots.
      */
     const listings: EventListing[] = [
       {
         id: 1,
+        title: 'Winter 1066 Event',
+        slug: 'winter-1066-event',
+        startDate: '1066-01-15',
+        endDate: '1066-01-16',
+        seasonalYear: 1066,
+        season: 0,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '1066-01-01 00:00:00',
+      },
+      {
+        id: 2,
         title: 'Hastings',
         slug: 'hastings',
         startDate: '1066-10-14',
@@ -42,9 +57,9 @@ describe('refreshHierarchyIndexes', () => {
         updatedAt: '1066-10-01 00:00:00',
       },
       {
-        id: 2,
-        title: 'Spring Event',
-        slug: 'spring-event',
+        id: 3,
+        title: 'Spring 2026 Event',
+        slug: 'spring-2026-event',
         startDate: '2026-04-01',
         endDate: '2026-04-08',
         seasonalYear: 2026,
@@ -54,9 +69,9 @@ describe('refreshHierarchyIndexes', () => {
         updatedAt: '2026-04-01 00:00:00',
       },
       {
-        id: 3,
-        title: 'Summer Event',
-        slug: 'summer-event',
+        id: 4,
+        title: 'Summer 2026 Event',
+        slug: 'summer-2026-event',
         startDate: '2026-07-01',
         endDate: '2026-07-08',
         seasonalYear: 2026,
@@ -64,6 +79,18 @@ describe('refreshHierarchyIndexes', () => {
         position: 1,
         renderedAt: null,
         updatedAt: '2026-07-01 00:00:00',
+      },
+      {
+        id: 5,
+        title: 'Fall 2026 Event',
+        slug: 'fall-2026-event',
+        startDate: '2026-10-01',
+        endDate: '2026-10-08',
+        seasonalYear: 2026,
+        season: 3,
+        position: 1,
+        renderedAt: null,
+        updatedAt: '2026-10-01 00:00:00',
       },
     ]
 
@@ -73,19 +100,44 @@ describe('refreshHierarchyIndexes', () => {
       { seasonalYear: 2026, season: 2 },
     ]
 
-    /** One slot in 1066 whose orphan event output was pruned this run — orchestrator should refresh its indexes too. */
+    /** One slot in 1066 whose orphan event output was pruned this run. */
     const slotsWithPrunedEvents: SeasonalSlot[] = [
       { seasonalYear: 1066, season: 3 },
     ]
 
+    /** Mtime applied to every seeded file; deep in the past so any re-render advances mtime measurably. */
+    const preRunTime = new Date('2000-01-01T00:00:00Z')
+
+    /**
+     * Output paths the SUT is expected to refresh — root, both year indexes, every touched
+     * slot, and the two non-touched neighbor slots (1066 winter, 2026 fall). Each is seeded
+     * with empty content and `preRunTime` mtime so the SUT must advance the mtime to pass.
+     */
+    const expectedRefreshedPaths = [
+      join(outputDirPath, 'index.html'),
+      join(outputDirPath, '1066', 'index.html'),
+      join(outputDirPath, '2026', 'index.html'),
+      join(outputDirPath, '1066', '0-winter', 'index.html'),
+      join(outputDirPath, '1066', '3-fall', 'index.html'),
+      join(outputDirPath, '2026', '1-spring', 'index.html'),
+      join(outputDirPath, '2026', '2-summer', 'index.html'),
+      join(outputDirPath, '2026', '3-fall', 'index.html'),
+    ]
+
+    for (const path of expectedRefreshedPaths) {
+      mkdirSync(dirname(path), { recursive: true })
+      writeFileSync(path, '')
+      utimesSync(path, preRunTime, preRunTime)
+    }
+
     refreshHierarchyIndexes(outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
 
-    assert.ok(existsSync(join(outputDirPath, 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '1066', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '2026', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '1066', '3-fall', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '2026', '1-spring', 'index.html')))
-    assert.ok(existsSync(join(outputDirPath, '2026', '2-summer', 'index.html')))
+    for (const path of expectedRefreshedPaths) {
+      assert.ok(
+        statSync(path).mtimeMs > preRunTime.getTime(),
+        `expected ${path} mtime to advance — file was not re-rendered`,
+      )
+    }
   })
 
   describe('when no seasons were rendered or pruned', () => {
