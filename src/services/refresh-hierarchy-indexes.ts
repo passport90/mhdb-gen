@@ -1,6 +1,8 @@
 import type EventListing from '../types/event-listing.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
+import compareNumbers from '../helpers/compare-numbers.js'
 import compareSlots from '../helpers/compare-slots.js'
+import findLowerBound from '../helpers/find-lower-bound.js'
 import renderRootIndex from './render-root-index.js'
 import renderSeasonIndex from './render-season-index.js'
 import renderYearIndex from './render-year-index.js'
@@ -33,27 +35,21 @@ const refreshHierarchyIndexes = (
 
   renderRootIndex(outputDirPath, listings)
 
-  /** Distinct years occupied in this run's listings, ascending — neighbor-lookup index. */
-  const occupiedYears = collectOccupiedYears(listings)
+  /** Years directly touched by event activity this run, before neighbor expansion. */
+  const touchedYearSet = collectTouchedYearSet(slotsWithRenderedEvents, slotsWithPrunedEvents)
 
   /** Touched years plus their closest occupied earlier and later neighbors; covers cross-year prev/next link drift. */
-  const touchedYearSet = expandWithNeighborYears(
-    collectTouchedYearSet(slotsWithRenderedEvents, slotsWithPrunedEvents),
-    occupiedYears,
-  )
-  for (const year of touchedYearSet) {
+  const yearSetToRefresh = expandWithNeighborYears(touchedYearSet, listings)
+  for (const year of yearSetToRefresh) {
     renderYearIndex(outputDirPath, year, listings)
   }
 
-  /** Distinct slots occupied in this run's listings, in `(year, season)` ascending order — neighbor-lookup index. */
-  const occupiedSlots = collectOccupiedSlots(listings)
+  /** Slots directly touched by event activity this run, before neighbor expansion. */
+  const touchedSlots = collectTouchedSlots(slotsWithRenderedEvents, slotsWithPrunedEvents)
 
   /** Touched slots plus their closest occupied earlier and later neighbors; covers cross-slot prev/next link drift. */
-  const touchedSlots = expandWithNeighborSlots(
-    collectTouchedSlots(slotsWithRenderedEvents, slotsWithPrunedEvents),
-    occupiedSlots,
-  )
-  for (const slot of touchedSlots) {
+  const slotsToRefresh = expandWithNeighborSlots(touchedSlots, listings)
+  for (const slot of slotsToRefresh) {
     renderSeasonIndex(outputDirPath, slot, listings)
   }
 }
@@ -72,60 +68,6 @@ const addSlotToMap = (slotByKeyMap: Map<string, SeasonalSlot>, slot: SeasonalSlo
   /** Composite key uniquely identifying `slot`. */
   const slotKey = `${slot.seasonalYear}:${slot.season}`
   if (!slotByKeyMap.has(slotKey)) slotByKeyMap.set(slotKey, slot)
-}
-
-/**
- * Collects the distinct slots occupied in `listings`, in `(year, season)` ascending order.
- * Relies on `listings` being sorted by `(seasonal_year, season, position)` so a single
- * forward pass with last-slot dedup is enough.
- *
- * @param listings - Snapshot of every event listing, ordered as above.
- * @returns Distinct occupied slots, ascending.
- */
-const collectOccupiedSlots = (listings: EventListing[]): SeasonalSlot[] => {
-  /** Distinct occupied slots accumulated across the pass. */
-  const occupiedSlots: SeasonalSlot[] = []
-
-  /** Last slot pushed; tracks dedup state for the linear pass. */
-  let lastSlot: SeasonalSlot | null = null
-
-  for (const listing of listings) {
-    if (
-      lastSlot !== null
-      && lastSlot.seasonalYear === listing.seasonalYear
-      && lastSlot.season === listing.season
-    ) continue
-
-    lastSlot = { seasonalYear: listing.seasonalYear, season: listing.season }
-    occupiedSlots.push(lastSlot)
-  }
-
-  return occupiedSlots
-}
-
-/**
- * Collects the distinct years occupied in `listings`, ascending. Relies on `listings`
- * being sorted by `(seasonal_year, season, position)` so a single forward pass with
- * last-year dedup is enough.
- *
- * @param listings - Snapshot of every event listing, ordered as above.
- * @returns Distinct occupied years, ascending.
- */
-const collectOccupiedYears = (listings: EventListing[]): number[] => {
-  /** Distinct occupied years accumulated across the pass. */
-  const occupiedYears: number[] = []
-
-  /** Last year pushed; tracks dedup state for the linear pass. */
-  let lastYear: number | null = null
-
-  for (const listing of listings) {
-    if (lastYear === listing.seasonalYear) continue
-
-    lastYear = listing.seasonalYear
-    occupiedYears.push(lastYear)
-  }
-
-  return occupiedYears
 }
 
 /**
@@ -170,27 +112,44 @@ const collectTouchedYearSet = (
 }
 
 /**
+ * Asymmetric comparator pairing a listing's year with a target year. Lets `findLowerBound`
+ * binary-search `listings` by year without materialising an intermediate years-only array.
+ *
+ * @param listing - Listing whose year is the lhs of the comparison.
+ * @param year - Target year being searched for.
+ * @returns `-1`, `0`, or `1` per `compareNumbers` on `listing.seasonalYear` vs `year`.
+ */
+const compareListingToYear = (listing: EventListing, year: number): -1 | 0 | 1 =>
+  compareNumbers(listing.seasonalYear, year)
+
+/**
  * Expands `touchedSlots` with each touched slot's closest occupied earlier and later
- * neighbor in `occupiedSlots`. Required to refresh neighbor season-index pages whose
- * `prevSeasonLink` / `nextSeasonLink` was reaching across a slot that became occupied (or
- * across a slot that was pruned to empty) this run.
+ * neighbor as it appears in `listings`. Required to refresh neighbor season-index pages
+ * whose `prevSeasonLink` / `nextSeasonLink` was reaching across a slot that became occupied
+ * (or across a slot that was pruned to empty) this run. One binary search per touched slot;
+ * the search index is threaded into both `findPrev/NextOccupiedSlot` so we don't pay it
+ * twice.
  *
  * @param touchedSlots - Slots already known to need a season-index re-render.
- * @param occupiedSlots - Distinct occupied slots in `(year, season)` ascending order.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
  * @returns Touched slots plus their closest occupied neighbors on either side, deduped by
  *   `(year, season)`.
  */
 const expandWithNeighborSlots = (
   touchedSlots: SeasonalSlot[],
-  occupiedSlots: SeasonalSlot[],
+  listings: EventListing[],
 ): SeasonalSlot[] => {
   /** Expanded slot set keyed by `year:season`; preserves first-encounter order via Map insertion order. */
   const slotByKeyMap = new Map<string, SeasonalSlot>()
 
   for (const slot of touchedSlots) {
     addSlotToMap(slotByKeyMap, slot)
-    addSlotToMap(slotByKeyMap, findPrevOccupiedSlot(slot, occupiedSlots))
-    addSlotToMap(slotByKeyMap, findNextOccupiedSlot(slot, occupiedSlots))
+
+    /** Lower-bound index of `slot` in `listings`; shared by the prev and next lookups below. */
+    const lowerBoundIndex = findLowerBound(listings, slot, compareSlots)
+
+    addSlotToMap(slotByKeyMap, findPrevOccupiedSlot(lowerBoundIndex, listings))
+    addSlotToMap(slotByKeyMap, findNextOccupiedSlot(lowerBoundIndex, slot, listings))
   }
 
   return [...slotByKeyMap.values()]
@@ -198,28 +157,33 @@ const expandWithNeighborSlots = (
 
 /**
  * Expands `touchedYearSet` with each touched year's closest occupied earlier and later
- * neighbor in `occupiedYears`. Required to refresh neighbor year-index pages whose
+ * neighbor as it appears in `listings`. Required to refresh neighbor year-index pages whose
  * `prevYearLink` / `nextYearLink` was reaching across a year that became occupied (or
- * across a year that was pruned to empty) this run.
+ * across a year that was pruned to empty) this run. One binary search per touched year;
+ * the search index is threaded into both `findPrev/NextOccupiedYear` so we don't pay it
+ * twice.
  *
  * @param touchedYearSet - Years already known to need a year-index re-render.
- * @param occupiedYears - Distinct occupied years in ascending order.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
  * @returns Touched years plus their closest occupied neighbors on either side.
  */
 const expandWithNeighborYears = (
   touchedYearSet: Set<number>,
-  occupiedYears: number[],
+  listings: EventListing[],
 ): Set<number> => {
   /** Expanded year set seeded with the inputs; mutated by the loop. */
   const expandedYearSet = new Set<number>(touchedYearSet)
 
   for (const year of touchedYearSet) {
+    /** Lower-bound index of `year` in `listings`; shared by the prev and next lookups below. */
+    const lowerBoundIndex = findLowerBound(listings, year, compareListingToYear)
+
     /** Closest occupied year strictly earlier than `year`, or `null` when none exists. */
-    const prevOccupiedYear = findPrevOccupiedYear(year, occupiedYears)
+    const prevOccupiedYear = findPrevOccupiedYear(lowerBoundIndex, listings)
     if (prevOccupiedYear !== null) expandedYearSet.add(prevOccupiedYear)
 
     /** Closest occupied year strictly later than `year`, or `null` when none exists. */
-    const nextOccupiedYear = findNextOccupiedYear(year, occupiedYears)
+    const nextOccupiedYear = findNextOccupiedYear(lowerBoundIndex, year, listings)
     if (nextOccupiedYear !== null) expandedYearSet.add(nextOccupiedYear)
   }
 
@@ -227,71 +191,95 @@ const expandWithNeighborYears = (
 }
 
 /**
- * Finds the closest occupied slot strictly later than `slot` in `occupiedSlots`.
+ * Reads the closest occupied slot strictly later than the slot located at `lowerBoundIndex`
+ * in `listings`. Walks past any listings still in the searched slot, then returns the slot
+ * of the next listing. O(k) where k is the number of listings in the searched slot (zero
+ * when empty, otherwise a handful in practice).
  *
- * @param slot - Reference slot; may or may not itself appear in `occupiedSlots`.
- * @param occupiedSlots - Distinct occupied slots in `(year, season)` ascending order.
+ * @param lowerBoundIndex - Result of `findLowerBound(listings, slot, compareSlots)`.
+ * @param slot - The slot that was searched for; needed to recognise same-slot listings to
+ *   walk past.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
  * @returns First occupied slot strictly after `slot`, or `null` when none exists.
  */
-const findNextOccupiedSlot = (slot: SeasonalSlot, occupiedSlots: SeasonalSlot[]): SeasonalSlot | null => {
-  for (const occupiedSlot of occupiedSlots) {
-    if (compareSlots(occupiedSlot, slot) > 0) return occupiedSlot
+const findNextOccupiedSlot = (
+  lowerBoundIndex: number,
+  slot: SeasonalSlot,
+  listings: EventListing[],
+): SeasonalSlot | null => {
+  /** Cursor walked past any listings in `slot` itself to land on the first listing strictly after. */
+  let nextIndex = lowerBoundIndex
+  while (
+    nextIndex < listings.length
+    && listings[nextIndex].seasonalYear === slot.seasonalYear
+    && listings[nextIndex].season === slot.season
+  ) {
+    nextIndex++
   }
 
-  return null
+  if (nextIndex === listings.length) return null
+
+  /** Listing in the next occupied slot; its `(year, season)` defines the neighbor. */
+  const nextListing = listings[nextIndex]
+
+  return { seasonalYear: nextListing.seasonalYear, season: nextListing.season }
 }
 
 /**
- * Finds the closest occupied year strictly later than `year` in `occupiedYears`.
+ * Reads the closest occupied year strictly later than the year located at `lowerBoundIndex`
+ * in `listings`. Walks past any listings still in the searched year, then returns the year
+ * of the next listing. O(k) where k is the number of listings in the searched year (zero
+ * when empty, otherwise a handful in practice).
  *
- * @param year - Reference year; may or may not itself appear in `occupiedYears`.
- * @param occupiedYears - Distinct occupied years in ascending order.
+ * @param lowerBoundIndex - Result of `findLowerBound(listings, year, compareListingToYear)`.
+ * @param year - The year that was searched for; needed to recognise same-year listings to
+ *   walk past.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
  * @returns First occupied year strictly after `year`, or `null` when none exists.
  */
-const findNextOccupiedYear = (year: number, occupiedYears: number[]): number | null => {
-  for (const occupiedYear of occupiedYears) {
-    if (occupiedYear > year) return occupiedYear
+const findNextOccupiedYear = (
+  lowerBoundIndex: number,
+  year: number,
+  listings: EventListing[],
+): number | null => {
+  /** Cursor walked past any listings in `year` itself to land on the first listing strictly after. */
+  let nextIndex = lowerBoundIndex
+  while (nextIndex < listings.length && listings[nextIndex].seasonalYear === year) {
+    nextIndex++
   }
 
-  return null
+  return nextIndex < listings.length ? listings[nextIndex].seasonalYear : null
 }
 
 /**
- * Finds the closest occupied slot strictly earlier than `slot` in `occupiedSlots`.
+ * Reads the closest occupied slot strictly earlier than the slot located at
+ * `lowerBoundIndex` in `listings`. Constant-time — the listing immediately before
+ * `lowerBoundIndex` (when any) is guaranteed to be in a strictly-earlier slot.
  *
- * @param slot - Reference slot; may or may not itself appear in `occupiedSlots`.
- * @param occupiedSlots - Distinct occupied slots in `(year, season)` ascending order.
- * @returns Last occupied slot strictly before `slot`, or `null` when none exists.
+ * @param lowerBoundIndex - Result of `findLowerBound(listings, slot, compareSlots)`.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
+ * @returns Last occupied slot strictly before the searched slot, or `null` when none exists.
  */
-const findPrevOccupiedSlot = (slot: SeasonalSlot, occupiedSlots: SeasonalSlot[]): SeasonalSlot | null => {
-  /** Best candidate seen so far that precedes `slot`; updated as the cursor advances. */
-  let prevOccupiedSlot: SeasonalSlot | null = null
+const findPrevOccupiedSlot = (lowerBoundIndex: number, listings: EventListing[]): SeasonalSlot | null => {
+  if (lowerBoundIndex === 0) return null
 
-  for (const occupiedSlot of occupiedSlots) {
-    if (compareSlots(occupiedSlot, slot) >= 0) break
-    prevOccupiedSlot = occupiedSlot
-  }
+  /** Listing immediately before the lower-bound index; its slot is the predecessor. */
+  const prevListing = listings[lowerBoundIndex - 1]
 
-  return prevOccupiedSlot
+  return { seasonalYear: prevListing.seasonalYear, season: prevListing.season }
 }
 
 /**
- * Finds the closest occupied year strictly earlier than `year` in `occupiedYears`.
+ * Reads the closest occupied year strictly earlier than the year located at
+ * `lowerBoundIndex` in `listings`. Constant-time — the listing immediately before
+ * `lowerBoundIndex` (when any) is guaranteed to be in a strictly-earlier year.
  *
- * @param year - Reference year; may or may not itself appear in `occupiedYears`.
- * @param occupiedYears - Distinct occupied years in ascending order.
- * @returns Last occupied year strictly before `year`, or `null` when none exists.
+ * @param lowerBoundIndex - Result of `findLowerBound(listings, year, compareListingToYear)`.
+ * @param listings - Snapshot of every event listing, sorted by `(seasonal_year, season, position)`.
+ * @returns Last occupied year strictly before the searched year, or `null` when none exists.
  */
-const findPrevOccupiedYear = (year: number, occupiedYears: number[]): number | null => {
-  /** Best candidate seen so far that precedes `year`; updated as the cursor advances. */
-  let prevOccupiedYear: number | null = null
-
-  for (const occupiedYear of occupiedYears) {
-    if (occupiedYear >= year) break
-    prevOccupiedYear = occupiedYear
-  }
-
-  return prevOccupiedYear
+const findPrevOccupiedYear = (lowerBoundIndex: number, listings: EventListing[]): number | null => {
+  return lowerBoundIndex > 0 ? listings[lowerBoundIndex - 1].seasonalYear : null
 }
 
 export default refreshHierarchyIndexes
