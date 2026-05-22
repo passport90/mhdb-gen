@@ -3,6 +3,8 @@ import type EventListing from '../types/event-listing.js'
 import type YearIndexSource from '../types/year-index-source.js'
 import buildYearIndexPage from '../presenters/build-year-index-page.js'
 import buildYearIndexViewModel from '../presenters/build-year-index-view-model.js'
+import compareListingToYear from './compare-listing-to-year.js'
+import findLowerBound from '../helpers/find-lower-bound.js'
 import { join } from 'node:path'
 
 /**
@@ -13,14 +15,14 @@ import { join } from 'node:path'
  * @param outputDirPath - Output root.
  * @param year - Seasonal year whose index page is being rendered.
  * @param listings - Snapshot of every event listing; the season set and prev/next year links
- *   are derived from it in a single pass.
+ *   are derived from it in memory.
  */
 const renderYearIndex = (
   outputDirPath: string,
   year: number,
   listings: EventListing[],
 ): void => {
-  /** Year-index source data derived from listings in one cursor pass. */
+  /** Year-index source — the seasons in the year and its prev/next year neighbors. */
   const source = deriveYearIndexSource(listings, year)
 
   if (source.seasonsInYear.length === 0) return
@@ -38,19 +40,22 @@ const renderYearIndex = (
 }
 
 /**
- * Walks `listings` once and harvests every piece of data the year-index render needs:
- * the seasons in `year` (deduped by consecutive same-season runs) and the closest earlier
- * and later years with events. Relies on `listings` being sorted by
- * `(seasonal_year, season, position)`; the pass terminates as soon as the first
- * post-target listing is seen.
+ * Harvests every piece of data the year-index render needs: the distinct seasons in `year`
+ * (deduped by consecutive same-season runs) and the closest earlier and later years with
+ * events. Binary-searches `listings` for the year's first event, then walks only that year
+ * — O(log n + events in year). Relies on `listings` being sorted by
+ * `(seasonal_year, season, position)`.
  *
  * @param listings - Snapshot of every event listing, ordered as above.
  * @param year - Target year whose source is being derived.
  * @returns Year-index source — the year, its seasons, and prev/next year neighbors.
  */
 const deriveYearIndexSource = (listings: EventListing[], year: number): YearIndexSource => {
-  /** Latest year strictly below `year` seen so far; the final value is the prev-year answer. */
-  let prevYear: number | null = null
+  /** Index of the year's first event, or — when the year is empty — of the first later event. */
+  const firstIndex = findLowerBound(listings, year, compareListingToYear)
+
+  /** Closest earlier year with events, or `null` when nothing precedes `year`. */
+  const prevYear: number | null = listings[firstIndex - 1]?.seasonalYear ?? null
 
   /** Distinct seasons in `year` accumulated so far, in ascending encounter order. */
   const seasonsInYear: number[] = []
@@ -58,14 +63,8 @@ const deriveYearIndexSource = (listings: EventListing[], year: number): YearInde
   /** Last season pushed into `seasonsInYear`; tracks the dedup boundary. */
   let lastSeasonInYear: number | null = null
 
-  /** Cursor into `listings`; advanced through the pre-target and target-year phases. */
-  let index = 0
-
-  while (index < listings.length && listings[index].seasonalYear < year) {
-    prevYear = listings[index].seasonalYear
-    index++
-  }
-
+  /** Cursor walked forward from `firstIndex` while listings remain in `year`. */
+  let index = firstIndex
   while (index < listings.length && listings[index].seasonalYear === year) {
     /** Season number for the current listing. */
     const season = listings[index].season

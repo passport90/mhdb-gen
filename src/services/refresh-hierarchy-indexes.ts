@@ -1,6 +1,6 @@
 import type EventListing from '../types/event-listing.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
-import compareNumbers from '../helpers/compare-numbers.js'
+import compareListingToYear from './compare-listing-to-year.js'
 import compareSlots from './compare-slots.js'
 import findLowerBound from '../helpers/find-lower-bound.js'
 import renderRootIndex from './render-root-index.js'
@@ -110,17 +110,6 @@ const collectTouchedYearSet = (
 
   return yearSet
 }
-
-/**
- * Asymmetric comparator pairing a listing's year with a target year. Lets `findLowerBound`
- * binary-search `listings` by year without materialising an intermediate years-only array.
- *
- * @param listing - Listing whose year is the lhs of the comparison.
- * @param year - Target year being searched for.
- * @returns `-1`, `0`, or `1` per `compareNumbers` on `listing.seasonalYear` vs `year`.
- */
-const compareListingToYear = (listing: EventListing, year: number): -1 | 0 | 1 =>
-  compareNumbers(listing.seasonalYear, year)
 
 /**
  * Expands `touchedSlots` with each touched slot's closest occupied earlier and later
