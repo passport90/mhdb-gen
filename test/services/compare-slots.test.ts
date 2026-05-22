@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import compareSlots from '../../src/helpers/compare-slots.js'
+import compareSlots from '../../src/services/compare-slots.js'
 
 describe('compareSlots', () => {
   it('returns -1 when a\'s year is earlier than b\'s', () => {

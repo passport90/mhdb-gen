@@ -5,7 +5,7 @@ import type SeasonIndexSource from '../types/season-index-source.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import buildSeasonIndexPage from '../presenters/build-season-index-page.js'
 import buildSeasonIndexViewModel from '../presenters/build-season-index-view-model.js'
-import compareSlots from '../helpers/compare-slots.js'
+import compareSlots from './compare-slots.js'
 import { join } from 'node:path'
 
 /**

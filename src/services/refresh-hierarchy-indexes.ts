@@ -1,7 +1,7 @@
 import type EventListing from '../types/event-listing.js'
 import type SeasonalSlot from '../types/seasonal-slot.js'
 import compareNumbers from '../helpers/compare-numbers.js'
-import compareSlots from '../helpers/compare-slots.js'
+import compareSlots from './compare-slots.js'
 import findLowerBound from '../helpers/find-lower-bound.js'
 import renderRootIndex from './render-root-index.js'
 import renderSeasonIndex from './render-season-index.js'
