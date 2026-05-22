@@ -450,11 +450,24 @@ Pick by motivation, not by diff shape: `perf:` when the change is motivated by p
 
 **Owed cleanup:** template-only changes don't propagate without a content trigger. The `<base href="">` → `<base href="./">` fix landed in `src/templates/root-index.eta` but `~/mhdb/index.html` stayed stale until either (a) a content change forced a re-render or (b) the served file was directly patched. mrdb-gen lifts `renderRootIndex` to the controller (unconditional, one template execution per sync — noise). Port the same shape here when convenient: drop the early-return gate around `renderRootIndex` (or lift it out of `refreshHierarchyIndexes` into the sync controller), keep the year/season gating since those scale with year/slot count.
 
-### Neighbor expansion — settled perf shape, don't 're-optimize'
+### Hierarchy refresh — settled perf shape, don't 're-optimize'
 
-`refreshHierarchyIndexes` re-renders the touched years/slots *and* each touched entry's closest occupied neighbor on either side: `expandWithNeighborSlots` / `expandWithNeighborYears` add those neighbors because a neighbor's `prev/next` link reaches across the touched entry and goes stale when it appears or vanishes. Each lookup is one `findLowerBound` (binary search over `listings`) plus a short forward slide past the touched entry's own listings. Shape: O(C·log n + n), C = touched count — the `n` is the *total* slide budget shared across all touched entries (slides over disjoint slots never overlap), not a per-entry cost.
+`refreshHierarchyIndexes` re-renders the touched years/slots *and* each touched entry's closest occupied neighbor on either side — `expandWithNeighborSlots` / `expandWithNeighborYears` add those neighbors because a neighbor's `prev/next` link reaches across the touched entry and goes stale when it appears or vanishes.
 
-The slide *looks* like an O(n) footgun but isn't, and the shape is deliberately tuned for the real workload: small C (an incremental sync touches few slots) and small seasons (a calendar quarter holds a handful of events). Two textbook-cleaner alternatives were considered and rejected as *worse here*: the pure two-binary-search version (`upperBound` instead of the slide, O(C·log n)) doubles the binary searches to delete a `+n` that never bites — a season would need ~log n events just to break even; sort-then-merge (O(n + C·log C)) only wins at large C (a full rebuild) and loses for the common small-C sync. Don't swap the slide out.
+Every step is anchored on a binary search over the sorted `listings`:
+
+- **Neighbor expansion** — one `findLowerBound` per touched entry, then a forward slide past that entry's own listings. The slide is bounded by the ≤5-events-per-season cap, so it's O(1) per entry — *not* the O(n) it superficially looks like.
+- **Per-page render** — `renderYearIndex` / `renderSeasonIndex` build their source with `deriveYearIndexSource` / `deriveSeasonIndexSource`, each of which `findLowerBound`s to the year/slot's first event, then walks only that year/slot (again cap-bounded).
+
+Overall: **O((Y+S)·log n)** for the year/slot hierarchy — Y+S = years and slots refreshed (touched + neighbors), within a constant factor of the touched count C — plus one intrinsic O(n) pass for `renderRootIndex`'s decade histogram (the root index is a function of the whole corpus). Cost scales with the size of the sync, not the size of the database.
+
+**Why this note exists.** `deriveXSource` originally scanned `listings` from index 0 on every call — O(n) per render, so a refresh was O((Y+S)·n), the render scan being the silent dominant term that an earlier version of this note omitted (it miscredited the neighbor slide as the perf story). `106141c` fixed the derivation (binary-search + cap-bounded walk); mrdb-gen's twin landed as `d40c919`.
+
+**Three cleaner-looking alternatives were considered and rejected as worse here — don't swap any in:**
+
+- **Two-binary-search neighbor lookup** (`upperBound` instead of the slide, O(C·log n)) — doubles the binary searches to delete a slide the ≤5 cap already makes O(1). Pure overhead.
+- **Sort-then-merge** (O(n + C·log C)) — wins only at large C (a full rebuild), loses for the common small-C incremental sync.
+- **Precomputed first-event-index map** — an O(n) build paid every sync even for a one-event change, tying edit cost to corpus size rather than change size. A throwaway lookup map beats binary-searching an already-sorted source only when lookups M ≳ N/log N; an incremental sync touches a handful of slots, so M ≪ N/log N. Binary-search the sorted `listings` — the same tool every other step here already uses.
 
 ### `<base href>` must never be empty
 
