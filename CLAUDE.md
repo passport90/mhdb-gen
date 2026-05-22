@@ -133,6 +133,10 @@ Within a module, group elements in this order, with members alphabetical inside 
 
 The public API stays first among the runtime declarations so readers encounter the dominant function before its supporting cast (see above). Types and constants precede it because they're declarative scaffolding — read once, referenced throughout — and alphabetical ordering inside each group removes the "where did I put X?" lookup tax.
 
+### Helpers vs services — domain boundary
+
+`src/helpers/` holds domain-agnostic utilities — code that knows nothing about events, slots, or the encyclopedia: `compareNumbers`, `findLowerBound`, `slugify`, `hashFile`. `src/services/` holds domain code — anything that references a domain type. A pure comparator still counts: `compareSlots` lives in `src/services/` because it operates on `SeasonalSlot`, not in `src/helpers/`, even though it drives no pipeline step and `compare` is not one of the find/decide/collect/derive/build service verbs. The split is domain-vs-non-domain, not pure-vs-impure.
+
 ### No default parameters
 
 No default parameter values. Every argument is explicit at the call site — no `(arg = default)` syntax. Reasons: defaults hide a behavior contract that's invisible at the call site (you must read the function signature to know what value you're getting), and changing a default silently changes behavior for every existing caller. Make the call site speak for itself.
@@ -445,6 +449,12 @@ Pick by motivation, not by diff shape: `perf:` when the change is motivated by p
 `refreshHierarchyIndexes` short-circuits when both `slotsWithRenderedEvents` and `slotsWithPrunedEvents` are empty, which means `renderRootIndex` is only called when at least one event was rendered or one orphan was pruned this run. Smart optimization for the data-driven case (the root template iterates the decade-index table over `listings`, so same-data + same-template = same-output and skipping the write is free).
 
 **Owed cleanup:** template-only changes don't propagate without a content trigger. The `<base href="">` → `<base href="./">` fix landed in `src/templates/root-index.eta` but `~/mhdb/index.html` stayed stale until either (a) a content change forced a re-render or (b) the served file was directly patched. mrdb-gen lifts `renderRootIndex` to the controller (unconditional, one template execution per sync — noise). Port the same shape here when convenient: drop the early-return gate around `renderRootIndex` (or lift it out of `refreshHierarchyIndexes` into the sync controller), keep the year/season gating since those scale with year/slot count.
+
+### Neighbor expansion — settled perf shape, don't 're-optimize'
+
+`refreshHierarchyIndexes` re-renders the touched years/slots *and* each touched entry's closest occupied neighbor on either side: `expandWithNeighborSlots` / `expandWithNeighborYears` add those neighbors because a neighbor's `prev/next` link reaches across the touched entry and goes stale when it appears or vanishes. Each lookup is one `findLowerBound` (binary search over `listings`) plus a short forward slide past the touched entry's own listings. Shape: O(C·log n + n), C = touched count — the `n` is the *total* slide budget shared across all touched entries (slides over disjoint slots never overlap), not a per-entry cost.
+
+The slide *looks* like an O(n) footgun but isn't, and the shape is deliberately tuned for the real workload: small C (an incremental sync touches few slots) and small seasons (a calendar quarter holds a handful of events). Two textbook-cleaner alternatives were considered and rejected as *worse here*: the pure two-binary-search version (`upperBound` instead of the slide, O(C·log n)) doubles the binary searches to delete a `+n` that never bites — a season would need ~log n events just to break even; sort-then-merge (O(n + C·log C)) only wins at large C (a full rebuild) and loses for the common small-C sync. Don't swap the slide out.
 
 ### `<base href>` must never be empty
 
