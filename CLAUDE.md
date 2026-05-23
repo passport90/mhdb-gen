@@ -6,8 +6,4 @@ Engineering conventions for `mhdb-gen` — the historical-events encyclopedia ge
 
 ## Architecture
 
-Architecture decisions live in `docs/architecture/` — consult before refactoring hot paths or changing render output:
-
-- [`incremental-sync-data-keyed.md`](docs/architecture/incremental-sync-data-keyed.md) — incremental sync's gating is data-keyed; a generator change requires a full output-dir rebuild.
-- [`hierarchy-refresh-perf-shape.md`](docs/architecture/hierarchy-refresh-perf-shape.md) — settled perf shape of `refreshHierarchyIndexes`; three plausible "cleanups" are rejected.
-- [`base-href.md`](docs/architecture/base-href.md) — `<base href>` must never be empty; templates must produce URLs that survive a dumb static server.
+See [`docs/shared-architecture.md`](docs/shared-architecture.md) for architecture concerns shared with `mrdb-gen` (incremental sync data-keyed contract, hierarchy refresh perf shape, `<base href>` rule, view-model rules, slug derivation, service-verb taxonomy, repo patterns, test patterns, migrations rule, etc.). No mhdb-specific architecture yet — when it emerges, it lives in `docs/architecture/`.
