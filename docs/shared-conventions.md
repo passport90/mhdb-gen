@@ -437,6 +437,22 @@ The "keep a double" list is narrower than "all I/O." The test is reach: things y
 
 A surviving mock is a signal: either the child below it is unimplemented (expected during the descent) or the parent's test is conflating seam with branch logic (split it).
 
+### Per-test-type patterns
+
+Specific shapes for each kind of test in this codebase.
+
+- **Page tests** (`build-*-page.test.ts`): describe-scope `baseViewModel` fixture; happy `it` does `assert.strictEqual(renderedHtml, expectedHtml)` against a hand-authored multi-line template-literal of the full HTML. Sad-path null-describes use spread-override and `.includes()` assertions. One describe per null axis, never combined.
+- **View-model tests** (`build-*-view-model.test.ts`): describe-scope fixtures; happy `it` does per-field `strictEqual` + `deepStrictEqual`; one null-describe per axis.
+- **Single-page renderer tests** (`render-event.test.ts`, `render-record.test.ts`, `render-artist.test.ts`): no DB — pass the slim `*ToRender` literal + the separate pivot-row literal directly to the SUT; call the SUT; `readFileSync` the written file; `.includes()` for title + key anchors.
+- **Batch renderer tests** (`render-events.test.ts`, `render-records.test.ts`, `render-artists.test.ts`): describe-scope fixtures covering interesting transitions; `PassThrough` for `messageStream`; happy `it` asserts (a) progress lines, (b) file content, (c) `markXxxRendered` side effect, (d) any returned value. One `when the listings list is empty` null-describe asserts no writes + every `rendered_at` still null.
+- **Hierarchy orchestrator** (`refresh-*hierarchy-indexes.test.ts`): mtime-based assertions — the orchestrator's job is dispatch, not content. Each expected output path is pre-seeded with empty content and a deep-past mtime; the SUT must advance mtime on every path it dispatches to. `existsSync` would pass even when a stale page from a previous sync survives — the neighbor case demands the mtime test.
+- **Row-hydrator repo tests** (`find-*-by-id.test.ts`): one happy `it` per repo — single `INSERT`, call SUT, assert the row fields. No pivot setup.
+- **Pivot-JOIN repo tests** (`find-*-credits-by-*-id.test.ts`): `beforeEach` seeds the anchor row. Helper inserts. Happy `it` inserts multiple rows out-of-order + one unrelated row and asserts ordering + exclusion. **FK pitfall**: the unrelated pivot row needs a real id — insert a second anchor row and use `lastInsertRowid`, not a fabricated number (FK validation fails the test setup). One null-describe asserts empty array when the anchor has no children.
+- **Listings repo tests** (`find-all-*-listings.test.ts`): `insertXxxRow(..., renderedAt, updatedAt)` helper bypasses the timestamp trigger; happy `it` inserts rows out of order and asserts the SUT's ordering. For row-mapper SUTs with per-row branches (e.g., mrdb's `findAllRecordListings` JOIN/EXISTS), vary the credit shape across fixtures so one query execution exercises every row-shape branch.
+- **`decide-*-to-render.test.ts`**: pure file-system test (no DB). 4 listings covering the `(isDbStale, fileExists)` grid; `seedOutputFile(...)` / `seedOutputDir(...)` helper creates the on-disk artifact at the same path the SUT computes; one happy `it` asserts full-reference subset equality. No separate sad-path describes — the grid covers them.
+- **`mark-*-rendered.test.ts`**: insert one row with `updated_at` fixed and `rendered_at=null`, call SUT, assert `rendered_at !== null` AND `updated_at` unchanged (proves the trigger's `OF` clause excludes the `rendered_at` write from bumping `updated_at`).
+- **Tiny presenter tests**: single-`it` happy-path with hardcoded literal oracle. No describes.
+
 ## Commits
 
 Use Conventional Commits for all commit messages. Prefix with one of:
