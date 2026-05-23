@@ -444,37 +444,8 @@ Pick by motivation, not by diff shape: `perf:` when the change is motivated by p
 
 ## Architecture
 
-### Incremental sync is data-keyed — a generator change needs a full rebuild
+Architecture decisions live in `docs/architecture/` — consult before refactoring hot paths or changing render output:
 
-`sync` is incremental: it re-renders only what changed since the last run. `decideEventsToRender` selects events whose `renderedAt` is null or older than `updatedAt`, or whose output directory is missing; `refreshHierarchyIndexes` short-circuits entirely when no event was rendered or pruned, and otherwise refreshes only the touched years/slots plus their occupied neighbors. Every one of those signals keys off **data** — DB rows and on-disk output presence. The gating is the optimization that keeps a one-event sync O(change), not O(corpus); the year/season gating in particular scales with year/slot count and must stay.
-
-A **generator** change trips none of those signals. Editing a template (`*.eta`), a presenter (`build-*`), a render service (`render-*`), the eta engine, or any other code on the render path changes the output bytes without touching an `updated_at` column or removing an output directory — so an incremental sync after a generator-only change re-renders nothing and the stale output survives. The `<base href="">` → `<base href="./">` fix in `root-index.eta` is the worked example: the served `index.html` stayed stale until an unrelated content change happened to force a re-render.
-
-This is not a bug in the gating — it is the gating's correctness contract, narrower than "sync always produces correct output":
-
-**Incremental sync trusts that only data changed since the last sync. If the generator changed — any template or any code on the render path — that trust is void: delete the whole output directory (`$MHDB_OUTPUT_DIR_PATH`) and re-sync for a full rebuild.**
-
-A full delete is safe: nothing under `$MHDB_OUTPUT_DIR_PATH` is a source of truth. `sync` rebuilds the whole tree from sources that live outside it — every event directory comes back missing so `isOutputDirMissing` forces a re-render of all events (each re-copying its illustration from the blob store at `${MHDB_DB_PATH}.blobs`, a sibling of the SQLite file), every slot is then touched so every index page refreshes, and assets re-mirror via `copyDirectory`.
-
-### Hierarchy refresh — settled perf shape, don't 're-optimize'
-
-`refreshHierarchyIndexes` re-renders the touched years/slots *and* each touched entry's closest occupied neighbor on either side — `expandWithNeighborSlots` / `expandWithNeighborYears` add those neighbors because a neighbor's `prev/next` link reaches across the touched entry and goes stale when it appears or vanishes.
-
-Every step is anchored on a binary search over the sorted `listings`:
-
-- **Neighbor expansion** — one `findLowerBound` per touched entry, then a forward slide past that entry's own listings. The slide is bounded by the ≤5-events-per-season cap, so it's O(1) per entry — *not* the O(n) it superficially looks like.
-- **Per-page render** — `renderYearIndex` / `renderSeasonIndex` build their source with `deriveYearIndexSource` / `deriveSeasonIndexSource`, each of which `findLowerBound`s to the year/slot's first event, then walks only that year/slot (again cap-bounded).
-
-Overall: **O((Y+S)·log n)** for the year/slot hierarchy — Y+S = years and slots refreshed (touched + neighbors), within a constant factor of the touched count C — plus one intrinsic O(n) pass for `renderRootIndex`'s decade histogram (the root index is a function of the whole corpus). Cost scales with the size of the sync, not the size of the database.
-
-**Why this note exists.** `deriveXSource` originally scanned `listings` from index 0 on every call — O(n) per render, so a refresh was O((Y+S)·n), the render scan being the silent dominant term that an earlier version of this note omitted (it miscredited the neighbor slide as the perf story). `106141c` fixed the derivation (binary-search + cap-bounded walk); mrdb-gen's twin landed as `d40c919`.
-
-**Three cleaner-looking alternatives were considered and rejected as worse here — don't swap any in:**
-
-- **Two-binary-search neighbor lookup** (`upperBound` instead of the slide, O(C·log n)) — doubles the binary searches to delete a slide the ≤5 cap already makes O(1). Pure overhead.
-- **Sort-then-merge** (O(n + C·log C)) — wins only at large C (a full rebuild), loses for the common small-C incremental sync.
-- **Precomputed first-event-index map** — an O(n) build paid every sync even for a one-event change, tying edit cost to corpus size rather than change size. A throwaway lookup map beats binary-searching an already-sorted source only when lookups M ≳ N/log N; an incremental sync touches a handful of slots, so M ≪ N/log N. Binary-search the sorted `listings` — the same tool every other step here already uses.
-
-### `<base href>` must never be empty
-
-Use `<base href="./">` for depth 0 (the root index); deeper pages use `<base href="../">`, `<base href="../../">`, etc. matching their depth. An empty `<base href="">` trips Safari/WebKit URL resolution and mangles relative links like `1066/index.html` to `/1066` — which then 404s on any non-rewriting static server (`http-server`, `python3 -m http.server`). The dumb static server is the correct serving choice; the templates must produce URLs that survive it.
+- [`incremental-sync-data-keyed.md`](docs/architecture/incremental-sync-data-keyed.md) — incremental sync's gating is data-keyed; a generator change requires a full output-dir rebuild.
+- [`hierarchy-refresh-perf-shape.md`](docs/architecture/hierarchy-refresh-perf-shape.md) — settled perf shape of `refreshHierarchyIndexes`; three plausible "cleanups" are rejected.
+- [`base-href.md`](docs/architecture/base-href.md) — `<base href>` must never be empty; templates must produce URLs that survive a dumb static server.
