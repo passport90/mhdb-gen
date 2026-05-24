@@ -15,6 +15,8 @@ Every `git commit` requires explicit user approval. Before committing:
 
 One commit = one coherent change. No bundled commits. If uncertain whether to split, ask.
 
+**Rebuild before upsert/sync.** After any change under `<gen>/src/` (code, templates, or assets), run `npm run build` from `<gen>/` before the user invokes `upsert.sh` / `sync.sh`. The wrappers exec `<gen>/dist/bin/*.js` and read templates from `<gen>/dist/templates/`, so source changes don't take effect until `dist/` is rebuilt. Template-only staleness is silent — pages re-render from the old templates with no error, which is easy to miss and easy to misdiagnose as "the change didn't work."
+
 ## Code Style
 
 ### Import sorting
