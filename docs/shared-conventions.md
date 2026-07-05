@@ -478,6 +478,14 @@ Specific shapes for each kind of test in this codebase.
 ## Commits
 
 Use Conventional Commits for all commit messages. Prefix with one of:
-`feat:`, `fix:`, `build:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, `style:`, `perf:`
+`feat:`, `fix:`, `build:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, `perf:`
 
-Pick by motivation, not by diff shape: `perf:` when the change is motivated by performance (e.g., O(3N) → O(N) via single-pass cursor — even when the diff is structural). `refactor:` for structural changes with no behavior or perf delta. `style:` for binding-shape changes (destructuring → separate consts) that touch neither logic nor structure.
+Classify by what the diff actually does, not by how it reads; when a commit does several things, take the higher-order type (`feat` > `fix` > `perf` > `refactor` > `build` > `chore` > `docs`/`test`).
+
+- `feat:` — any observable/business behavior change. The bar is strict: moving where output goes (stderr → stdout), a previously-hidden warning becoming visible, or a served asset's appearance changing all count as `feat`.
+- `fix:` — behavior was wrong, now correct.
+- `perf:` — a change to the performance or IO profile with byte-identical output: an algorithm swap (O(3N) → O(N)), or moving work between layers (per-page DB queries → in-memory derivation over a threaded snapshot), even when the motivation was structural.
+- `refactor:` — a transparent change with zero behavior *and* zero perf delta: renames, reorganization, DRY, type reorg, binding-shape changes (e.g. indexing in place of destructuring).
+- `build:` — the build/artifact pipeline: `package.json`, `tsconfig.json`, lockfiles, bundler/tsc config.
+- `chore:` — meta only: `.gitignore`, eslint config, CI config. Not source, not build artifacts.
+- `docs:` / `test:` — documentation-only / test-only changes.
