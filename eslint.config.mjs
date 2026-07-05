@@ -30,6 +30,7 @@ export default [
       ...tsPlugin.configs.strict.rules,
       'no-undef': 'off',
       eqeqeq: 'error',
+      'no-restricted-syntax': ['error', 'ArrayPattern', 'ObjectPattern'],
       'no-var': 'error',
       'sort-imports': 'error',
       '@stylistic/comma-dangle': ['error', 'always-multiline'],

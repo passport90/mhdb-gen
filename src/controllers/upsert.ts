@@ -21,7 +21,10 @@ const upsert: Controller = (args, messageStream) => {
 
   try {
     runWithDatabaseTransaction(db => {
-      for (const [index, source] of sources.entries()) {
+      for (let index = 0; index < sources.length; index++) {
+        /** Paired event source at the current batch position. */
+        const source = sources[index]
+
         messageStream.write(`[${index + 1}/${sources.length}] ${source.entryFilePath}\n`)
 
         processEventFile(db, source.entryFilePath, source.illustrationFilePath)

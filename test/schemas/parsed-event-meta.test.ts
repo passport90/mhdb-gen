@@ -43,10 +43,10 @@ describe('parsedEventMetaSchema', () => {
     { name: 'endDate is not an ISO 8601 date', input: { ...validInput, endDate: 'April 22, 2026' } },
   ]
 
-  for (const { name, input } of rejectionCases) {
-    describe(`when ${name}`, () => {
+  for (const rejectionCase of rejectionCases) {
+    describe(`when ${rejectionCase.name}`, () => {
       it('rejects', () => {
-        assert.throws(() => parsedEventMetaSchema.parse(input))
+        assert.throws(() => parsedEventMetaSchema.parse(rejectionCase.input))
       })
     })
   }

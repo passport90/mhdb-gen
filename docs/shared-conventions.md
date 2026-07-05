@@ -313,13 +313,13 @@ const parseEventMeta = (meta: string): ParsedEventMeta => {
  */
 ```
 
-A consequence of the per-declaration JSDoc rule: avoid destructuring in standalone `const`/`let` declarations — JSDoc attaches to the whole declaration, so individual bindings can't carry their own description. Use separate declarations instead:
+A consequence of the per-declaration JSDoc rule: destructuring is banned outright. Array patterns (`const [a, b] = ...`) and object patterns (`const { a } = ...`) bind several names in one statement, and JSDoc attaches to the declaration, not the individual bindings — so no destructured name can carry its own hover description. Use indexed assignment for tuples and member assignment for objects, one declaration per binding:
 
 ```ts
-// ❌ avoid
+// ❌ banned — array destructuring
 const [command, ...commandArgs] = args
 
-// ✅ prefer
+// ✅ indexed + member assignment; each binding carries JSDoc
 /** Sub-command name. */
 const command = args[0]
 
@@ -327,7 +327,27 @@ const command = args[0]
 const commandArgs = args.slice(1)
 ```
 
-Function-parameter destructuring and `for (...)` loop variable lists (including destructured tuples like `for (const [index, path] of args.entries())`) are fine — TypeScript doesn't surface JSDoc on those positions, so the per-declaration rule has nothing to attach to. The bindings are scoped to a narrow block, so the missing hover is bounded.
+The ban is enforced by the `no-restricted-syntax` eslint rule (`ArrayPattern`, `ObjectPattern`) and is **total** — it covers function parameters and `for (...)` loop heads too, even though TypeScript surfaces no hover there. A plain `for (const x of xs)` binding is fine (it's an identifier, not a pattern); only the destructuring forms are rejected. Where a loop needs the index, use a counted loop and index the container; where it destructured the element, bind the element and read its members:
+
+```ts
+// ❌ banned — for-of tuple destructuring
+for (const [index, source] of sources.entries()) { /* ... */ }
+
+// ✅ counted loop; element bound as its own JSDoc-carrying declaration
+for (let index = 0; index < sources.length; index++) {
+  /** Event source at the current position. */
+  const source = sources[index]
+  // ...
+}
+
+// ❌ banned — for-of object destructuring
+for (const { name, input } of rejectionCases) { /* ... */ }
+
+// ✅ plain element binding; read members at the use site
+for (const rejectionCase of rejectionCases) {
+  // rejectionCase.name, rejectionCase.input
+}
+```
 
 ## Types
 

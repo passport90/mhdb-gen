@@ -82,8 +82,8 @@ body
     /** Illustration paths pinned to each markdown fixture by basename. */
     const illustrationPaths = filePaths.map(path => path.replace(/\.md$/, '.png'))
 
-    for (const [index, illustrationPath] of illustrationPaths.entries()) {
-      writeFileSync(illustrationPath, `illustration-${index + 1}`)
+    for (let index = 0; index < illustrationPaths.length; index++) {
+      writeFileSync(illustrationPaths[index], `illustration-${index + 1}`)
     }
 
     /** Mixed argv: all markdown paths followed by all illustration paths, paired by basename across argv distance. */
@@ -146,8 +146,8 @@ body
       /** Illustration paths pinned to each markdown fixture by basename. */
       const illustrationPaths = filePaths.map(path => path.replace(/\.md$/, '.png'))
 
-      for (const [index, illustrationPath] of illustrationPaths.entries()) {
-        writeFileSync(illustrationPath, `illustration-${index + 1}`)
+      for (let index = 0; index < illustrationPaths.length; index++) {
+        writeFileSync(illustrationPaths[index], `illustration-${index + 1}`)
       }
 
       /** Exit code returned by `upsert`. */
