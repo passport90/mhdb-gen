@@ -4,6 +4,7 @@
     "rootDir": ".",
     "outDir": "./build",
     "types": ["node"],
+    "strict": true,
     "removeComments": true,
     "skipLibCheck": true,
     "noEmitOnError": true
