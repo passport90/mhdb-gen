@@ -1,8 +1,8 @@
 import type Controller from './types/controller.js'
 import { USAGE_ERROR_EXIT_CODE } from './constants/exit-codes.js'
-import UsageError from './errors/usage-error.js'
 import type { Writable } from 'node:stream'
 import resolveRoute from './router.js'
+import respondToError from './helpers/respond-to-error.js'
 
 /**
  * Runs the program against the given args.
@@ -24,20 +24,16 @@ const main: Controller = (args, messageStream) => {
   /** Args passed to the command. */
   const commandArgs = args.slice(1)
 
+  /** Controller resolved from the command name; assigned inside the routing boundary. */
+  let controller: Controller
+
   try {
-    /** Controller resolved from the command name. */
-    const controller = resolveRoute(command)
-
-    return controller(commandArgs, messageStream)
-  } catch (err) {
-    if (err instanceof UsageError) {
-      messageStream.write(`${err.message}\n`)
-
-      return USAGE_ERROR_EXIT_CODE
-    }
-
-    throw err
+    controller = resolveRoute(command)
+  } catch (error) {
+    return respondToError(error, messageStream)
   }
+
+  return controller(commandArgs, messageStream)
 }
 
 /**

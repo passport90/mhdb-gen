@@ -8,6 +8,7 @@ import findAllEventListings from '../repositories/find-all-event-listings.js'
 import pruneOrphanOutput from '../services/prune-orphan-output.js'
 import refreshHierarchyIndexes from '../services/refresh-hierarchy-indexes.js'
 import renderEvents from '../services/render-events.js'
+import respondToError from '../helpers/respond-to-error.js'
 import runWithDatabase from '../helpers/run-with-database.js'
 import slugify from '../helpers/slugify.js'
 
@@ -27,23 +28,27 @@ const sync: Controller = (_args, messageStream) => {
   /** Asset source root from env, mirrored into `outputDirPath` after the DB-side reconciliation. */
   const assetsDirPath = process.env.MHDB_ASSETS_DIR_PATH as string
 
-  runWithDatabase(db => {
-    /** Snapshot of every event row, threaded through the decision-side services with pre-derived slug. */
-    const listings = findAllEventListings(db).map(hydrateListing)
+  try {
+    runWithDatabase(db => {
+      /** Snapshot of every event row, threaded through the decision-side services with pre-derived slug. */
+      const listings = findAllEventListings(db).map(hydrateListing)
 
-    /** Listings of the events that need rendering this run; carry the slug forward to the renderer. */
-    const eventsToRender = decideEventsToRender(listings, outputDirPath)
+      /** Listings of the events that need rendering this run; carry the slug forward to the renderer. */
+      const eventsToRender = decideEventsToRender(listings, outputDirPath)
 
-    /** Distinct slots containing at least one event re-rendered this run. */
-    const slotsWithRenderedEvents = renderEvents(db, eventsToRender, outputDirPath, messageStream)
+      /** Distinct slots containing at least one event re-rendered this run. */
+      const slotsWithRenderedEvents = renderEvents(db, eventsToRender, outputDirPath, messageStream)
 
-    /** Distinct slots containing at least one event whose orphan output was pruned this run. */
-    const slotsWithPrunedEvents = pruneOrphanOutput(listings, outputDirPath)
+      /** Distinct slots containing at least one event whose orphan output was pruned this run. */
+      const slotsWithPrunedEvents = pruneOrphanOutput(listings, outputDirPath)
 
-    refreshHierarchyIndexes(outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
-  })
+      refreshHierarchyIndexes(outputDirPath, listings, slotsWithRenderedEvents, slotsWithPrunedEvents)
+    })
 
-  copyDirectory(assetsDirPath, outputDirPath)
+    copyDirectory(assetsDirPath, outputDirPath)
+  } catch (error) {
+    return respondToError(error, messageStream)
+  }
 
   return SUCCESS_EXIT_CODE
 }
