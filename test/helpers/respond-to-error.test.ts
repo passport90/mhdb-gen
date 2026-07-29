@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import { PassThrough } from 'node:stream'
 import UsageError from '../../src/errors/usage-error.js'
 import assert from 'node:assert/strict'
+import readBufferedText from '../support/read-buffered-text.js'
 import respondToError from '../../src/helpers/respond-to-error.js'
 
 describe('respondToError', () => {
@@ -13,7 +14,7 @@ describe('respondToError', () => {
     /** Exit code returned by the responder. */
     const code = respondToError(new UsageError('unknown command'), messageStream)
 
-    assert.strictEqual(messageStream.read()?.toString() ?? '', 'unknown command\n')
+    assert.strictEqual(readBufferedText(messageStream), 'unknown command\n')
     assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
   })
 
@@ -25,7 +26,7 @@ describe('respondToError', () => {
       /** Exit code returned by the responder. */
       const code = respondToError(new Error('database is locked'), messageStream)
 
-      assert.strictEqual(messageStream.read()?.toString() ?? '', 'database is locked\n')
+      assert.strictEqual(readBufferedText(messageStream), 'database is locked\n')
       assert.strictEqual(code, OPERATIONAL_ERROR_EXIT_CODE)
     })
   })
@@ -38,7 +39,7 @@ describe('respondToError', () => {
       /** Exit code returned by the responder. */
       const code = respondToError('raw failure', messageStream)
 
-      assert.strictEqual(messageStream.read()?.toString() ?? '', 'raw failure\n')
+      assert.strictEqual(readBufferedText(messageStream), 'raw failure\n')
       assert.strictEqual(code, OPERATIONAL_ERROR_EXIT_CODE)
     })
   })

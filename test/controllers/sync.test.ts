@@ -8,6 +8,7 @@ import { SUCCESS_EXIT_CODE } from '../../src/constants/exit-codes.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import readBufferedText from '../support/read-buffered-text.js'
 import sync from '../../src/controllers/sync.js'
 import { tmpdir } from 'node:os'
 
@@ -109,7 +110,7 @@ describe('sync', () => {
     /** Exit code returned by `sync`. */
     const code = sync([], messageStream)
 
-    assert.strictEqual(messageStream.read()?.toString(), '[1/1] 1-the-event\n')
+    assert.strictEqual(readBufferedText(messageStream), '[1/1] 1-the-event\n')
 
     /** Rendered event page on disk. */
     const eventPageHtml = readFileSync(

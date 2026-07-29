@@ -9,6 +9,7 @@ import type SeasonalSlot from '../../src/types/seasonal-slot.js'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import readBufferedText from '../support/read-buffered-text.js'
 import renderEvents from '../../src/services/render-events.js'
 import { tmpdir } from 'node:os'
 
@@ -154,7 +155,7 @@ describe('renderEvents', () => {
     const slotsWithRenderedEvents = renderEvents(db, listings, outputDirPath, messageStream)
 
     assert.strictEqual(
-      messageStream.read()?.toString(),
+      readBufferedText(messageStream),
       '[1/3] 1-first-event\n[2/3] 2-first-event-sibling\n[3/3] 4-second-event\n',
     )
 
@@ -203,7 +204,7 @@ describe('renderEvents', () => {
       const slotsWithRenderedEvents = renderEvents(db, [], outputDirPath, messageStream)
 
       assert.deepStrictEqual(slotsWithRenderedEvents, [])
-      assert.strictEqual(messageStream.read(), null)
+      assert.strictEqual(readBufferedText(messageStream), '')
 
       /** `rendered_at` for every seeded row; should remain null since no event was rendered. */
       const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()

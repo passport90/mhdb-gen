@@ -6,6 +6,7 @@ import { PassThrough } from 'node:stream'
 import applyMigrations from '../support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
+import readBufferedText from '../support/read-buffered-text.js'
 import { tmpdir } from 'node:os'
 import upsert from '../../src/controllers/upsert.js'
 import { writeFile } from 'node:fs/promises'
@@ -93,7 +94,7 @@ body
     const code = upsert(mixedArgs, messageStream)
 
     assert.strictEqual(
-      messageStream.read()?.toString(),
+      readBufferedText(messageStream),
       `[1/3] ${filePaths[0]}\n[2/3] ${filePaths[1]}\n[3/3] ${filePaths[2]}\n`,
     )
 
@@ -154,7 +155,7 @@ body
       const code = upsert([...filePaths, ...illustrationPaths], messageStream)
 
       /** Output lines written to the message stream during the run. */
-      const lines = (messageStream.read()?.toString() ?? '').split('\n')
+      const lines = readBufferedText(messageStream).split('\n')
 
       assert.strictEqual(lines[0], `[1/3] ${filePaths[0]}`)
       assert.strictEqual(lines[1], `[2/3] ${filePaths[1]}`)

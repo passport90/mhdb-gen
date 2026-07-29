@@ -7,6 +7,7 @@ import applyMigrations from './support/apply-migrations.js'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import main from '../src/main.js'
+import readBufferedText from './support/read-buffered-text.js'
 import { tmpdir } from 'node:os'
 
 describe('main', () => {
@@ -98,7 +99,7 @@ body
       const code = main([], messageStream)
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
-      assert.match(messageStream.read()?.toString() ?? '', /^usage: /)
+      assert.match(readBufferedText(messageStream), /^usage: /)
       assert.strictEqual(readEvents().length, 0)
     })
   })
@@ -109,7 +110,7 @@ body
       const code = main(['nope'], messageStream)
 
       assert.strictEqual(code, USAGE_ERROR_EXIT_CODE)
-      assert.match(messageStream.read()?.toString() ?? '', /unknown command: 'nope'/)
+      assert.match(readBufferedText(messageStream), /unknown command: 'nope'/)
       assert.strictEqual(readEvents().length, 0)
     })
   })
