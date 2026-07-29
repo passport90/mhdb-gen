@@ -8,29 +8,29 @@
     "mhdb-gen": "./dist/bin/mhdb-gen.js"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "prebuild": "rm -rf dist",
     "build": "tsc -p tsconfig.prod.json && cp -R src/templates dist/templates",
     "lint": "eslint src test",
     "pretest": "rm -rf build",
-    "test": "tsc && cp -R src/templates build/src/templates && node --test --experimental-test-module-mocks 'build/test/**/*.test.js'",
+    "test": "tsc && cp -R src/templates build/src/templates && node --test 'build/test/**/*.test.js'",
     "typecheck": "tsc --noEmit",
     "validate": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "dependencies": {
-    "eta": "^4.5.1",
-    "marked": "^18.0.2",
-    "zod": "^4.3.6"
+    "eta": "^4.6.0",
+    "marked": "^18.0.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^24.12.2",
-    "@typescript-eslint/eslint-plugin": "^8.59.0",
-    "@typescript-eslint/parser": "^8.59.0",
-    "eslint": "^10.2.1",
+    "@types/node": "^26.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^10.8.0",
     "typescript": "^6.0.3"
   }
 }
