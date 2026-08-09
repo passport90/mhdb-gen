@@ -17,15 +17,14 @@ import { join } from 'node:path'
  *
  * @param outputDirPath - Output root.
  * @param slot - Seasonal slot whose index page is being rendered.
- * @param listings - Snapshot of every event listing; the timeline and prev/next slot links
- *   are derived from it in memory.
+ * @param listings - Snapshot of every event listing; the timeline is derived from it in memory.
  */
 const renderSeasonIndex = (
   outputDirPath: string,
   slot: SeasonalSlot,
   listings: EventListing[],
 ): void => {
-  /** Season-index source — events in the slot and its prev/next slot neighbors. */
+  /** Season-index source — the events in the slot. */
   const source = deriveSeasonIndexSource(listings, slot)
 
   if (source.eventsInSlot.length === 0) return
@@ -44,14 +43,14 @@ const renderSeasonIndex = (
 }
 
 /**
- * Harvests every piece of data the season-index render needs: the events in `slot` (in
- * position order) and the closest earlier and later slots with events. Binary-searches
- * `listings` for the slot's first event, then walks only that slot — O(log n + events in
- * slot). Relies on `listings` being sorted by `(seasonal_year, season, position)`.
+ * Harvests every piece of data the season-index render needs: the events in `slot`, in
+ * position order. Binary-searches `listings` for the slot's first event, then walks only
+ * that slot — O(log n + events in slot). Relies on `listings` being sorted by
+ * `(seasonal_year, season, position)`.
  *
  * @param listings - Snapshot of every event listing, ordered as above.
  * @param slot - Target slot whose source is being derived.
- * @returns Season-index source — the slot, events in it, and prev/next slot neighbors.
+ * @returns Season-index source — the slot and the events in it.
  */
 const deriveSeasonIndexSource = (
   listings: EventListing[],
@@ -59,14 +58,6 @@ const deriveSeasonIndexSource = (
 ): SeasonIndexSource => {
   /** Index of the slot's first event, or — when the slot is empty — of the first later event. */
   const firstIndex = findLowerBound(listings, slot, compareSlots)
-
-  /** Listing immediately before `firstIndex`; `undefined` when nothing precedes the slot. */
-  const prevListing = listings[firstIndex - 1]
-
-  /** Slot of `prevListing` — the closest earlier slot with events — or `null` when none. */
-  const prevSlot: SeasonalSlot | null = prevListing
-    ? { seasonalYear: prevListing.seasonalYear, season: prevListing.season }
-    : null
 
   /** Events in the target slot, in position order. */
   const eventsInSlot: EventListing[] = []
@@ -78,15 +69,7 @@ const deriveSeasonIndexSource = (
     index++
   }
 
-  /** First listing strictly after the target slot; `undefined` past the listings end. */
-  const nextListing = listings[index]
-
-  /** Slot of `nextListing` — the closest later slot with events — or `null` when none. */
-  const nextSlot: SeasonalSlot | null = nextListing
-    ? { seasonalYear: nextListing.seasonalYear, season: nextListing.season }
-    : null
-
-  return { slot, eventsInSlot, prevSlot, nextSlot }
+  return { slot, eventsInSlot }
 }
 
 export default renderSeasonIndex

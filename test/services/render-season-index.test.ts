@@ -23,7 +23,7 @@ describe('renderSeasonIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('writes the season index to the slot folder, with timeline and adjacencies reflecting the listings', () => {
+  it('writes the season index to the slot folder, with the timeline reflecting the listings', () => {
     /** Slot being rendered. */
     const slot: SeasonalSlot = { seasonalYear: 1066, season: 1 }
 
@@ -93,8 +93,6 @@ describe('renderSeasonIndex', () => {
       + 'Second Event</a>'))
     assert.ok(!indexHtml.includes('later-slot'))
     assert.ok(!indexHtml.includes('earlier-slot'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/0-winter/index.html">← Winter 1066</a>'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1066/2-summer/index.html">Summer 1066 →</a>'))
   })
 
   describe('when the slot has no events in the listings', () => {

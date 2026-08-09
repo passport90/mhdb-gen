@@ -22,7 +22,7 @@ describe('renderYearIndex', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('writes the year index page to <outputDirPath>/<year>/index.html with seasons + nav from the listings', () => {
+  it('writes the year index page to <outputDirPath>/<year>/index.html with seasons from the listings', () => {
     /**
      * Listings cover years 1065, 1066 (two seasons), and 1067 — the SUT renders 1066 with
      * seasons 1 and 3 populated, 0 and 2 empty, and prev/next links to 1065 and 1067.
@@ -87,8 +87,6 @@ describe('renderYearIndex', () => {
     assert.ok(indexHtml.includes('<a class="season-card" data-season="3" href="1066/3-fall/index.html">'))
     assert.ok(indexHtml.includes('<span class="season-card season-card-empty" data-season="0">'))
     assert.ok(indexHtml.includes('<span class="season-card season-card-empty" data-season="2">'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1065/index.html">← 1065</a>'))
-    assert.ok(indexHtml.includes('<a class="season-nav-link" href="1067/index.html">1067 →</a>'))
   })
 
   describe('when the year has no events in the listings', () => {

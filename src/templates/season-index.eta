@@ -36,18 +36,6 @@
         </li>
 <% } %>
       </ol>
-      <div class="season-nav" aria-label="Season navigation">
-        <div class="season-nav-slot">
-<% if (it.prevSeasonLink !== null) { %>
-          <a class="season-nav-link" href="<%= it.prevSeasonLink.indexPagePath %>">← <%= it.prevSeasonLink.label %></a>
-<% } %>
-        </div>
-        <div class="season-nav-slot">
-<% if (it.nextSeasonLink !== null) { %>
-          <a class="season-nav-link" href="<%= it.nextSeasonLink.indexPagePath %>"><%= it.nextSeasonLink.label %> →</a>
-<% } %>
-        </div>
-      </div>
     </main>
   </body>
 </html>

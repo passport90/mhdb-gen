@@ -21,11 +21,9 @@ describe('buildSeasonIndexPage', () => {
         eventPagePath: '1066/1-spring/2-second/index.html',
       },
     ],
-    prevSeasonLink: { label: 'Winter 1066', indexPagePath: '1066/0-winter/index.html' },
-    nextSeasonLink: { label: 'Summer 1066', indexPagePath: '1066/2-summer/index.html' },
   }
 
-  it('renders the full season index page with timeline list and prev+next season nav', () => {
+  it('renders the full season index page with timeline list', () => {
     /** Expected HTML for the full happy-path season index page. */
     const expectedHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -67,14 +65,6 @@ describe('buildSeasonIndexPage', () => {
           <a class="event-title" href="1066/1-spring/2-second/index.html">Second Event</a>
         </li>
       </ol>
-      <div class="season-nav" aria-label="Season navigation">
-        <div class="season-nav-slot">
-          <a class="season-nav-link" href="1066/0-winter/index.html">← Winter 1066</a>
-        </div>
-        <div class="season-nav-slot">
-          <a class="season-nav-link" href="1066/2-summer/index.html">Summer 1066 →</a>
-        </div>
-      </div>
     </main>
   </body>
 </html>
@@ -84,31 +74,5 @@ describe('buildSeasonIndexPage', () => {
     const renderedHtml = buildSeasonIndexPage(baseViewModel)
 
     assert.strictEqual(renderedHtml, expectedHtml)
-  })
-
-  describe('when there is no previous season', () => {
-    it('omits the previous-season link from the nav slot', () => {
-      /** View model with `prevSeasonLink` cleared. */
-      const viewModel: SeasonIndexPageViewModel = { ...baseViewModel, prevSeasonLink: null }
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildSeasonIndexPage(viewModel)
-
-      assert.ok(!renderedHtml.includes('← Winter 1066'))
-      assert.ok(renderedHtml.includes('Summer 1066 →'))
-    })
-  })
-
-  describe('when there is no next season', () => {
-    it('omits the next-season link from the nav slot', () => {
-      /** View model with `nextSeasonLink` cleared. */
-      const viewModel: SeasonIndexPageViewModel = { ...baseViewModel, nextSeasonLink: null }
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildSeasonIndexPage(viewModel)
-
-      assert.ok(renderedHtml.includes('← Winter 1066'))
-      assert.ok(!renderedHtml.includes('Summer 1066 →'))
-    })
   })
 })

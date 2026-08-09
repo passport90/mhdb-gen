@@ -40,18 +40,6 @@
 <% } %>
 <% } %>
       </div>
-      <div class="season-nav" aria-label="Year navigation">
-        <div class="season-nav-slot">
-<% if (it.prevYearLink !== null) { %>
-          <a class="season-nav-link" href="<%= it.prevYearLink.indexPagePath %>">← <%= it.prevYearLink.label %></a>
-<% } %>
-        </div>
-        <div class="season-nav-slot">
-<% if (it.nextYearLink !== null) { %>
-          <a class="season-nav-link" href="<%= it.nextYearLink.indexPagePath %>"><%= it.nextYearLink.label %> →</a>
-<% } %>
-        </div>
-      </div>
     </main>
   </body>
 </html>

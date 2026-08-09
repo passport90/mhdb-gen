@@ -1,4 +1,3 @@
-import type SeasonLink from './season-link.js'
 import type SeasonTimelineEntry from './season-timeline-entry.js'
 
 /** View model consumed by `buildSeasonIndexPage`'s eta template — every field is template-ready. */
@@ -11,10 +10,6 @@ interface SeasonIndexPageViewModel {
   yearIndexPagePath: string
   /** Timeline entries for the slot's events, in position order. */
   timelineEntries: SeasonTimelineEntry[]
-  /** Link to the previous slot with events; `null` when this is the earliest. */
-  prevSeasonLink: SeasonLink | null
-  /** Link to the next slot with events; `null` when this is the latest. */
-  nextSeasonLink: SeasonLink | null
 }
 
 export default SeasonIndexPageViewModel

@@ -418,39 +418,6 @@ nav[aria-label="breadcrumb"] .current {
     flex: 0 0 auto;
 }
 
-.season-nav {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
-    align-items: center;
-    font-family: var(--serif);
-    font-size: 0.95rem;
-}
-
-.season-nav {
-    margin: 1.25rem 0 0;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-}
-
-.season-nav a {
-    color: var(--accent-strong);
-    text-decoration: none;
-}
-
-.season-nav a:hover,
-.season-nav a:focus-visible {
-    text-decoration: underline;
-}
-
-.season-nav .season-nav-muted {
-    color: var(--muted);
-}
-
-.season-nav-slot:last-child {
-    text-align: right;
-}
-
 /* ============================================
    #7. MAIN CONTENT
    ============================================ */

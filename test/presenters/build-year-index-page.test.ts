@@ -13,11 +13,9 @@ describe('buildYearIndexPage', () => {
       { number: 2, label: 'Summer', indexPagePath: null },
       { number: 3, label: 'Fall', indexPagePath: '1066/3-fall/index.html' },
     ],
-    prevYearLink: { label: '1065', indexPagePath: '1065/index.html' },
-    nextYearLink: { label: '1067', indexPagePath: '1067/index.html' },
   }
 
-  it('renders the full year index page with season cards (link / empty) and prev+next year nav', () => {
+  it('renders the full year index page with season cards (link / empty)', () => {
     /** Expected HTML for the full happy-path year index page. */
     const expectedHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -62,14 +60,6 @@ describe('buildYearIndexPage', () => {
           <span class="season-card-label">Fall</span>
         </a>
       </div>
-      <div class="season-nav" aria-label="Year navigation">
-        <div class="season-nav-slot">
-          <a class="season-nav-link" href="1065/index.html">← 1065</a>
-        </div>
-        <div class="season-nav-slot">
-          <a class="season-nav-link" href="1067/index.html">1067 →</a>
-        </div>
-      </div>
     </main>
   </body>
 </html>
@@ -79,31 +69,5 @@ describe('buildYearIndexPage', () => {
     const renderedHtml = buildYearIndexPage(baseViewModel)
 
     assert.strictEqual(renderedHtml, expectedHtml)
-  })
-
-  describe('when there is no previous year', () => {
-    it('omits the previous-year link from the nav slot', () => {
-      /** View model with `prevYearLink` cleared. */
-      const viewModel: YearIndexPageViewModel = { ...baseViewModel, prevYearLink: null }
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildYearIndexPage(viewModel)
-
-      assert.ok(!renderedHtml.includes('← 1065'))
-      assert.ok(renderedHtml.includes('1067 →'))
-    })
-  })
-
-  describe('when there is no next year', () => {
-    it('omits the next-year link from the nav slot', () => {
-      /** View model with `nextYearLink` cleared. */
-      const viewModel: YearIndexPageViewModel = { ...baseViewModel, nextYearLink: null }
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildYearIndexPage(viewModel)
-
-      assert.ok(renderedHtml.includes('← 1065'))
-      assert.ok(!renderedHtml.includes('1067 →'))
-    })
   })
 })
