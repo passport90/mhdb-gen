@@ -56,24 +56,6 @@
           <div class="description"><%~ it.descriptionHtml %></div>
         </div>
       </div>
-      <div class="entry-nav" aria-label="Season entry navigation">
-        <div class="entry-nav-slot">
-<% const prevLink = it.siblingNavigation.prevLink; %>
-<% if (prevLink !== null) { %>
-          <a class="entry-nav-link" href="<%= prevLink.path %>">← <%~ prevLink.titleInlineHtml %></a>
-<% } else { %>
-          <a class="entry-nav-link" href="<%= it.breadcrumb.season.indexPagePath %>">Start of season</a>
-<% } %>
-        </div>
-        <div class="entry-nav-slot">
-<% const nextLink = it.siblingNavigation.nextLink; %>
-<% if (nextLink !== null) { %>
-          <a class="entry-nav-link" href="<%= nextLink.path %>"><%~ nextLink.titleInlineHtml %> →</a>
-<% } else { %>
-          <a class="entry-nav-link" href="<%= it.breadcrumb.season.indexPagePath %>">End of season</a>
-<% } %>
-        </div>
-      </div>
       <div class="paper-stamp">
         <span class="stamp">Updated <%= it.updatedAtLabel %> UTC</span>
       </div>

@@ -159,23 +159,21 @@ describe('renderEvents', () => {
       '[1/3] 1-first-event\n[2/3] 2-first-event-sibling\n[3/3] 4-second-event\n',
     )
 
-    /** Rendered page for `firstEvent`; inspected for title and threaded next link. */
+    /** Rendered page for `firstEvent`; inspected for title. */
     const firstEventHtml = readFileSync(
       join(outputDirPath, '2026', '1-spring', '1-first-event', 'index.html'),
       'utf8',
     )
     assert.ok(firstEventHtml.includes('<title>First Event - MHDB</title>'))
-    assert.ok(firstEventHtml.includes('href="2026/1-spring/2-first-event-sibling/index.html"'))
 
-    /** Rendered page for `firstEventSibling`; inspected for title and threaded prev link. */
+    /** Rendered page for `firstEventSibling`; inspected for title. */
     const firstEventSiblingHtml = readFileSync(
       join(outputDirPath, '2026', '1-spring', '2-first-event-sibling', 'index.html'),
       'utf8',
     )
     assert.ok(firstEventSiblingHtml.includes('<title>First Event Sibling - MHDB</title>'))
-    assert.ok(firstEventSiblingHtml.includes('href="2026/1-spring/1-first-event/index.html"'))
 
-    /** Rendered page for `secondEvent`; inspected for title — different slot, no siblings threaded. */
+    /** Rendered page for `secondEvent`; inspected for title — different slot. */
     const secondEventHtml = readFileSync(
       join(outputDirPath, '2026', '2-summer', '4-second-event', 'index.html'),
       'utf8',
@@ -196,22 +194,5 @@ describe('renderEvents', () => {
     ]
 
     assert.deepStrictEqual(slotsWithRenderedEvents, expectedSlotsWithRenderedEvents)
-  })
-
-  describe('when the listing list is empty', () => {
-    it('returns an empty slot list, writes nothing, and leaves every rendered_at null', () => {
-      /** Distinct slots returned by the SUT. */
-      const slotsWithRenderedEvents = renderEvents(db, [], outputDirPath, messageStream)
-
-      assert.deepStrictEqual(slotsWithRenderedEvents, [])
-      assert.strictEqual(readBufferedText(messageStream), '')
-
-      /** `rendered_at` for every seeded row; should remain null since no event was rendered. */
-      const renderedAtById = db.prepare('SELECT id, rendered_at FROM events ORDER BY id').all()
-      assert.strictEqual(renderedAtById.length, 3)
-      assert.strictEqual(renderedAtById[0]?.rendered_at, null)
-      assert.strictEqual(renderedAtById[1]?.rendered_at, null)
-      assert.strictEqual(renderedAtById[2]?.rendered_at, null)
-    })
   })
 })

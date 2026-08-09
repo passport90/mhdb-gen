@@ -59,25 +59,7 @@ describe('renderEvent', () => {
       updatedAt: '2026-05-05 12:00:00',
     }
 
-    /** Stand-in for the previous in-season event; threaded through to the rendered page. */
-    const prevEvent: EventToRender = {
-      ...event,
-      id: 6,
-      title: 'Norman Prologue',
-      slug: 'norman-prologue',
-      position: 1,
-    }
-
-    /** Stand-in for the next in-season event; threaded through to the rendered page. */
-    const nextEvent: EventToRender = {
-      ...event,
-      id: 8,
-      title: 'Aftermath',
-      slug: 'aftermath',
-      position: 3,
-    }
-
-    renderEvent(event, prevEvent, nextEvent, outputDirPath)
+    renderEvent(event, outputDirPath)
 
     /** Rendered page on disk. */
     const pageHtml = readFileSync(
@@ -85,17 +67,7 @@ describe('renderEvent', () => {
       'utf8',
     )
 
-    /** Expected anchor for the previous-event link in the entry nav. */
-    const expectedPrevAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3-fall/1-norman-prologue/index.html">← Norman Prologue</a>'
-
-    /** Expected anchor for the next-event link in the entry nav. */
-    const expectedNextAnchor = '<a class="entry-nav-link" '
-      + 'href="1066/3-fall/3-aftermath/index.html">Aftermath →</a>'
-
     assert.ok(pageHtml.includes('<title>Battle of Hastings - MHDB</title>'))
-    assert.ok(pageHtml.includes(expectedPrevAnchor))
-    assert.ok(pageHtml.includes(expectedNextAnchor))
     assert.strictEqual(
       readFileSync(join(outputDirPath, '1066', '3-fall', '2-battle-of-hastings', 'illustration.png'), 'utf8'),
       'illustration-bytes',
@@ -119,7 +91,7 @@ describe('renderEvent', () => {
         updatedAt: '2026-05-05 12:00:00',
       }
 
-      renderEvent(event, null, null, outputDirPath)
+      renderEvent(event, outputDirPath)
 
       assert.ok(existsSync(join(outputDirPath, '2026', '1-spring', '1-fall-of-rome', 'index.html')))
       assert.strictEqual(

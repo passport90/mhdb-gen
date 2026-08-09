@@ -17,16 +17,6 @@ describe('buildEventPage', () => {
     dateRangeLabel: 'October 14, 1066',
     illustrationPath: '1066/3-fall/2-battle-of-hastings/illustration.png',
     descriptionHtml: '<p>A <em>decisive</em> victory.</p>',
-    siblingNavigation: {
-      prevLink: {
-        path: '1066/3-fall/1-norman-prologue/index.html',
-        titleInlineHtml: 'Norman Prologue',
-      },
-      nextLink: {
-        path: '1066/3-fall/3-aftermath/index.html',
-        titleInlineHtml: 'Aftermath',
-      },
-    },
     updatedAtLabel: 'May 5, 2026 12:00:00',
   }
 
@@ -85,14 +75,6 @@ describe('buildEventPage', () => {
           <div class="description"><p>A <em>decisive</em> victory.</p></div>
         </div>
       </div>
-      <div class="entry-nav" aria-label="Season entry navigation">
-        <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3-fall/1-norman-prologue/index.html">← Norman Prologue</a>
-        </div>
-        <div class="entry-nav-slot">
-          <a class="entry-nav-link" href="1066/3-fall/3-aftermath/index.html">Aftermath →</a>
-        </div>
-      </div>
       <div class="paper-stamp">
         <span class="stamp">Updated May 5, 2026 12:00:00 UTC</span>
       </div>
@@ -117,44 +99,6 @@ describe('buildEventPage', () => {
 
       assert.ok(!renderedHtml.includes('<figure class="event-illustration">'))
       assert.match(renderedHtml, /<div class="main-content">\s*<h1 class="title-with-subtitle event-title">/)
-    })
-  })
-
-  describe('when there is no previous event in the season', () => {
-    it('renders a `Start of season` link to the season index in the prev slot', () => {
-      /** View model with `prevLink` cleared. */
-      const viewModel: EventPageViewModel = {
-        ...baseViewModel,
-        siblingNavigation: { ...baseViewModel.siblingNavigation, prevLink: null },
-      }
-
-      /** Expected anchor in the prev slot when there is no previous event. */
-      const expectedAnchor = '<a class="entry-nav-link" href="1066/3-fall/index.html">Start of season</a>'
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildEventPage(viewModel)
-
-      assert.ok(!renderedHtml.includes('← Norman Prologue'))
-      assert.ok(renderedHtml.includes(expectedAnchor))
-    })
-  })
-
-  describe('when there is no next event in the season', () => {
-    it('renders an `End of season` link to the season index in the next slot', () => {
-      /** View model with `nextLink` cleared. */
-      const viewModel: EventPageViewModel = {
-        ...baseViewModel,
-        siblingNavigation: { ...baseViewModel.siblingNavigation, nextLink: null },
-      }
-
-      /** Expected anchor in the next slot when there is no next event. */
-      const expectedAnchor = '<a class="entry-nav-link" href="1066/3-fall/index.html">End of season</a>'
-
-      /** Rendered HTML produced by the SUT. */
-      const renderedHtml = buildEventPage(viewModel)
-
-      assert.ok(!renderedHtml.includes('Aftermath →'))
-      assert.ok(renderedHtml.includes(expectedAnchor))
     })
   })
 })

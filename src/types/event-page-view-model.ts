@@ -1,5 +1,3 @@
-import type EventLink from './event-link.js'
-
 /** Parent navigation cluster — pointers up the hierarchy from event to season to year. */
 interface Breadcrumb {
   /** Year level of the breadcrumb. */
@@ -24,14 +22,6 @@ interface EventTitle {
   plainText: string
 }
 
-/** Links to the previous and next events in the same season — for in-season navigation between events. */
-interface SiblingNavigation {
-  /** Link to the previous event in the same season; `null` at the start of the season. */
-  prevLink: EventLink | null
-  /** Link to the next event in the same season; `null` at the end of the season. */
-  nextLink: EventLink | null
-}
-
 /**
  * View model consumed by `buildEventPage`'s eta template — every field is template-ready, no filters
  * applied at render time.
@@ -50,8 +40,6 @@ interface EventPageViewModel {
   illustrationPath: string | null
   /** Event description rendered to HTML by `marked`; empty string when the description is empty. */
   descriptionHtml: string
-  /** Prev/next links to the in-season neighbors. */
-  siblingNavigation: SiblingNavigation
   /** Formatted update timestamp label, e.g. `May 5, 2026 12:00:00`. */
   updatedAtLabel: string
 }

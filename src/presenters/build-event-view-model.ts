@@ -1,9 +1,7 @@
-import type EventLink from '../types/event-link.js'
 import type EventPageViewModel from '../types/event-page-view-model.js'
 import type EventToRender from '../types/event-to-render.js'
 import SEASON_PATH_SEGMENTS from '../constants/season-path-segments.js'
 import buildDateRangeLabel from './build-date-range-label.js'
-import buildEventPagePath from './build-event-page-path.js'
 import buildSeasonIndexPagePath from './build-season-index-page-path.js'
 import buildSeasonLabel from './build-season-label.js'
 import buildUpdatedAtLabel from './build-updated-at-label.js'
@@ -14,19 +12,13 @@ import renderInlineMarkdown from '../helpers/render-inline-markdown.js'
 const ILLUSTRATION_FILE_NAME = 'illustration.png'
 
 /**
- * Projects a hydrated event plus its in-season neighbors into the view model the eta template consumes
- * — resolves paths, labels, the date range, the rendered description HTML, and the prev/next links.
+ * Projects a hydrated event into the view model the eta template consumes — resolves paths, labels,
+ * the date range, and the rendered description HTML.
  *
  * @param event - Event being rendered.
- * @param prevEvent - Previous event in the same season, or `null` at the start of the season.
- * @param nextEvent - Next event in the same season, or `null` at the end of the season.
  * @returns View model ready for `buildEventPage`.
  */
-const buildEventViewModel = (
-  event: EventToRender,
-  prevEvent: EventToRender | null,
-  nextEvent: EventToRender | null,
-): EventPageViewModel => ({
+const buildEventViewModel = (event: EventToRender): EventPageViewModel => ({
   title: {
     inlineHtml: renderInlineMarkdown(event.title),
     plainText: stripInlineMarkdown(event.title),
@@ -46,10 +38,6 @@ const buildEventViewModel = (
     ? buildIllustrationPath(event.seasonalYear, event.season, event.position, event.slug)
     : null,
   descriptionHtml: marked.parse(event.description, { async: false }).trimEnd(),
-  siblingNavigation: {
-    prevLink: buildSiblingLink(prevEvent),
-    nextLink: buildSiblingLink(nextEvent),
-  },
   updatedAtLabel: buildUpdatedAtLabel(event.updatedAt),
 })
 
@@ -65,26 +53,6 @@ const buildEventViewModel = (
  */
 const buildIllustrationPath = (year: number, season: number, position: number, slug: string): string =>
   `${year}/${SEASON_PATH_SEGMENTS[season]}/${position}-${slug}/${ILLUSTRATION_FILE_NAME}`
-
-/**
- * Builds an `EventLink` for an in-season neighbor — the path to its bundle plus its inline-rendered title.
- *
- * @param siblingEvent - In-season neighbor, or `null` when there is none on that side.
- * @returns Link to the neighbor's bundle, or `null` when `siblingEvent` is `null`.
- */
-const buildSiblingLink = (siblingEvent: EventToRender | null): EventLink | null => {
-  if (siblingEvent === null) return null
-
-  return {
-    path: buildEventPagePath(
-      siblingEvent.seasonalYear,
-      siblingEvent.season,
-      siblingEvent.position,
-      siblingEvent.slug,
-    ),
-    titleInlineHtml: renderInlineMarkdown(siblingEvent.title),
-  }
-}
 
 /**
  * Root-relative URL of a year's index page.

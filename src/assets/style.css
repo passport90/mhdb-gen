@@ -418,8 +418,7 @@ nav[aria-label="breadcrumb"] .current {
     flex: 0 0 auto;
 }
 
-.season-nav,
-.entry-nav {
+.season-nav {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
@@ -434,34 +433,22 @@ nav[aria-label="breadcrumb"] .current {
     border-top: 1px solid var(--border);
 }
 
-.season-nav a,
-.entry-nav a {
+.season-nav a {
     color: var(--accent-strong);
     text-decoration: none;
 }
 
 .season-nav a:hover,
-.season-nav a:focus-visible,
-.entry-nav a:hover,
-.entry-nav a:focus-visible {
+.season-nav a:focus-visible {
     text-decoration: underline;
 }
 
-.season-nav .season-nav-muted,
-.entry-nav .entry-nav-muted {
+.season-nav .season-nav-muted {
     color: var(--muted);
 }
 
-.season-nav-slot:last-child,
-.entry-nav-slot:last-child {
+.season-nav-slot:last-child {
     text-align: right;
-}
-
-.entry-nav {
-    margin: 0.75rem 0 0;
-    padding-bottom: 0.75rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border);
 }
 
 /* ============================================
