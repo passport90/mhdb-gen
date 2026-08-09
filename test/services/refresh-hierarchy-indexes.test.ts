@@ -23,14 +23,12 @@ describe('refreshHierarchyIndexes', () => {
     rmSync(tmpDirPath, { recursive: true, force: true })
   })
 
-  it('re-renders root, every touched year and slot, and the closest occupied neighbors of each', () => {
+  it('re-renders root and every touched year and slot, leaving untouched positions alone', () => {
     /**
      * Listings cover six events across three years. Touched: 1066 fall (pruned), 2026
-     * spring and 2026 summer (both rendered). Non-touched occupied: 1066 winter (slot
-     * neighbor of 1066 fall), 1500 spring (year neighbor of 1066 and 2026 AND slot
-     * neighbor of 1066 fall / 2026 spring — exercises both year-level and slot-level
-     * expansion), 2026 fall (slot neighbor of 2026 summer). All three non-touched
-     * positions must refresh as closest-occupied neighbors of a touched year or slot.
+     * spring and 2026 summer (both rendered). Occupied but untouched: 1066 winter, 1500
+     * spring, and 2026 fall — each adjacent to a touched position, so they would refresh
+     * under a neighbor-expanding refresh but must stay untouched under this one.
      */
     const listings: EventListing[] = [
       {
@@ -121,27 +119,25 @@ describe('refreshHierarchyIndexes', () => {
     /** Mtime applied to every seeded file; deep in the past so any re-render advances mtime measurably. */
     const preRunTime = new Date('2000-01-01T00:00:00Z')
 
-    /**
-     * Output paths the SUT is expected to refresh — root, all three year indexes (one
-     * reached only via year-neighbor expansion), every touched slot, and every
-     * non-touched slot reachable as a closest-occupied neighbor of a touched slot. Each
-     * is seeded with empty content and `preRunTime` mtime so the SUT must advance the
-     * mtime to pass.
-     */
+    /** Output paths the SUT is expected to refresh — root, both touched years, and every touched slot. */
     const expectedRefreshedPaths = [
       join(outputDirPath, 'index.html'),
       join(outputDirPath, '1066', 'index.html'),
-      join(outputDirPath, '1500', 'index.html'),
       join(outputDirPath, '2026', 'index.html'),
-      join(outputDirPath, '1066', '0-winter', 'index.html'),
       join(outputDirPath, '1066', '3-fall', 'index.html'),
-      join(outputDirPath, '1500', '1-spring', 'index.html'),
       join(outputDirPath, '2026', '1-spring', 'index.html'),
       join(outputDirPath, '2026', '2-summer', 'index.html'),
+    ]
+
+    /** Output paths for occupied positions with no event activity this run; the SUT must leave them alone. */
+    const expectedUntouchedPaths = [
+      join(outputDirPath, '1500', 'index.html'),
+      join(outputDirPath, '1066', '0-winter', 'index.html'),
+      join(outputDirPath, '1500', '1-spring', 'index.html'),
       join(outputDirPath, '2026', '3-fall', 'index.html'),
     ]
 
-    for (const path of expectedRefreshedPaths) {
+    for (const path of [...expectedRefreshedPaths, ...expectedUntouchedPaths]) {
       mkdirSync(dirname(path), { recursive: true })
       writeFileSync(path, '')
       utimesSync(path, preRunTime, preRunTime)
@@ -153,6 +149,14 @@ describe('refreshHierarchyIndexes', () => {
       assert.ok(
         statSync(path).mtimeMs > preRunTime.getTime(),
         `expected ${path} mtime to advance — file was not re-rendered`,
+      )
+    }
+
+    for (const path of expectedUntouchedPaths) {
+      assert.strictEqual(
+        statSync(path).mtimeMs,
+        preRunTime.getTime(),
+        `expected ${path} mtime to hold — file was re-rendered despite no event activity`,
       )
     }
   })
