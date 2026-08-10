@@ -54,12 +54,15 @@ CREATE TABLE events (
     -- Last modification timestamp; maintained by the trigger
     -- below on every UPDATE that touches a content column.
     updated_at        DATETIME NOT NULL DEFAULT (datetime('now')),
-    -- Snapshot of `updated_at` at the row's last sync render.
-    -- NULL means the row has never been rendered. Sync re-renders
-    -- whenever `rendered_at IS NULL OR rendered_at != updated_at`.
-    -- Excluded from the timestamp trigger below so sync's writes
-    -- to this column do not bump `updated_at` and self-trigger
-    -- the next sync pass.
+    -- Wall-clock time of the row's last sync render, written as
+    -- `datetime('now')` — not a copy of `updated_at`. NULL means
+    -- the row has never been rendered. Sync re-renders whenever
+    -- `rendered_at IS NULL OR rendered_at < updated_at`; because
+    -- the stamp is always later than the `updated_at` it rendered
+    -- against, a row edited mid-sync stays stale rather than
+    -- reading as fresh. Excluded from the timestamp trigger below
+    -- so sync's writes to this column do not bump `updated_at`
+    -- and self-trigger the next sync pass.
     rendered_at       DATETIME NULL,
 
     -- Format and ordering check for the date pair. GLOB enforces
