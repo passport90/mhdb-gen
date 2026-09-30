@@ -10,6 +10,7 @@ describe('buildEventViewModel', () => {
     title: 'Battle of *Hastings*',
     slug: 'battle-of-hastings',
     description: 'A *decisive* victory.',
+    generatedBy: 'gpt-6-sol-medium',
     illustrationHash: 'a1b2c3',
     startDate: '1066-10-14',
     endDate: '1066-10-14',
@@ -32,6 +33,7 @@ describe('buildEventViewModel', () => {
     assert.strictEqual(viewModel.illustrationPath, '1066/3-fall/2-battle-of-hastings/illustration.png')
     assert.strictEqual(viewModel.dateRangeLabel, 'October 14, 1066')
     assert.strictEqual(viewModel.descriptionHtml, '<p>A <em>decisive</em> victory.</p>')
+    assert.strictEqual(viewModel.generatedBy, 'gpt-6-sol-medium')
     assert.strictEqual(viewModel.updatedAtLabel, 'May 5, 2026 12:00:00')
   })
 

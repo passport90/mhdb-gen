@@ -17,6 +17,7 @@ const findEventBodyById = (db: DatabaseSync, id: number): EventBody => {
     SELECT
       title,
       description,
+      generated_by AS generatedBy,
       illustration_hash AS illustrationHash,
       start_date AS startDate,
       end_date AS endDate
@@ -27,6 +28,7 @@ const findEventBodyById = (db: DatabaseSync, id: number): EventBody => {
   return {
     title: row?.title,
     description: row?.description,
+    generatedBy: row?.generatedBy,
     illustrationHash: row?.illustrationHash,
     startDate: row?.startDate,
     endDate: row?.endDate,

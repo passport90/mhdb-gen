@@ -17,6 +17,7 @@ describe('buildEventPage', () => {
     dateRangeLabel: 'October 14, 1066',
     illustrationPath: '1066/3-fall/2-battle-of-hastings/illustration.png',
     descriptionHtml: '<p>A <em>decisive</em> victory.</p>',
+    generatedBy: 'gpt-6-sol-medium',
     updatedAtLabel: 'May 5, 2026 12:00:00',
   }
 
@@ -76,7 +77,8 @@ describe('buildEventPage', () => {
         </div>
       </div>
       <div class="paper-stamp">
-        <span class="stamp">Updated May 5, 2026 12:00:00 UTC</span>
+        <span class="stamp stamp-model">gpt-6-sol-medium</span>
+        <span class="stamp stamp-updated">Updated May 5, 2026 12:00:00 UTC</span>
       </div>
     </main>
   </body>
@@ -99,6 +101,15 @@ describe('buildEventPage', () => {
 
       assert.ok(!renderedHtml.includes('<figure class="event-illustration">'))
       assert.match(renderedHtml, /<div class="main-content">\s*<h1 class="title-with-subtitle event-title">/)
+    })
+  })
+  describe('when the generation model is unknown', () => {
+    it('omits the model attribution', () => {
+      /** HTML for an entry imported before attribution was recorded. */
+      const html = buildEventPage({ ...baseViewModel, generatedBy: null })
+
+      assert.ok(!html.includes('stamp-model'))
+      assert.ok(html.includes('Updated May 5, 2026 12:00:00 UTC'))
     })
   })
 })

@@ -17,6 +17,7 @@ describe('sync', () => {
   const theEventBody: EventBody = {
     title: 'The Event',
     description: '\nbody\n',
+    generatedBy: null,
     illustrationHash: 'hash-1',
     startDate: '2026-04-15',
     endDate: '2026-04-22',

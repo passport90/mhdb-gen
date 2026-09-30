@@ -8,6 +8,8 @@ interface EventBody {
   title: string
   /** Full event body in markdown, with the H1 line stripped. */
   description: string
+  /** Model saved at import time; null for entries with unknown attribution. */
+  generatedBy: string | null
   /** Hex SHA-256 of the illustration; `null` when the event has no illustration. */
   illustrationHash: string | null
   /** Inclusive start of the event in ISO 8601 (YYYY-MM-DD). */

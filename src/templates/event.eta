@@ -57,7 +57,10 @@
         </div>
       </div>
       <div class="paper-stamp">
-        <span class="stamp">Updated <%= it.updatedAtLabel %> UTC</span>
+<% if (it.generatedBy !== null) { %>
+        <span class="stamp stamp-model"><%= it.generatedBy %></span>
+<% } %>
+        <span class="stamp stamp-updated">Updated <%= it.updatedAtLabel %> UTC</span>
       </div>
     </main>
   </body>

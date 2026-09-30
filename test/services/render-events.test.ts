@@ -18,6 +18,7 @@ describe('renderEvents', () => {
   const firstEventBody: EventBody = {
     title: 'First Event',
     description: '\nbody-1\n',
+    generatedBy: null,
     illustrationHash: null,
     startDate: '2026-04-15',
     endDate: '2026-04-22',
@@ -30,6 +31,7 @@ describe('renderEvents', () => {
   const firstEventSiblingBody: EventBody = {
     title: 'First Event Sibling',
     description: '\nbody-1b\n',
+    generatedBy: null,
     illustrationHash: null,
     startDate: '2026-04-23',
     endDate: '2026-04-30',
@@ -42,6 +44,7 @@ describe('renderEvents', () => {
   const secondEventBody: EventBody = {
     title: 'Second Event',
     description: '\nbody-2\n',
+    generatedBy: null,
     illustrationHash: null,
     startDate: '2026-05-05',
     endDate: '2026-05-12',

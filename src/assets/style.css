@@ -771,7 +771,12 @@ body[data-season] main::after {
 .paper-stamp {
     position: absolute;
     bottom: 1rem;
+    left: 1rem;
     right: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
 }
 
 .stamp {
@@ -785,6 +790,14 @@ body[data-season] main::after {
     text-shadow:
         0 1px 0 rgba(255, 255, 255, 0.9),
         0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.stamp-model {
+    text-transform: none;
+}
+
+.stamp-updated {
+    margin-left: auto;
 }
 
 /* ============================================
@@ -1017,6 +1030,7 @@ body[data-season] main::after {
 
     .paper-stamp {
         bottom: 1.2rem;
+        left: 1.2rem;
         right: 1.2rem;
     }
 }
@@ -1108,6 +1122,7 @@ body[data-season] main::after {
 
     .paper-stamp {
         bottom: 0.75rem;
+        left: 0.75rem;
         right: 0.75rem;
     }
 }

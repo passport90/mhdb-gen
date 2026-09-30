@@ -47,10 +47,13 @@ describe('findEventBodyById', () => {
       1,
     )
 
+    db.prepare('UPDATE events SET generated_by = ? WHERE id = 1').run('previous-model')
+
     /** Body fields hydrated by the SUT. */
     const body = findEventBodyById(db, 1)
 
     assert.strictEqual(body.title, 'Battle of Hastings')
+    assert.strictEqual(body.generatedBy, 'previous-model')
     assert.strictEqual(body.description, '\nbody\n')
     assert.strictEqual(body.illustrationHash, 'hash-1')
     assert.strictEqual(body.startDate, '1066-10-14')

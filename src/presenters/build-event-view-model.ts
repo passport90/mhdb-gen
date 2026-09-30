@@ -38,6 +38,7 @@ const buildEventViewModel = (event: EventToRender): EventPageViewModel => ({
     ? buildIllustrationPath(event.seasonalYear, event.season, event.position, event.slug)
     : null,
   descriptionHtml: marked.parse(event.description, { async: false }).trimEnd(),
+  generatedBy: event.generatedBy,
   updatedAtLabel: buildUpdatedAtLabel(event.updatedAt),
 })
 

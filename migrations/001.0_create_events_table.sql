@@ -18,6 +18,8 @@ CREATE TABLE events (
     -- the renderer re-emits the title from `title` on its own.
     -- Always present.
     description       TEXT     NOT NULL,
+    -- Model stamped by the generator on upsert; NULL for legacy entries.
+    generated_by      TEXT     NULL,
     -- Hex digest of the event's illustration PNG. The PNG itself
     -- is NOT stored in the database — only its hash. The binary
     -- lives on disk in a blob store managed by upsert and read by
@@ -88,7 +90,7 @@ CREATE TABLE events (
 -- updated_at, otherwise sync would self-trigger every render.
 CREATE TRIGGER events_update_timestamp
 AFTER UPDATE OF
-    title, description, illustration_hash,
+    title, description, generated_by, illustration_hash,
     start_date, end_date,
     seasonal_year, season, position
 ON events

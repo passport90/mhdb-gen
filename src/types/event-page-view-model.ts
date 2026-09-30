@@ -40,6 +40,8 @@ interface EventPageViewModel {
   illustrationPath: string | null
   /** Event description rendered to HTML by `marked`; empty string when the description is empty. */
   descriptionHtml: string
+  /** Model saved at import time; null for entries with unknown attribution. */
+  generatedBy: string | null
   /** Formatted update timestamp label, e.g. `May 5, 2026 12:00:00`. */
   updatedAtLabel: string
 }
